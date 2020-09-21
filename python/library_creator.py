@@ -29,7 +29,7 @@ def get_options():
                                      prog='pen_checker_cdc.py')
 
     parser.add_argument('--hit_csv', required=True, help='Out merged BLAST csv (required)', type=str)
-    parser.add_argument('--refrerence_csv', required=True, help='Isolates and references csv (required)', type=str)
+    parser.add_argument('--reference_csv', required=True, help='Isolates gff and references gff csv (required)', type=str)
     parser.add_argument('--align_cutoff', required=True, help='Alignment length cut_off for hit  (required)', type=int)
     parser.add_argument('--act_loc', required=True, help='Directory where act comparisons stored (required)', type=str)
     parser.add_argument('--contig_loc', required=True, help='Directory where contig_numbers stored  (required)', type=str)
@@ -38,6 +38,37 @@ def get_options():
     args = parser.parse_args()
 
     return args
+
+def contig_checker(contig_csv, hit_to_check):
+    ## This is a function to check what contig a BLAST hit appears on
+    ## Input: contig_csv: The CSV file containing contig start in a single column and contig end in another
+    ##        hit_to_check: Start and end of a BLAST hit
+    ## Output: Contig number of BLAST hit.
+    hit_contig = 0
+    for j in range(len(contig_csv.index)):
+        c_start_and_end = contig_csv.iloc[j]
+        if j == 0:
+            overhang_before = 0
+            overhang_after = 10
+        else:
+            overhang_before = 15
+            overhang_after = 15
+        start_hit = hit_to_check[0] >= (c_start_and_end[0] - overhang_before) and \
+                    hit_to_check[0] <= (c_start_and_end[1] + overhang_after)
+        end_hit = hit_to_check[1] >= (c_start_and_end[0] - overhang_before) and \
+                  hit_to_check[1] <= (c_start_and_end[1] + overhang_after)
+
+        if start_hit == True and end_hit == True:
+            hit_contig = j + 1
+
+    return hit_contig
+
+def bounds_of_contig(contig_tab, contig_mge):
+    ## Function to get bounds of a contig
+    contig_bounds = contig_tab.iloc[contig_mge - 1]
+
+    return contig_bounds
+
 
 
 def contig_end_checker(hitters, contig_tab, act_path, isolate_id):
@@ -391,6 +422,377 @@ def merged_contig_checker(merged_csv, contig_file_abs_path, act_path):
 
     return merged_csv, merged_locs
 
+def ref_contains_hit(compo_table, hitters, mge_bounds, isolate_id):
+    ## This function checks if there are any hits within the mge position
+    ## where compo_table is the act comparison, hitters the position of
+    ## the mge in the query and mge bounds the contig of the mge.
+
+    if hitters[0] < hitters[1]:
+        mge_ori = "forward"
+    elif hitters[0] > hitters[1]:
+        mge_ori = "reverse"
+
+    if mge_ori == "forward":
+        whole_overlap = compo_table[(compo_table['qstart'] < hitters[0]) & (compo_table['qend'] > hitters[1])]
+        whole_overlap = whole_overlap.sort_values(by=['qstart'], ascending=False)
+        if whole_overlap.empty:
+            hits_bef = compo_table[(compo_table['qend'] > hitters[0] + 100) & (compo_table['qstart'] < hitters[0])]
+            hits_bef = hits_bef.sort_values(by=['qstart'], ascending=False)
+            if hits_bef.empty:
+                hit_bef = "Not"
+                hit_aft = "Not"
+            else:
+                hit_bef = hits_bef.iloc[0]
+
+                hits_aft = compo_table[(compo_table['qstart'] < hitters[1] - 100) & (compo_table['qend'] > hitters[1])]
+                hits_aft = hits_aft.sort_values(by=['qend'], ascending=True)
+                if hits_aft.empty:
+                    hit_aft = "Not"
+                else:
+                    hit_aft = hits_aft.iloc[0]
+        else:
+            whole_match = whole_overlap.iloc[0]
+            hit_bef, hit_aft = whole_match_splitter(whole_match, hitters)
+
+    elif mge_ori == "reverse":
+        whole_overlap = compo_table[(compo_table['qstart'] < hitters[1]) & (compo_table['qend'] > hitters[0])]
+        whole_overlap = whole_overlap.sort_values(by=['qstart'], ascending=False)
+        if whole_overlap.empty:
+            hits_bef = compo_table[(compo_table['qstart'] < hitters[0] - 100) & (compo_table['qend'] > hitters[0])]
+            hits_bef = hits_bef.sort_values(by=['qend'], ascending=True)
+            if hits_bef.empty:
+                hit_bef = "Not"
+                hit_aft = "Not"
+            else:
+                hit_bef = hits_bef.iloc[0]
+
+                hits_aft = compo_table[(compo_table['qend'] > hitters[1] + 100) & (compo_table['qstart'] < hitters[1])]
+                hits_aft = hits_aft.sort_values(by=['qstart'], ascending=False)
+                if hits_aft.empty:
+                    hit_aft = "Not"
+                else:
+                    hit_aft = hits_aft.iloc[0]
+        else:
+            whole_match = whole_overlap.iloc[0]
+            hit_bef, hit_aft = whole_match_splitter(whole_match, hitters)
+
+    if type(hit_bef) == str or type(hit_aft) == str:
+        overlap = "No"
+    else:
+        overlap = "Yes"
+
+
+    return hit_bef, hit_aft, overlap
+
+def whole_match_splitter(match, mge_locs):
+    ## This is a function to split a whole match if found to a before hit that
+    ## lines up with the start of the mge and then the after hit with the end
+
+    if mge_locs[0] < mge_locs[1]:
+        mge_ori = "forward"
+    elif mge_locs[0] > mge_locs[1]:
+        mge_ori = "reverse"
+
+    if match['sstart'] < match['send']:
+        match_ori = "forward"
+    elif match['sstart'] > match['send']:
+        match_ori = "reverse"
+
+    if match_ori == "forward":
+        if mge_ori == "forward":
+            length_bef = mge_locs[0] - match['qstart']
+            hit_bef = pandas.Series({'query': match['query'],
+                                     'subject': match['subject'],
+                                     'pid': match['pid'],
+                                     'align': length_bef,
+                                     'gap': match['gap'],
+                                     'mismatch': match['mismatch'],
+                                     'qstart': match['qstart'],
+                                     'qend': mge_locs[0],
+                                     'sstart': match['sstart'],
+                                     'send': (match['sstart'] + length_bef),
+                                     'eval': match['eval'],
+                                     'bitscore': match['bitscore']})
+
+            length_aft = match['qend'] - mge_locs[1]
+            hit_aft = pandas.Series({'query': match['query'],
+                                     'subject': match['subject'],
+                                     'pid': match['pid'],
+                                     'align': length_aft,
+                                     'gap': match['gap'],
+                                     'mismatch': match['mismatch'],
+                                     'qstart': mge_locs[1],
+                                     'qend': match['qend'],
+                                     'sstart': (match['send'] - length_aft),
+                                     'send': match['send'],
+                                     'eval': match['eval'],
+                                     'bitscore': match['bitscore']})
+        elif mge_ori == "reverse":
+            length_bef = match['qend'] - mge_locs[0]
+            hit_bef = pandas.Series({'query': match['query'],
+                                     'subject': match['subject'],
+                                     'pid': match['pid'],
+                                     'align': length_bef,
+                                     'gap': match['gap'],
+                                     'mismatch': match['mismatch'],
+                                     'qstart': mge_locs[0],
+                                     'qend': match['qend'],
+                                     'sstart': (match['send'] - length_bef),
+                                     'send': match['send'],
+                                     'eval': match['eval'],
+                                     'bitscore': match['bitscore']})
+
+            length_aft = mge_locs[1] - match['qstart']
+            hit_aft = pandas.Series({'query': match['query'],
+                                     'subject': match['subject'],
+                                     'pid': match['pid'],
+                                     'align': length_aft,
+                                     'gap': match['gap'],
+                                     'mismatch': match['mismatch'],
+                                     'qstart': match['qstart'],
+                                     'qend': mge_locs[1],
+                                     'sstart': match['sstart'],
+                                     'send': (match['sstart'] + length_aft),
+                                     'eval': match['eval'],
+                                     'bitscore': match['bitscore']})
+    elif match_ori == "reverse":
+        if mge_ori == "forward":
+            length_bef = mge_locs[0] - match['qstart']
+            hit_bef = pandas.Series({'query': match['query'],
+                                     'subject': match['subject'],
+                                     'pid': match['pid'],
+                                     'align': length_bef,
+                                     'gap': match['gap'],
+                                     'mismatch': match['mismatch'],
+                                     'qstart': match['qstart'],
+                                     'qend': mge_locs[0],
+                                     'sstart': match['sstart'],
+                                     'send': (match['sstart'] - length_bef),
+                                     'eval': match['eval'],
+                                     'bitscore': match['bitscore']})
+
+            length_aft = match['qend'] - mge_locs[1]
+            hit_aft = pandas.Series({'query': match['query'],
+                                     'subject': match['subject'],
+                                     'pid': match['pid'],
+                                     'align': length_aft,
+                                     'gap': match['gap'],
+                                     'mismatch': match['mismatch'],
+                                     'qstart': mge_locs[1],
+                                     'qend': match['qend'],
+                                     'sstart': (match['send'] + length_aft),
+                                     'send': match['send'],
+                                     'eval': match['eval'],
+                                     'bitscore': match['bitscore']})
+        elif mge_ori == "reverse":
+            length_bef = match['qend'] - mge_locs[0]
+            hit_bef = pandas.Series({'query': match['query'],
+                                     'subject': match['subject'],
+                                     'pid': match['pid'],
+                                     'align': length_bef,
+                                     'gap': match['gap'],
+                                     'mismatch': match['mismatch'],
+                                     'qstart': mge_locs[0],
+                                     'qend': match['qend'],
+                                     'sstart': (match['send'] + length_bef),
+                                     'send': match['send'],
+                                     'eval': match['eval'],
+                                     'bitscore': match['bitscore']})
+
+            length_aft = mge_locs[1] - match['qstart']
+            hit_aft = pandas.Series({'query': match['query'],
+                                     'subject': match['subject'],
+                                     'pid': match['pid'],
+                                     'align': length_aft,
+                                     'gap': match['gap'],
+                                     'mismatch': match['mismatch'],
+                                     'qstart': match['qstart'],
+                                     'qend': mge_locs[1],
+                                     'sstart': match['sstart'],
+                                     'send': (match['sstart'] - length_aft),
+                                     'eval': match['eval'],
+                                     'bitscore': match['bitscore']})
+
+    return hit_bef, hit_aft
+
+def before_and_after_hits(hit_info, compo_table, contig_bounds):
+    ## This function looks for matches around the MGE loc based on their
+    ## position in the query sequence. First looks for hits with align
+    ## greater than 2000, then if this isn't on contig looks for hits
+    ## simply on the contig, no matter the size.
+    overhang = 50
+    if hit_info[0] < hit_info[1]:
+        hits_before = compo_table.loc[compo_table[compo_table.columns[7]] < (hit_info[0] + overhang)]
+        hits_before = hits_before.sort_values(by=['qend'], ascending=False)
+        hits_before_1k = hits_before.loc[hits_before['align'] > 2000]
+        ## Just check if this align > 1500 hit is on the same contig, if not we
+        ## use the original hits_before ordered df
+
+
+
+        if hits_before_1k.empty:
+            hits_before_1k = hits_before
+
+        if hits_before_1k.iloc[0, 6] < (contig_bounds[0] - 10):
+            hits_before_1k = hits_before
+        else:
+            hits_before_1k = hits_before_1k
+
+        ## Check now if this align > 1500 df is empty, if so again we use the
+        ## original hits before df
+        if hits_before_1k.empty:
+            hits_before_1k = hits_before
+        if hits_before_1k.empty:
+            hit_before = pandas.DataFrame(data=numpy.zeros(shape=(1, 12)),
+                                          columns=hits_before.columns.values)
+        else:
+            hit_before = hits_before_1k.iloc[0]
+
+        ## Now we get the major hit before the insertion
+
+        hits_after = compo_table.loc[compo_table[compo_table.columns[6]] > (hit_info[1] - overhang)]
+        hits_after = hits_after.sort_values(by=['qstart'], ascending=True)
+        hits_after_1k = hits_after.loc[hits_after['align'] > 2000]
+
+        if hits_after_1k.empty:
+            hits_after_1k = hits_after
+
+        if hits_after_1k.iloc[0, 7] > (contig_bounds[1] + 10):
+            hits_after_1k = hits_after
+        else:
+            hits_after_1k = hits_after_1k
+
+        if hits_after_1k.empty:
+            hits_after_1k = hits_after
+        if hits_after_1k.empty:
+            hit_after = pandas.DataFrame(data=numpy.zeros(shape=(1, 12)),
+                                         columns=hits_after.columns.values)
+        else:
+            hit_after = hits_after_1k.iloc[0]
+
+
+    elif hit_info[0] > hit_info[1]:
+
+        hits_before = compo_table.loc[compo_table[compo_table.columns[6]] > (hit_info[0] - overhang)]
+        hits_before = hits_before.sort_values(by=['qstart'], ascending=True)
+        hits_before_1k = hits_before.loc[hits_before['align'] > 2000]
+
+        if hits_before_1k.empty:
+            hits_before_1k = hits_before
+
+
+        if hits_before_1k.iloc[0, 7] > (contig_bounds[1] + 10):
+            hits_before_1k = hits_before
+        else:
+            hits_before_1k = hits_before_1k
+
+        if hits_before_1k.empty:
+            hits_before_1k = hits_before
+        if hits_before_1k.empty:
+            hit_before = pandas.DataFrame(data=numpy.zeros(shape=(1, 12)),
+                                          columns=hits_before.columns.values)
+        else:
+            hit_before = hits_before_1k.iloc[0]
+
+        hits_after = compo_table.loc[compo_table[compo_table.columns[7]] < (hit_info[1] + overhang)]
+        hits_after = hits_after.sort_values(by=['qend'], ascending=False)
+        hits_after_1k = hits_after.loc[hits_after['align'] > 2000]
+
+        if hits_after_1k.iloc[0, 6] < (contig_bounds[0] - 10):
+            hits_after_1k = hits_after
+        else:
+            hits_after_1k = hits_after_1k
+
+        if hits_after_1k.empty:
+            hits_after_1k = hits_after
+        if hits_after_1k.empty:
+            hit_after = pandas.DataFrame(data=numpy.zeros(shape=(1, 12)),
+                                         columns=hits_after.columns.values)
+        else:
+            hit_after = hits_after_1k.iloc[0]
+
+
+    is_aft_within_bef = False
+    is_bef_within_aft = False
+    hits_to_use = "both"
+
+    if hit_before.iloc[3] > hit_after.iloc[3]:
+        is_aft_within_bef = within_a_hit(hit_before, hit_after)
+    elif hit_before.iloc[3] < hit_after.iloc[3]:
+        is_bef_within_aft = within_a_hit(hit_after, hit_before)
+
+    if is_aft_within_bef == True:
+        hits_to_use = "before"
+    if is_bef_within_aft == True:
+        hits_to_use = "after"
+
+
+    return hit_before, hit_after, hits_to_use
+
+def within_a_hit(big_hit, little_hit):
+    ## This only works with two hits of the same orientation
+    if big_hit['sstart'] < big_hit['send']:
+        orientation = "forward"
+    elif big_hit['sstart'] > big_hit['send']:
+        orientation = "reverse"
+
+    if orientation == "forward":
+        output = little_hit['sstart'] > big_hit['sstart'] and little_hit['send'] < big_hit['send']
+    elif orientation == "reverse":
+        output = little_hit['send'] > big_hit['send'] and little_hit['sstart'] < big_hit['sstart']
+
+    return output
+
+def gff_finder(gff_csv, isolate_id):
+    ## Function to get the location of an isolates gff file
+    isolate_check = isolate_id + "\."
+    isolate_rows = gff_csv['isolate'].str.contains(isolate_check)
+    isolate_row_indy = isolate_rows.where(isolate_rows == True)
+    isolate_row_indy = isolate_row_indy.index[isolate_row_indy == True].tolist()
+    if len(isolate_row_indy) != 1:
+        print(isolate_id)
+        print(isolate_row_indy)
+    isolate_loc = gff_csv.iloc[isolate_row_indy,0]
+
+    return isolate_loc
+
+def gff_to_dna(gff_csv, contig_csv, isolate_id):
+    ## Function to turn the contigs based values of gff gene locs into a continuous DNA
+    ## based values (1 .. seq length). Needs there to be at least one gene on a contig
+    ## Input gff_csv: gff for a contiged assembly
+    ##       contig_csv: contig_bound csv
+
+    finding_izzy = re.sub("#","_",isolate_id)
+
+
+    if "contig" in gff_csv.iloc[1,0]:
+        ## go through the contig_csv and add on differences
+        for k in  range(1 , len(contig_csv.index)):
+            current_contig = k + 1
+            num_zeros = 6 - len(str(current_contig))
+            empty_str = ""
+            contig_finder = "contig" + (empty_str.join((["0"] * num_zeros))) + str(current_contig)
+            num_to_add = contig_csv.iloc[k,0]
+            contig_rows = gff_csv['seqid'].str.contains(contig_finder)
+            contig_rows_indy = contig_rows.where(contig_rows == True)
+            contig_rows_indy = contig_rows_indy.index[contig_rows_indy == True].tolist()
+
+            gff_csv.iloc[contig_rows_indy,3] = gff_csv.iloc[contig_rows_indy, 3] + num_to_add - 1
+            gff_csv.iloc[contig_rows_indy, 4] =  gff_csv.iloc[contig_rows_indy, 4] + num_to_add - 1
+    elif finding_izzy in gff_csv.iloc[1,0]:
+        for k in  range(1 , len(contig_csv.index)):
+            current_contig = k + 1
+            contig_finder = finding_izzy + "\." + str(current_contig)
+            num_to_add = contig_csv.iloc[k,0]
+            contig_rows = gff_csv['seqid'].str.contains(contig_finder)
+            contig_rows_indy = contig_rows.where(contig_rows == True)
+            contig_rows_indy = contig_rows_indy.index[contig_rows_indy == True].tolist()
+
+
+            gff_csv.iloc[contig_rows_indy,3] = gff_csv.iloc[contig_rows_indy, 3] + num_to_add - 1
+            gff_csv.iloc[contig_rows_indy, 4] =  gff_csv.iloc[contig_rows_indy, 4] + num_to_add - 1
+
+    return gff_csv
 
 
 ## Ok so first lets load up the merged BLAST CSV and narrow it down to just those
@@ -413,6 +815,138 @@ if __name__ == '__main__':
     proper_hits = proper_hits.reset_index(drop=True)
 
     ## Now lets load up the csv with the isolate names and their reference location
+
+    isolate_ref_gff = pandas.read_csv(files_for_input.reference_csv)
+
+    ## Set up the library df
+
+    library_id = []
+    library_mge_start = []
+    library_mge_end = []
+    library_insert_start = []
+    library_insert_end = []
+    library_length = []
+    library_num_genes = []
+    library_mge_length = []
+    library_flank_genes = []
+    librarY_flank_gene_length = []
+
+
+
+
+
+    ## Now loop through the blast results ##
+
+    for k in range(len(proper_hits.index)):
+        ## First we'll get the hit locs in place for each of the hits
+        current_row = proper_hits.iloc[[k]]
+        hitters = (list(current_row.iloc[0, [5, 6]]))
+        if hitters[0] < hitters[1]:
+            mge_ori = "forward"
+        elif hitters[0] > hitters[1]:
+            mge_ori = "reverse"
+
+        ## Now we'll go into the tab files and get the compo files
+        isolate_id_z = proper_hits.iloc[k, 0]
+        if isolate_id_z.count('_') == 2:
+            last_occy = isolate_id_z.rfind('_')
+            isolate_id = isolate_id_z[0:last_occy]
+        else:
+            isolate_id = isolate_id_z
+
+        print(isolate_id)
+        current_gff_loc = gff_finder(isolate_ref_gff, isolate_id)
+        compo_file = absolute_act_path + isolate_id + ".crunch.gz"
+        compo_names = ['query', 'subject', 'pid', 'align', 'gap', 'mismatch', 'qstart',
+                       'qend', 'sstart', 'send', 'eval', 'bitscore']
+        compo_table = pandas.read_csv(compo_file, sep='\t', names=compo_names)
+
+        ## Now we've got and opened the tab blast file, we should look for hits
+        ## before the start of the MGE in the host genome.
+
+
+        ## So now we've got the hits before and after the insertion site, we need to check if they're on the same
+        ## contig as each other.
+
+        contig_suffix = "#contig_bounds.csv"
+        contig_isolate = re.sub("#", "_", isolate_id)
+        contig_file_path = contig_file_abs_path + contig_isolate + contig_suffix
+
+        contig_tab = pandas.read_csv(contig_file_path)
+
+        contig_mge = contig_checker(contig_tab, hitters)
+
+        mge_bounds = bounds_of_contig(contig_tab, contig_mge)
+
+        ###########################################################################
+        ## Now we'll do a check on the reference to see if it has the same ########
+        ## identical hits as the current isolate in question ######################
+        ###########################################################################
+
+        hit_before, hit_after, overlap = ref_contains_hit(compo_table, hitters, mge_bounds, isolate_id)
+
+        if overlap == "No":
+
+            hit_before, hit_after, which_hit = before_and_after_hits(hitters, compo_table, mge_bounds)
+            if isolate_id == "15608_5#22":
+                print(hit_before, hit_after)
+        else:
+            which_hit = "both"
+
+        if hit_before[0] == 0:
+            contig_before = None
+        else:
+            hit_before_loc = hit_before.iloc[[6, 7]]
+            hit_before_length = abs(hit_before_loc[1] - hit_before_loc[0])
+            contig_before = contig_checker(contig_tab, hit_before_loc)
+
+        if hit_after[0] == 0:
+            contig_after = None
+        else:
+            hit_after_loc = hit_after.iloc[[6, 7]]
+            hit_after_length = abs(hit_after_loc[1] - hit_after_loc[0])
+            contig_after = contig_checker(contig_tab, hit_after_loc)
+
+        all_one_tig = contig_before == contig_mge and contig_mge == contig_after and which_hit == "both"
+        all_one_tig_5k = hit_before_length >= 5000 and hit_after_length >= 5000 and all_one_tig
+
+
+
+        if all_one_tig_5k:
+
+            ## If the before and after hits to the isolate all line up on one contig we can assume this is
+            ## a good enough hit to be used in library creation. Also needs to have at least 5k bp either side
+            ## in this hit
+
+            current_gff = pandas.read_csv(current_gff_loc.iloc[0], sep='\t',
+                                       names=['seqid', 'source', 'type', 'start', 'end', 'score', 'strand', 'phase',
+                                             'attributes'],
+                                       header=None)
+            #current_gff = gff_to_dna(current_gff, contig_tab, isolate_id)
+
+
+            if mge_ori == "forward":
+                ## Lets get the element length
+                ## The insertion length
+                ## Number of genes in the inserton
+                ## number genes & average length 500bp either side.
+                current_mge_length = hitters[1] - hitters[0]
+                current_insert_locs = [hit_before_loc[1], hit_after_loc[0]]
+                current_insert_length = int(hit_after_loc[0]) - int(hit_before_loc[1])
+                genes = current_gff[(current_gff['start'] >= current_insert_locs[0]) & (current_gff['end'] <= current_insert_locs[1])]
+
+                gene_num = len(genes.index)
+                print(gene_num)
+                ## 500 bp regions.
+
+
+
+
+
+
+
+
+
 
 
 
