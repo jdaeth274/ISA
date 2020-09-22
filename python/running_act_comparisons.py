@@ -37,7 +37,6 @@ if __name__ == '__main__':
     for k in range(len(unique_refs)):
         ## lets narrow down the df to just for these references.
         current_data_set = input_csv[input_csv['reference'] == unique_refs[k]]
-        print(current_data_set.head())
         reference_gff = str(current_data_set.iloc[0,1])
         print("On reference %s" % os.path.basename(reference_gff))
         print("")
