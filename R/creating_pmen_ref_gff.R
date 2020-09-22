@@ -17,7 +17,7 @@ colnames(pmen_ref_gff) <- c("isolate","reference")
 write.csv(pmen_ref_gff, file = "~/Dropbox/phd/insertion_site_analysis/data/reference_isolate_gff.csv", row.names = FALSE)
 
 shortened_csv <- pmen_ref_gff[c(625:650, 725:750),]
-write.csv(shortened_csv, file = "~/Dropbox/phd/insertion_site_analysis/data/short_reference_isolate.csv", row.names = FALSE)
+write.csv(shortened_csv, file = "~/Dropbox/phd/insertion_site_analysis/data/short_reference_isolate_gff.csv", row.names = FALSE)
 
 pmen9_only <- pmen_ref_gff[710:715,]
 write.csv(pmen9_only, file = "~/Dropbox/phd/insertion_site_analysis/data/pmen9_reference_isolate.csv", row.names = FALSE)

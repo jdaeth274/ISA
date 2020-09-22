@@ -794,6 +794,11 @@ def gff_to_dna(gff_csv, contig_csv, isolate_id):
 
     return gff_csv
 
+def library_integrator(library_csv, prospective_csv):
+    ## Function to decide whether to merge a hits data into the library csv.
+    ## Input: library_csv: The current library csv to search for matches against
+    ##        prospective_csv: The prospective
+
 
 ## Ok so first lets load up the merged BLAST CSV and narrow it down to just those
 ## over the threshold length.
@@ -831,7 +836,10 @@ if __name__ == '__main__':
     library_flank_genes = []
     librarY_flank_gene_length = []
 
+    lib_col_names = ["id","mge_start","mge_end","insert_start","insert_end","mge_length",
+                     "insert_length","num_genes","flank_genes","mean_flank_gene_length"]
 
+    library_df = pandas.DataFrame(columns=lib_col_names)
 
 
 
@@ -854,7 +862,6 @@ if __name__ == '__main__':
         else:
             isolate_id = isolate_id_z
 
-        print(isolate_id)
         current_gff_loc = gff_finder(isolate_ref_gff, isolate_id)
         compo_file = absolute_act_path + isolate_id + ".crunch.gz"
         compo_names = ['query', 'subject', 'pid', 'align', 'gap', 'mismatch', 'qstart',
@@ -895,6 +902,7 @@ if __name__ == '__main__':
 
         if hit_before[0] == 0:
             contig_before = None
+            hit_before_length = 0
         else:
             hit_before_loc = hit_before.iloc[[6, 7]]
             hit_before_length = abs(hit_before_loc[1] - hit_before_loc[0])
@@ -902,6 +910,7 @@ if __name__ == '__main__':
 
         if hit_after[0] == 0:
             contig_after = None
+            hit_after_length = 0
         else:
             hit_after_loc = hit_after.iloc[[6, 7]]
             hit_after_length = abs(hit_after_loc[1] - hit_after_loc[0])
@@ -922,7 +931,7 @@ if __name__ == '__main__':
                                        names=['seqid', 'source', 'type', 'start', 'end', 'score', 'strand', 'phase',
                                              'attributes'],
                                        header=None)
-            #current_gff = gff_to_dna(current_gff, contig_tab, isolate_id)
+            current_gff = gff_to_dna(current_gff, contig_tab, isolate_id)
 
 
             if mge_ori == "forward":
@@ -936,8 +945,19 @@ if __name__ == '__main__':
                 genes = current_gff[(current_gff['start'] >= current_insert_locs[0]) & (current_gff['end'] <= current_insert_locs[1])]
 
                 gene_num = len(genes.index)
-                print(gene_num)
-                ## 500 bp regions.
+
+                ## 5000 bp regions.
+                ## Include any genes overlapping region, so just based on end
+                before_loc_gens = current_gff[(current_gff['end'] > (hit_before_loc[1] - 5000)) & (current_gff['end'] <= (hit_before_loc[1] + 100))]
+                num_genes_before = len(before_loc_gens.index)
+                if not before_loc_gens.empty:
+                    before_gene_lengths = []
+                    for k in range(len(before_loc_gens.index)):
+                        current_length = before_loc_gens.iloc[k, 4] - before_loc_gens.iloc[k, 3]
+                        before_loc_gens.append(current_length)
+                    mean_length_before = numpy.mean(before_loc_gens)
+
+
 
 
 
