@@ -20,13 +20,19 @@ $filename = <fazza>;
 
 close fazza;
 
-$filename =~ s/>\.//g;
-$filename =~ s/\.1\s//g;
-$filename =~ s/>.*\.//g;
-$filename =~ s/>//g;
-$filename =~ s/\s+$//;
+## based on the first line in fasta, lets alter this to use the file name
+#$filename =~ s/>\.//g;
+#$filename =~ s/\.1\s//g;
+#$filename =~ s/>.*\.//g;
+#$filename =~ s/>//g;
+#$filename =~ s/\s+$//;
 
+my $filename = $filein;
+my @files_B = split('\/([^\/]+)$', $filename);
+$filename = $files_B[1];
 
+$filename =~ s/\.[a-zA-z].*$//g;
+$filename =~ s/#/_/g;
 
 
 print "\n The file's name is $filename.dna";

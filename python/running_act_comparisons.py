@@ -3,6 +3,7 @@ import os
 import pandas
 import subprocess
 import argparse
+import re
 
 def get_options():
     purpose = ''' Script to take in a csv of all the locations of fastas for all isolates in first 
@@ -38,10 +39,23 @@ if __name__ == '__main__':
         ## lets narrow down the df to just for these references.
         current_data_set = input_csv[input_csv['reference'] == unique_refs[k]]
         reference_gff = str(current_data_set.iloc[0,1])
-        print("On reference %s" % os.path.basename(reference_gff))
+        ref_base = os.path.basename(reference_gff)
+        print("On reference %s" % ref_base)
         print("")
-        seqret_command = "seqret -sequence " + reference_gff + " -outseq referoo.fasta"
-        subprocess.call(seqret_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+        if bool(re.search("\.fasta$", ref_base)) or bool(re.search("\.fa$", ref_base)):
+            ## first make .dna then run through command
+            dna_file = re.sub("\..*$","",ref_base)
+            dna_file = re.sub("#","_",dna_file)
+            dna_file = dna_file + ".dna"
+            dna_command = "perl " + perl_dir + "converting_velvet_contigs_to_dna.pl " + reference_gff
+            mv_command = "mv " + dna_file + " referoo.fasta"
+            subprocess.call(dna_command, shell=True, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+            subprocess.call(mv_command, shell=True)
+        else:
+            seqret_command = "seqret -sequence " + reference_gff + " -outseq referoo.fasta"
+            subprocess.call(seqret_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
         for l in range(len(current_data_set.index)):
             print("On isolate number %s" % l, end="\r", flush=True)
             current_isolate = str(current_data_set.iloc[l, 0])
