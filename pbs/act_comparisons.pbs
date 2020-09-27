@@ -1,6 +1,8 @@
 #PBS -l select=1:ncpus=1:mem=2gb
 #PBS -l walltime=48:00:00
 
+start=$SECONDS
+
 module load anaconda3/personal
 
 source activate
@@ -11,8 +13,9 @@ cd /rds/general/project/bacterial_evo_genomics/live/gps_annotations_4_2_2020/gps
 
 echo $PWD
 
-python ./ISA/python/running_act_comparisons.py --csv gps_reference_isolate_fasta.csv \
+python ./ISA/python/running_act_comparisons.py --csv gps_reference_isolate_both_fasta.csv \
 --perl_dir ./ISA/perl/ --act_dir ./act_compos/ 
 
+duration=$(( SECONDS - start ))
 
-
+echo $duration > act_comparison_time.txt
