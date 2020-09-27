@@ -153,8 +153,8 @@ def contig_end_checker(hitters, contig_tab, act_path, isolate_id):
 
 
 
-            before_df = pandas.concat([before_spans, before_within, before_overlap_1, before_overlap_2])
-            after_df = pandas.concat([after_spans, after_within, after_overlap_1, after_overlap_2])
+            before_df = pandas.concat([before_spans, before_within, before_overlap_1, before_overlap_2], sort=False)
+            after_df = pandas.concat([after_spans, after_within, after_overlap_1, after_overlap_2], sort=False)
 
 
             if start_pos == "None":
@@ -404,7 +404,7 @@ def merged_contig_checker(merged_csv, contig_file_abs_path, act_path):
             isolate_rows_narrow = isolate_rows_narrow.reset_index(drop=True)
             merged_row, merged_row_to_drop, merged_loc = row_merger(isolate_rows_narrow)
             if len(merged_row_to_drop) > 0:
-                merged_rows_to_add = merged_rows_to_add.append(merged_row)
+                merged_rows_to_add = merged_rows_to_add.append(merged_row, sort=False, ignore_index=True)
                 merged_rows_to_drop.extend(merged_row_to_drop)
                 merged_locs.append(merged_loc)
 
@@ -418,7 +418,7 @@ def merged_contig_checker(merged_csv, contig_file_abs_path, act_path):
     merged_csv['merged_index'] = numpy.NAN
     ## Now lets add in the rows
     merged_rows_to_add['merged_index'] = range(len(merged_rows_to_add.index))
-    merged_csv = merged_csv.append(merged_rows_to_add)
+    merged_csv = merged_csv.append(merged_rows_to_add, sort=False, ignore_index=True)
 
     return merged_csv, merged_locs
 
@@ -753,8 +753,9 @@ def gff_finder(gff_csv, isolate_id):
         print(isolate_id)
         print(isolate_row_indy)
     isolate_loc = gff_csv.iloc[isolate_row_indy,0]
+    isolate_ref = gff_csv.iloc[isolate_row_indy,1]
 
-    return isolate_loc
+    return isolate_loc, isolate_ref
 
 def gff_to_dna(gff_csv, contig_csv, isolate_id, input_k):
     ## Function to turn the contigs based values of gff gene locs into a continuous DNA
@@ -765,65 +766,81 @@ def gff_to_dna(gff_csv, contig_csv, isolate_id, input_k):
     finding_izzy = re.sub("#","_",isolate_id)
     contig_lengths = contig_csv.iloc[:,1] - contig_csv.iloc[:,0]
     index_to_keep = contig_lengths[contig_lengths > 10000].index
+    ## remove DNA sequences ##
+    starting_seq = gff_csv['seqid'].str.startswith("##FASTA", na = False)
+    starting_seq_indy = starting_seq.where(starting_seq == True)
+    starting_seq_indy = starting_seq_indy.index[starting_seq_indy == True].tolist()
+    starting_seq_indy = min(starting_seq_indy)
 
-    if "contig" in gff_csv.iloc[1,0]:
+    narrowed_gff = gff_csv.drop(range(starting_seq_indy,(len(gff_csv.index) - 1) ))
+    narrowed_gff = narrowed_gff.reset_index(drop=True)
+
+
+    if "contig" in narrowed_gff.iloc[1,0]:
         ## go through the contig_csv and add on differences
         for k in index_to_keep :
             if k == 0:
                 current_contig = k + 1
                 num_zeros = 6 - len(str(current_contig))
                 empty_str = ""
-                contig_finder = "contig" + (empty_str.join((["0"] * num_zeros))) + str(current_contig)
-                contig_rows = gff_csv['seqid'].str.contains(contig_finder)
+                contig_finder = "contig" + (empty_str.join((["0"] * num_zeros))) + str(current_contig) + "$"
+                contig_rows = narrowed_gff['seqid'].str.contains(contig_finder)
                 contig_rows_indy = contig_rows.where(contig_rows == True)
                 contig_rows_indy = contig_rows_indy.index[contig_rows_indy == True].tolist()
                 last_indy = max(contig_rows_indy)
 
-
-                continue
             else:
                 current_contig = k + 1
                 num_zeros = 6 - len(str(current_contig))
                 empty_str = ""
-                contig_finder = "contig" + (empty_str.join((["0"] * num_zeros))) + str(current_contig)
+                contig_finder = "contig" + (empty_str.join((["0"] * num_zeros))) + str(current_contig) + "$"
                 num_to_add = contig_csv.iloc[k,0]
-                contig_rows = gff_csv['seqid'].str.contains(contig_finder)
+                contig_rows = narrowed_gff['seqid'].str.contains(contig_finder)
                 contig_rows_indy = contig_rows.where(contig_rows == True)
                 contig_rows_indy = contig_rows_indy.index[contig_rows_indy == True].tolist()
 
-                gff_csv.iloc[contig_rows_indy,3] = gff_csv.iloc[contig_rows_indy, 3] + num_to_add - 1
-                gff_csv.iloc[contig_rows_indy, 4] =  gff_csv.iloc[contig_rows_indy, 4] + num_to_add - 1
+                narrowed_gff.iloc[contig_rows_indy,3] = narrowed_gff.iloc[contig_rows_indy, 3] + num_to_add - 1
+                narrowed_gff.iloc[contig_rows_indy, 4] =  narrowed_gff.iloc[contig_rows_indy, 4] + num_to_add - 1
                 last_indy = max(contig_rows_indy)
-        gff_index_to_drop = range((last_indy + 1), (len(gff_csv.index) - 1))
-        out_gff_csv = gff_csv.drop(gff_index_to_drop)
+
+        gff_index_to_drop = range((last_indy + 1), (len(narrowed_gff.index) - 1))
+        out_gff_csv = narrowed_gff.drop(gff_index_to_drop)
 
 
 
-
-    elif finding_izzy in gff_csv.iloc[1,0]:
+    elif finding_izzy in narrowed_gff.iloc[1,0]:
         for k in  index_to_keep:
             if k == 0:
                 current_contig = k + 1
-                contig_finder = finding_izzy + "\." + str(current_contig)
-                contig_rows = gff_csv['seqid'].str.contains(contig_finder)
+                contig_finder = finding_izzy + "\." + str(current_contig) + "$"
+                contig_rows = narrowed_gff['seqid'].str.contains(contig_finder)
                 contig_rows_indy = contig_rows.where(contig_rows == True)
                 contig_rows_indy = contig_rows_indy.index[contig_rows_indy == True].tolist()
                 last_indy = max(contig_rows_indy)
 
             else:
                 current_contig = k + 1
-                contig_finder = finding_izzy + "\." + str(current_contig)
+                contig_finder = finding_izzy + "\." + str(current_contig) + "$"
                 num_to_add = contig_csv.iloc[k,0]
-                contig_rows = gff_csv['seqid'].str.contains(contig_finder)
+
+
+                contig_rows = narrowed_gff['seqid'].str.contains(contig_finder)
                 contig_rows_indy = contig_rows.where(contig_rows == True)
                 contig_rows_indy = contig_rows_indy.index[contig_rows_indy == True].tolist()
 
 
-                gff_csv.iloc[contig_rows_indy,3] = gff_csv.iloc[contig_rows_indy, 3] + num_to_add - 1
-                gff_csv.iloc[contig_rows_indy, 4] =  gff_csv.iloc[contig_rows_indy, 4] + num_to_add - 1
+                narrowed_gff.iloc[contig_rows_indy,3] = narrowed_gff.iloc[contig_rows_indy, 3] + num_to_add - 1
+                narrowed_gff.iloc[contig_rows_indy, 4] =  narrowed_gff.iloc[contig_rows_indy, 4] + num_to_add - 1
+
                 last_indy = max(contig_rows_indy)
-        gff_index_to_drop = range((last_indy + 1), (len(gff_csv.index) - 1))
-        out_gff_csv = gff_csv.drop(gff_index_to_drop)
+
+        gff_index_to_drop = range((last_indy + 1), (len(narrowed_gff.index) ))
+        out_gff_csv = narrowed_gff.drop(gff_index_to_drop)
+
+    ## test out finder ##
+
+
+    out_gff_csv = out_gff_csv.reset_index(drop=True)
 
     return out_gff_csv
 
@@ -832,33 +849,42 @@ def library_integrator(library_csv, prospective_csv):
     ## Input: library_csv: The current library csv to search for matches against
     ##        prospective_csv: The prospective set of results to be potentially merged
 
+    lib_new = library_csv.copy()
+    ids_to_drop = []
+
     ## lets narrow down first by number of genes in the element if this is not exact I think its
     ## fair to assume this would be novel.
-    lib_new = library_csv.copy()
-    if prospective_csv['mge_genes'][0] in library_csv['mge_genes']:
+
+
+
+    if prospective_csv['mge_genes'][0] in library_csv['mge_genes'].values:
         ## So there is a hit with the same number of mge genes, let now check the element length +- 100 bp
         current_hits = library_csv[library_csv['mge_genes'] == prospective_csv['mge_genes'][0]]
         mge_length_hits = current_hits[(current_hits['mge_length'] >= (prospective_csv['mge_length'][0] - 100))\
                                        & (current_hits['mge_length'] <= (prospective_csv['mge_length'][0] + 100))]
+
         if not mge_length_hits.empty:
+            
             ## Check total insert length +- 200
             insert_length_hits = mge_length_hits[(mge_length_hits['insert_length'] >= (prospective_csv['insert_length'][0] - 100))\
                 & (mge_length_hits['insert_length'] <= (prospective_csv['insert_length'][0] + 100))]
             if not insert_length_hits.empty:
-                ## Check total insert genes +- 5
-                insert_gene_hits = insert_length_hits[(insert_length_hits['insert_genes'] >= (prospective_csv['insert_genes'][0] - 5))\
-                    & (insert_length_hits['insert_genes'] <= (prospective_csv['insert_genes'][0] + 5))]
+                ## Check total insert genes +- 5% of total genes in hit
+                five_percent = round(0.05 * prospective_csv['insert_genes'][0])
+                insert_gene_hits = insert_length_hits[(insert_length_hits['insert_genes'] >= (prospective_csv['insert_genes'][0] - five_percent ))\
+                    & (insert_length_hits['insert_genes'] <= (prospective_csv['insert_genes'][0] + five_percent))]
                 if not insert_gene_hits.empty:
                     ## Check num genes in the flanking hits +- 3
                     flank_genes = insert_length_hits[(insert_length_hits['flank_genes'] >= (prospective_csv['flank_genes'][0] - 3))\
                         & (insert_length_hits['flank_genes'] <= (prospective_csv['flank_genes'][0] + 3))]
                     if not flank_genes.empty:
-                        ## check mean_length_genes +- 25 bp
-                        flank_mean = flank_genes[(flank_genes['mean_flank_gene_length'] >= (prospective_csv['mean_flank_gene_length'][0] - 25))\
-                            & (flank_genes['mean_flank_gene_length'] <= (prospective_csv['mean_flank_gene_length'][0] + 25))]
+                        ## check mean_length_genes +- 50 bp
+                        flank_mean = flank_genes[(flank_genes['mean_flank_gene_length'] >= (prospective_csv['mean_flank_gene_length'][0] - 50))\
+                            & (flank_genes['mean_flank_gene_length'] <= (prospective_csv['mean_flank_gene_length'][0] + 50))]
                         if not flank_mean.empty:
-                            flanks_length = flank_mean[flank_mean['flanks_length'] >= prospective_csv['flanks_length'][0]]
+                            flanks_length = flank_mean[flank_mean['flanks_length'] > prospective_csv['flanks_length'][0]]
                             if flanks_length.empty:
+                                ids_to_drop = flank_mean['id'].tolist()
                                 novel_hit = True
                             else:
                                 novel_hit = False
@@ -876,7 +902,12 @@ def library_integrator(library_csv, prospective_csv):
         novel_hit = True
 
     if novel_hit:
-        lib_new = lib_new.append(prospective_csv, ignore_index = True)
+        lib_new = lib_new.append(prospective_csv, ignore_index = True, sort = False)
+    if len(ids_to_drop) > 0:
+        indies_to_drop = lib_new[lib_new['id'].isin(ids_to_drop)].index
+        lib_new = lib_new.drop(indies_to_drop)
+        lib_new = lib_new.reset_index(drop=True)
+
 
     return(lib_new)
 
@@ -887,6 +918,8 @@ if __name__ == '__main__':
     tab = str.maketrans("ACTG", "TGAC")
     tic = time.perf_counter()
     files_for_input = get_options()
+
+    pandas.set_option('display.max_columns', 500)
 
     hit_csv = pandas.read_csv(files_for_input.hit_csv)
     contig_file_abs_path = files_for_input.contig_loc
@@ -907,10 +940,12 @@ if __name__ == '__main__':
 
     lib_col_names = ["id", "mge_start", "mge_end", "insert_start", "insert_end", "mge_length",
                      "insert_length", "insert_genes", "mge_genes", "flank_genes",
-                     "mean_flank_gene_length",'flanks_length']
+                     "mean_flank_gene_length",'flanks_length', "ref_name", 'before_flank_gene','after_flank_gene','before_flank_avg',
+                     'after_flank_avg']
 
     library_df = pandas.DataFrame(columns=lib_col_names)
     tic_1 = time.perf_counter()
+    print("")
     print("This many hits to get through: %s" % len(proper_hits.index))
     print("")
 
@@ -934,7 +969,9 @@ if __name__ == '__main__':
             isolate_id = isolate_id_z[0:last_occy]
         else:
             isolate_id = isolate_id_z
-        current_gff_loc = gff_finder(isolate_ref_gff, isolate_id)
+
+
+        current_gff_loc, ref_loc = gff_finder(isolate_ref_gff, isolate_id)
         compo_file = absolute_act_path + isolate_id + ".crunch.gz"
         compo_names = ['query', 'subject', 'pid', 'align', 'gap', 'mismatch', 'qstart',
                        'qend', 'sstart', 'send', 'eval', 'bitscore']
@@ -967,8 +1004,7 @@ if __name__ == '__main__':
         if overlap == "No":
 
             hit_before, hit_after, which_hit = before_and_after_hits(hitters, compo_table, mge_bounds)
-            if isolate_id == "15608_5#22":
-                print(hit_before, hit_after)
+
         else:
             which_hit = "both"
 
@@ -1010,6 +1046,8 @@ if __name__ == '__main__':
                 current_gff = gff_to_dna(current_gff, contig_tab, isolate_id, input_k=k)
 
 
+
+
             if mge_ori == "forward":
                 ## Lets get the element length
                 ## The insertion length
@@ -1024,6 +1062,7 @@ if __name__ == '__main__':
                 genes_mge_num = len(genes_mge.index)
                 gene_insert_num = len(genes_insert.index)
 
+
                 ## 5000 bp regions.
                 ## Include any genes overlapping region, so just based on end
 
@@ -1037,7 +1076,7 @@ if __name__ == '__main__':
                         before_gene_lengths.append([current_length])
                     mean_length_before = numpy.mean(before_gene_lengths)
 
-                after_loc_gens = current_gff[(current_gff['start'] > (hit_after_loc[0] - 100) ) & (current_gff['start'] <= (hit_after_loc[0] + 5000))]
+                after_loc_gens = current_gff[(current_gff['start'] >= (hit_after_loc[0] - 100) ) & (current_gff['start'] < (hit_after_loc[0] + 5000))]
                 num_genes_after = len(after_loc_gens.index)
                 mean_length_after = [0]
                 if not after_loc_gens.empty:
@@ -1047,9 +1086,12 @@ if __name__ == '__main__':
                         after_loc_lengths.append([current_length])
                     mean_length_after = numpy.mean(after_loc_lengths)
 
+
+
                 flanks_genes = num_genes_before + num_genes_after
 
-                library_flank_gene_length = numpy.mean([mean_length_before, mean_length_after])
+                library_flank_gene_length = numpy.mean(before_gene_lengths + after_loc_lengths)
+                #library_flank_gene_length = numpy.mean([mean_length_before, mean_length_after])
                 tot_flanks_length = hit_before_length + hit_after_length
 
                 library_pros = pandas.DataFrame()
@@ -1065,19 +1107,31 @@ if __name__ == '__main__':
                 library_pros['flank_genes'] = pandas.Series(flanks_genes, index=library_pros.index)
                 library_pros['mean_flank_gene_length'] = pandas.Series(library_flank_gene_length, index=library_pros.index)
                 library_pros['flanks_length'] = pandas.Series(tot_flanks_length, index = library_pros.index)
+                library_pros['before_flank_gene'] = pandas.Series(num_genes_before, index=library_pros.index)
+                library_pros['after_flank_gene'] = pandas.Series(num_genes_after, index=library_pros.index)
+                library_pros['before_flank_avg'] = pandas.Series(numpy.mean(before_gene_lengths), index=library_pros.index)
+                library_pros['after_flank_avg'] = pandas.Series(numpy.mean(after_loc_lengths), index=library_pros.index)
+                ref_name = os.path.basename(ref_loc.iloc[0])
+                ref_name = re.sub("\.[a-zA-Z]*$", "", ref_name)
+
+                library_pros['ref_name'] = pandas.Series(ref_name, index=library_pros.index)
 
                 ## check if to add in to library csv
 
-                library_df = library_integrator(library_df, library_pros)
+                if genes_mge_num <= gene_insert_num:
+                    library_df = library_integrator(library_df, library_pros)
+
 
             elif mge_ori == "reverse":
 
                 current_mge_length = hitters[0] - hitters[1]
                 current_insert_locs = [hit_after_loc[1], hit_before_loc[0]]
-                current_insert_length = int(hit_after_loc[0]) - int(hit_before_loc[1])
+                current_insert_length = int(hit_before_loc[0]) - int(hit_after_loc[1])
                 genes_insert = current_gff[(current_gff['start'] >= current_insert_locs[0])\
                                            & (current_gff['end'] <= current_insert_locs[1])]
                 genes_mge = current_gff[(current_gff['start'] >= hitters[1]) & (current_gff['end'] <= hitters[0])]
+
+
                 genes_mge_num = len(genes_mge.index)
                 gene_insert_num = len(genes_insert.index)
 
@@ -1095,7 +1149,7 @@ if __name__ == '__main__':
                     mean_length_before = numpy.mean(before_gene_lengths)
 
                 after_loc_gens = current_gff[(current_gff['end'] > (hit_after_loc[1] - 5000)) &\
-                                             (current_gff['end'] <= (hit_after_loc[0] + 100))]
+                                             (current_gff['end'] <= (hit_after_loc[1] + 100))]
                 num_genes_after = len(after_loc_gens.index)
                 mean_length_after = [0]
                 if not after_loc_gens.empty:
@@ -1124,12 +1178,20 @@ if __name__ == '__main__':
                 library_pros['mean_flank_gene_length'] = pandas.Series(library_flank_gene_length,
                                                                        index=library_pros.index)
                 library_pros['flanks_length'] = pandas.Series(tot_flanks_length, index=library_pros.index)
+                library_pros['before_flank_gene'] = pandas.Series(num_genes_before, index=library_pros.index)
+                library_pros['after_flank_gene'] = pandas.Series(num_genes_after, index=library_pros.index)
+                library_pros['before_flank_avg'] = pandas.Series(numpy.mean(before_gene_lengths), index=library_pros.index)
+                library_pros['after_flank_avg'] = pandas.Series(numpy.mean(after_loc_lengths), index=library_pros.index)
+                ref_name = os.path.basename(ref_loc.iloc[0])
+                ref_name = re.sub("\.[a-zA-Z]*$", "", ref_name)
+                library_pros['ref_name'] = pandas.Series(ref_name, index=library_pros.index)
 
                 ## check if to add in to library csv
+                if genes_mge_num <= gene_insert_num:
+                    library_df = library_integrator(library_df, library_pros)
 
-                library_df = library_integrator(library_df, library_pros)
 
-    library_df.to_csv(path_or_buf=files_for_input.output)
+    library_df.to_csv(path_or_buf=files_for_input.output, index=False)
     toc1 = time.perf_counter()
     toc = time.perf_counter()
     print("Took this long for library_search: %s" % (toc1 - tic_1))
