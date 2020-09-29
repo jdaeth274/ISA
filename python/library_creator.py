@@ -432,24 +432,59 @@ def ref_contains_hit(compo_table, hitters, mge_bounds, isolate_id):
     elif hitters[0] > hitters[1]:
         mge_ori = "reverse"
 
+    cut_off_val = abs(hitters[1] - hitters[0]) * 0.5
+
     if mge_ori == "forward":
         whole_overlap = compo_table[(compo_table['qstart'] < hitters[0]) & (compo_table['qend'] > hitters[1])]
         whole_overlap = whole_overlap.sort_values(by=['qstart'], ascending=False)
+        if isolate_id == "6551_8#20":
+            print(whole_overlap)
         if whole_overlap.empty:
-            hits_bef = compo_table[(compo_table['qend'] > hitters[0] + 100) & (compo_table['qstart'] < hitters[0])]
+            ## Check if one hit is within the mge bounday above the cut off val established above
+
+            middle_hits = compo_table[(compo_table['qstart'] > hitters[0]) &\
+                                      (compo_table['qend'] > hitters[1])]
+            if middle_hits.empty:
+                middle_length = 0
+            else:
+                middle_length = middle_hits['align'].sum()
+
+
+
+            hits_bef = compo_table[(compo_table['qend'] > hitters[0])  & (compo_table['qstart'] < hitters[0])]
             hits_bef = hits_bef.sort_values(by=['qstart'], ascending=False)
+
             if hits_bef.empty:
-                hit_bef = "Not"
-                hit_aft = "Not"
+                hit_bef_length = 0
+                hit_bef = before_and_after_hits(hitters, compo_table, mge_bounds, "before")
             else:
                 hit_bef = hits_bef.iloc[0]
+                hit_bef_length = hit_bef['qend'][0] - hitters[0]
 
-                hits_aft = compo_table[(compo_table['qstart'] < hitters[1] - 100) & (compo_table['qend'] > hitters[1])]
-                hits_aft = hits_aft.sort_values(by=['qend'], ascending=True)
-                if hits_aft.empty:
-                    hit_aft = "Not"
-                else:
-                    hit_aft = hits_aft.iloc[0]
+            hits_aft = compo_table[(compo_table['qstart'] < hitters[1] ) & (compo_table['qend'] > hitters[1])]
+            hits_aft = hits_aft.sort_values(by=['qend'], ascending=True)
+            if hits_aft.empty:
+                hit_aft_length = 0
+                hit_aft = before_and_after_hits(hitters, compo_table, mge_bounds, "after")
+            else:
+                hit_aft = hits_aft.iloc[0]
+                hit_aft_length = hitters[1] - hit_aft['qstart'][0]
+
+
+            tot_overlap_length = hit_bef_length + middle_length + hit_aft_length
+            bef_aft_length = hit_bef_length + hit_aft_length
+
+            if tot_overlap_length < cut_off_val:
+                hit_bef = "No"
+                hit_aft = "No"
+            elif tot_overlap_length > cut_off_val and hit_bef_length > 0 and hit_aft_length > 0:
+                hit_bef = hit_bef
+                hit_aft = hit_aft
+
+
+
+            if isolate_id == "6551_8#20":
+                print(hit_bef, hit_aft)
         else:
             whole_match = whole_overlap.iloc[0]
             hit_bef, hit_aft = whole_match_splitter(whole_match, hitters)
@@ -484,7 +519,7 @@ def ref_contains_hit(compo_table, hitters, mge_bounds, isolate_id):
 
     return hit_bef, hit_aft, overlap
 
-def whole_match_splitter(match, mge_locs):
+def whole_match_splitter(match, mge_locs, hit_to_split):
     ## This is a function to split a whole match if found to a before hit that
     ## lines up with the start of the mge and then the after hit with the end
 
@@ -500,231 +535,239 @@ def whole_match_splitter(match, mge_locs):
 
     if match_ori == "forward":
         if mge_ori == "forward":
-            length_bef = mge_locs[0] - match['qstart']
-            hit_bef = pandas.Series({'query': match['query'],
-                                     'subject': match['subject'],
-                                     'pid': match['pid'],
-                                     'align': length_bef,
-                                     'gap': match['gap'],
-                                     'mismatch': match['mismatch'],
-                                     'qstart': match['qstart'],
-                                     'qend': mge_locs[0],
-                                     'sstart': match['sstart'],
-                                     'send': (match['sstart'] + length_bef),
-                                     'eval': match['eval'],
-                                     'bitscore': match['bitscore']})
-
-            length_aft = match['qend'] - mge_locs[1]
-            hit_aft = pandas.Series({'query': match['query'],
-                                     'subject': match['subject'],
-                                     'pid': match['pid'],
-                                     'align': length_aft,
-                                     'gap': match['gap'],
-                                     'mismatch': match['mismatch'],
-                                     'qstart': mge_locs[1],
-                                     'qend': match['qend'],
-                                     'sstart': (match['send'] - length_aft),
-                                     'send': match['send'],
-                                     'eval': match['eval'],
-                                     'bitscore': match['bitscore']})
+            if hit_to_split == "both" or hit_to_split == "before":
+                length_bef = mge_locs[0] - match['qstart']
+                hit_bef = pandas.Series({'query': match['query'],
+                                         'subject': match['subject'],
+                                         'pid': match['pid'],
+                                         'align': length_bef,
+                                         'gap': match['gap'],
+                                         'mismatch': match['mismatch'],
+                                         'qstart': match['qstart'],
+                                         'qend': mge_locs[0],
+                                         'sstart': match['sstart'],
+                                         'send': (match['sstart'] + length_bef),
+                                         'eval': match['eval'],
+                                         'bitscore': match['bitscore']})
+            if hit_to_split == "both" or hit_to_split == "after":
+                length_aft = match['qend'] - mge_locs[1]
+                hit_aft = pandas.Series({'query': match['query'],
+                                         'subject': match['subject'],
+                                         'pid': match['pid'],
+                                         'align': length_aft,
+                                         'gap': match['gap'],
+                                         'mismatch': match['mismatch'],
+                                         'qstart': mge_locs[1],
+                                         'qend': match['qend'],
+                                         'sstart': (match['send'] - length_aft),
+                                         'send': match['send'],
+                                         'eval': match['eval'],
+                                         'bitscore': match['bitscore']})
         elif mge_ori == "reverse":
-            length_bef = match['qend'] - mge_locs[0]
-            hit_bef = pandas.Series({'query': match['query'],
-                                     'subject': match['subject'],
-                                     'pid': match['pid'],
-                                     'align': length_bef,
-                                     'gap': match['gap'],
-                                     'mismatch': match['mismatch'],
-                                     'qstart': mge_locs[0],
-                                     'qend': match['qend'],
-                                     'sstart': (match['send'] - length_bef),
-                                     'send': match['send'],
-                                     'eval': match['eval'],
-                                     'bitscore': match['bitscore']})
-
-            length_aft = mge_locs[1] - match['qstart']
-            hit_aft = pandas.Series({'query': match['query'],
-                                     'subject': match['subject'],
-                                     'pid': match['pid'],
-                                     'align': length_aft,
-                                     'gap': match['gap'],
-                                     'mismatch': match['mismatch'],
-                                     'qstart': match['qstart'],
-                                     'qend': mge_locs[1],
-                                     'sstart': match['sstart'],
-                                     'send': (match['sstart'] + length_aft),
-                                     'eval': match['eval'],
-                                     'bitscore': match['bitscore']})
+            if hit_to_split == "both" or hit_to_split == "before":
+                length_bef = match['qend'] - mge_locs[0]
+                hit_bef = pandas.Series({'query': match['query'],
+                                         'subject': match['subject'],
+                                         'pid': match['pid'],
+                                         'align': length_bef,
+                                         'gap': match['gap'],
+                                         'mismatch': match['mismatch'],
+                                         'qstart': mge_locs[0],
+                                         'qend': match['qend'],
+                                         'sstart': (match['send'] - length_bef),
+                                         'send': match['send'],
+                                         'eval': match['eval'],
+                                         'bitscore': match['bitscore']})
+            if hit_to_split == "both" or hit_to_split == "after":
+                length_aft = mge_locs[1] - match['qstart']
+                hit_aft = pandas.Series({'query': match['query'],
+                                         'subject': match['subject'],
+                                         'pid': match['pid'],
+                                         'align': length_aft,
+                                         'gap': match['gap'],
+                                         'mismatch': match['mismatch'],
+                                         'qstart': match['qstart'],
+                                         'qend': mge_locs[1],
+                                         'sstart': match['sstart'],
+                                         'send': (match['sstart'] + length_aft),
+                                         'eval': match['eval'],
+                                         'bitscore': match['bitscore']})
     elif match_ori == "reverse":
         if mge_ori == "forward":
-            length_bef = mge_locs[0] - match['qstart']
-            hit_bef = pandas.Series({'query': match['query'],
-                                     'subject': match['subject'],
-                                     'pid': match['pid'],
-                                     'align': length_bef,
-                                     'gap': match['gap'],
-                                     'mismatch': match['mismatch'],
-                                     'qstart': match['qstart'],
-                                     'qend': mge_locs[0],
-                                     'sstart': match['sstart'],
-                                     'send': (match['sstart'] - length_bef),
-                                     'eval': match['eval'],
-                                     'bitscore': match['bitscore']})
-
-            length_aft = match['qend'] - mge_locs[1]
-            hit_aft = pandas.Series({'query': match['query'],
-                                     'subject': match['subject'],
-                                     'pid': match['pid'],
-                                     'align': length_aft,
-                                     'gap': match['gap'],
-                                     'mismatch': match['mismatch'],
-                                     'qstart': mge_locs[1],
-                                     'qend': match['qend'],
-                                     'sstart': (match['send'] + length_aft),
-                                     'send': match['send'],
-                                     'eval': match['eval'],
-                                     'bitscore': match['bitscore']})
+            if hit_to_split == "both" or hit_to_split == "before":
+                length_bef = mge_locs[0] - match['qstart']
+                hit_bef = pandas.Series({'query': match['query'],
+                                         'subject': match['subject'],
+                                         'pid': match['pid'],
+                                         'align': length_bef,
+                                         'gap': match['gap'],
+                                         'mismatch': match['mismatch'],
+                                         'qstart': match['qstart'],
+                                         'qend': mge_locs[0],
+                                         'sstart': match['sstart'],
+                                         'send': (match['sstart'] - length_bef),
+                                         'eval': match['eval'],
+                                         'bitscore': match['bitscore']})
+            if hit_to_split == "both" or hit_to_split == "after":
+                length_aft = match['qend'] - mge_locs[1]
+                hit_aft = pandas.Series({'query': match['query'],
+                                         'subject': match['subject'],
+                                         'pid': match['pid'],
+                                         'align': length_aft,
+                                         'gap': match['gap'],
+                                         'mismatch': match['mismatch'],
+                                         'qstart': mge_locs[1],
+                                         'qend': match['qend'],
+                                         'sstart': (match['send'] + length_aft),
+                                         'send': match['send'],
+                                         'eval': match['eval'],
+                                         'bitscore': match['bitscore']})
         elif mge_ori == "reverse":
-            length_bef = match['qend'] - mge_locs[0]
-            hit_bef = pandas.Series({'query': match['query'],
-                                     'subject': match['subject'],
-                                     'pid': match['pid'],
-                                     'align': length_bef,
-                                     'gap': match['gap'],
-                                     'mismatch': match['mismatch'],
-                                     'qstart': mge_locs[0],
-                                     'qend': match['qend'],
-                                     'sstart': (match['send'] + length_bef),
-                                     'send': match['send'],
-                                     'eval': match['eval'],
-                                     'bitscore': match['bitscore']})
-
-            length_aft = mge_locs[1] - match['qstart']
-            hit_aft = pandas.Series({'query': match['query'],
-                                     'subject': match['subject'],
-                                     'pid': match['pid'],
-                                     'align': length_aft,
-                                     'gap': match['gap'],
-                                     'mismatch': match['mismatch'],
-                                     'qstart': match['qstart'],
-                                     'qend': mge_locs[1],
-                                     'sstart': match['sstart'],
-                                     'send': (match['sstart'] - length_aft),
-                                     'eval': match['eval'],
-                                     'bitscore': match['bitscore']})
+            if hit_to_split == "both" or hit_to_split == "before":
+                length_bef = match['qend'] - mge_locs[0]
+                hit_bef = pandas.Series({'query': match['query'],
+                                         'subject': match['subject'],
+                                         'pid': match['pid'],
+                                         'align': length_bef,
+                                         'gap': match['gap'],
+                                         'mismatch': match['mismatch'],
+                                         'qstart': mge_locs[0],
+                                         'qend': match['qend'],
+                                         'sstart': (match['send'] + length_bef),
+                                         'send': match['send'],
+                                         'eval': match['eval'],
+                                         'bitscore': match['bitscore']})
+            if hit_to_split == "both" or hit_to_split == "after":
+                length_aft = mge_locs[1] - match['qstart']
+                hit_aft = pandas.Series({'query': match['query'],
+                                         'subject': match['subject'],
+                                         'pid': match['pid'],
+                                         'align': length_aft,
+                                         'gap': match['gap'],
+                                         'mismatch': match['mismatch'],
+                                         'qstart': match['qstart'],
+                                         'qend': mge_locs[1],
+                                         'sstart': match['sstart'],
+                                         'send': (match['sstart'] - length_aft),
+                                         'eval': match['eval'],
+                                         'bitscore': match['bitscore']})
 
     return hit_bef, hit_aft
 
-def before_and_after_hits(hit_info, compo_table, contig_bounds):
+def before_and_after_hits(hit_info, compo_table, contig_bounds, hits_to_search):
     ## This function looks for matches around the MGE loc based on their
     ## position in the query sequence. First looks for hits with align
     ## greater than 2000, then if this isn't on contig looks for hits
     ## simply on the contig, no matter the size.
     overhang = 50
+    hit_after = pandas.Series()
+    hit_before = pandas.Series()
     if hit_info[0] < hit_info[1]:
-        hits_before = compo_table.loc[compo_table[compo_table.columns[7]] < (hit_info[0] + overhang)]
-        hits_before = hits_before.sort_values(by=['qend'], ascending=False)
-        hits_before_1k = hits_before.loc[hits_before['align'] > 2000]
-        ## Just check if this align > 1500 hit is on the same contig, if not we
-        ## use the original hits_before ordered df
+        if hits_to_search == "both" or hits_to_search == "before":
+            hits_before = compo_table.loc[compo_table[compo_table.columns[7]] < (hit_info[0] + overhang)]
+            hits_before = hits_before.sort_values(by=['qend'], ascending=False)
+            hits_before_1k = hits_before.loc[hits_before['align'] > 2000]
+            ## Just check if this align > 1500 hit is on the same contig, if not we
+            ## use the original hits_before ordered df
 
 
 
-        if hits_before_1k.empty:
-            hits_before_1k = hits_before
+            if hits_before_1k.empty:
+                hits_before_1k = hits_before
 
-        if hits_before_1k.iloc[0, 6] < (contig_bounds[0] - 10):
-            hits_before_1k = hits_before
-        else:
-            hits_before_1k = hits_before_1k
+            if hits_before_1k.iloc[0, 6] < (contig_bounds[0] - 10):
+                hits_before_1k = hits_before
+            else:
+                hits_before_1k = hits_before_1k
 
-        ## Check now if this align > 1500 df is empty, if so again we use the
-        ## original hits before df
-        if hits_before_1k.empty:
-            hits_before_1k = hits_before
-        if hits_before_1k.empty:
-            hit_before = pandas.DataFrame(data=numpy.zeros(shape=(1, 12)),
-                                          columns=hits_before.columns.values)
-        else:
-            hit_before = hits_before_1k.iloc[0]
+            ## Check now if this align > 1500 df is empty, if so again we use the
+            ## original hits before df
+            if hits_before_1k.empty:
+                hits_before_1k = hits_before
+            if hits_before_1k.empty:
+                hit_before = pandas.DataFrame(data=numpy.zeros(shape=(1, 12)),
+                                              columns=hits_before.columns.values)
+            else:
+                hit_before = hits_before_1k.iloc[0]
 
         ## Now we get the major hit before the insertion
+        if hits_to_search == "both" or hits_to_search == "after":
+            hits_after = compo_table.loc[compo_table[compo_table.columns[6]] > (hit_info[1] - overhang)]
+            hits_after = hits_after.sort_values(by=['qstart'], ascending=True)
+            hits_after_1k = hits_after.loc[hits_after['align'] > 2000]
 
-        hits_after = compo_table.loc[compo_table[compo_table.columns[6]] > (hit_info[1] - overhang)]
-        hits_after = hits_after.sort_values(by=['qstart'], ascending=True)
-        hits_after_1k = hits_after.loc[hits_after['align'] > 2000]
+            if hits_after_1k.empty:
+                hits_after_1k = hits_after
 
-        if hits_after_1k.empty:
-            hits_after_1k = hits_after
+            if hits_after_1k.iloc[0, 7] > (contig_bounds[1] + 10):
+                hits_after_1k = hits_after
+            else:
+                hits_after_1k = hits_after_1k
 
-        if hits_after_1k.iloc[0, 7] > (contig_bounds[1] + 10):
-            hits_after_1k = hits_after
-        else:
-            hits_after_1k = hits_after_1k
-
-        if hits_after_1k.empty:
-            hits_after_1k = hits_after
-        if hits_after_1k.empty:
-            hit_after = pandas.DataFrame(data=numpy.zeros(shape=(1, 12)),
-                                         columns=hits_after.columns.values)
-        else:
-            hit_after = hits_after_1k.iloc[0]
+            if hits_after_1k.empty:
+                hits_after_1k = hits_after
+            if hits_after_1k.empty:
+                hit_after = pandas.DataFrame(data=numpy.zeros(shape=(1, 12)),
+                                             columns=hits_after.columns.values)
+            else:
+                hit_after = hits_after_1k.iloc[0]
 
 
     elif hit_info[0] > hit_info[1]:
+        if hits_to_search == "both" or hits_to_search == "before":
+            hits_before = compo_table.loc[compo_table[compo_table.columns[6]] > (hit_info[0] - overhang)]
+            hits_before = hits_before.sort_values(by=['qstart'], ascending=True)
+            hits_before_1k = hits_before.loc[hits_before['align'] > 2000]
 
-        hits_before = compo_table.loc[compo_table[compo_table.columns[6]] > (hit_info[0] - overhang)]
-        hits_before = hits_before.sort_values(by=['qstart'], ascending=True)
-        hits_before_1k = hits_before.loc[hits_before['align'] > 2000]
-
-        if hits_before_1k.empty:
-            hits_before_1k = hits_before
-
-
-        if hits_before_1k.iloc[0, 7] > (contig_bounds[1] + 10):
-            hits_before_1k = hits_before
-        else:
-            hits_before_1k = hits_before_1k
-
-        if hits_before_1k.empty:
-            hits_before_1k = hits_before
-        if hits_before_1k.empty:
-            hit_before = pandas.DataFrame(data=numpy.zeros(shape=(1, 12)),
-                                          columns=hits_before.columns.values)
-        else:
-            hit_before = hits_before_1k.iloc[0]
-
-        hits_after = compo_table.loc[compo_table[compo_table.columns[7]] < (hit_info[1] + overhang)]
-        hits_after = hits_after.sort_values(by=['qend'], ascending=False)
-        hits_after_1k = hits_after.loc[hits_after['align'] > 2000]
-
-        if hits_after_1k.iloc[0, 6] < (contig_bounds[0] - 10):
-            hits_after_1k = hits_after
-        else:
-            hits_after_1k = hits_after_1k
-
-        if hits_after_1k.empty:
-            hits_after_1k = hits_after
-        if hits_after_1k.empty:
-            hit_after = pandas.DataFrame(data=numpy.zeros(shape=(1, 12)),
-                                         columns=hits_after.columns.values)
-        else:
-            hit_after = hits_after_1k.iloc[0]
+            if hits_before_1k.empty:
+                hits_before_1k = hits_before
 
 
-    is_aft_within_bef = False
-    is_bef_within_aft = False
+            if hits_before_1k.iloc[0, 7] > (contig_bounds[1] + 10):
+                hits_before_1k = hits_before
+            else:
+                hits_before_1k = hits_before_1k
+
+            if hits_before_1k.empty:
+                hits_before_1k = hits_before
+            if hits_before_1k.empty:
+                hit_before = pandas.DataFrame(data=numpy.zeros(shape=(1, 12)),
+                                              columns=hits_before.columns.values)
+            else:
+                hit_before = hits_before_1k.iloc[0]
+        if hits_to_search == "both" or hits_to_search == "after":
+            hits_after = compo_table.loc[compo_table[compo_table.columns[7]] < (hit_info[1] + overhang)]
+            hits_after = hits_after.sort_values(by=['qend'], ascending=False)
+            hits_after_1k = hits_after.loc[hits_after['align'] > 2000]
+
+            if hits_after_1k.iloc[0, 6] < (contig_bounds[0] - 10):
+                hits_after_1k = hits_after
+            else:
+                hits_after_1k = hits_after_1k
+
+            if hits_after_1k.empty:
+                hits_after_1k = hits_after
+            if hits_after_1k.empty:
+                hit_after = pandas.DataFrame(data=numpy.zeros(shape=(1, 12)),
+                                             columns=hits_after.columns.values)
+            else:
+                hit_after = hits_after_1k.iloc[0]
+
     hits_to_use = "both"
+    if hits_to_search == "both":
+        is_aft_within_bef = False
+        is_bef_within_aft = False
 
-    if hit_before.iloc[3] > hit_after.iloc[3]:
-        is_aft_within_bef = within_a_hit(hit_before, hit_after)
-    elif hit_before.iloc[3] < hit_after.iloc[3]:
-        is_bef_within_aft = within_a_hit(hit_after, hit_before)
 
-    if is_aft_within_bef == True:
-        hits_to_use = "before"
-    if is_bef_within_aft == True:
-        hits_to_use = "after"
+        if hit_before.iloc[3] > hit_after.iloc[3]:
+            is_aft_within_bef = within_a_hit(hit_before, hit_after)
+        elif hit_before.iloc[3] < hit_after.iloc[3]:
+            is_bef_within_aft = within_a_hit(hit_after, hit_before)
+
+        if is_aft_within_bef == True:
+            hits_to_use = "before"
+        if is_bef_within_aft == True:
+            hits_to_use = "after"
 
 
     return hit_before, hit_after, hits_to_use
@@ -844,62 +887,139 @@ def gff_to_dna(gff_csv, contig_csv, isolate_id, input_k):
 
     return out_gff_csv
 
-def library_integrator(library_csv, prospective_csv):
+def library_integrator(library_csv, prospective_csv, isolate_id):
     ## Function to decide whether to merge a hits data into the library csv.
     ## Input: library_csv: The current library csv to search for matches against
     ##        prospective_csv: The prospective set of results to be potentially merged
+    ## This will first work on the basis of hits sharing almost identical blast matches
+    ## Then we'll look into flank region composition and finally the total insert composition
+    ## to see if this is a novel hit or not.
 
     lib_new = library_csv.copy()
     ids_to_drop = []
 
     ## lets narrow down first by number of genes in the element if this is not exact I think its
     ## fair to assume this would be novel.
+    #'before_flank_gene', 'after_flank_gene', 'before_flank_avg',
+    #'after_flank_avg'
 
 
 
-    if prospective_csv['mge_genes'][0] in library_csv['mge_genes'].values:
-        ## So there is a hit with the same number of mge genes, let now check the element length +- 100 bp
-        current_hits = library_csv[library_csv['mge_genes'] == prospective_csv['mge_genes'][0]]
-        mge_length_hits = current_hits[(current_hits['mge_length'] >= (prospective_csv['mge_length'][0] - 100))\
-                                       & (current_hits['mge_length'] <= (prospective_csv['mge_length'][0] + 100))]
 
-        if not mge_length_hits.empty:
-            
-            ## Check total insert length +- 200
-            insert_length_hits = mge_length_hits[(mge_length_hits['insert_length'] >= (prospective_csv['insert_length'][0] - 100))\
-                & (mge_length_hits['insert_length'] <= (prospective_csv['insert_length'][0] + 100))]
-            if not insert_length_hits.empty:
-                ## Check total insert genes +- 5% of total genes in hit
-                five_percent = round(0.05 * prospective_csv['insert_genes'][0])
-                insert_gene_hits = insert_length_hits[(insert_length_hits['insert_genes'] >= (prospective_csv['insert_genes'][0] - five_percent ))\
-                    & (insert_length_hits['insert_genes'] <= (prospective_csv['insert_genes'][0] + five_percent))]
-                if not insert_gene_hits.empty:
-                    ## Check num genes in the flanking hits +- 3
-                    flank_genes = insert_length_hits[(insert_length_hits['flank_genes'] >= (prospective_csv['flank_genes'][0] - 3))\
-                        & (insert_length_hits['flank_genes'] <= (prospective_csv['flank_genes'][0] + 3))]
-                    if not flank_genes.empty:
-                        ## check mean_length_genes +- 50 bp
-                        flank_mean = flank_genes[(flank_genes['mean_flank_gene_length'] >= (prospective_csv['mean_flank_gene_length'][0] - 50))\
-                            & (flank_genes['mean_flank_gene_length'] <= (prospective_csv['mean_flank_gene_length'][0] + 50))]
-                        if not flank_mean.empty:
-                            flanks_length = flank_mean[flank_mean['flanks_length'] > prospective_csv['flanks_length'][0]]
-                            if flanks_length.empty:
-                                ids_to_drop = flank_mean['id'].tolist()
-                                novel_hit = True
-                            else:
-                                novel_hit = False
-                        else:
-                            novel_hit = True
+    ## So there is a hit with the same number of mge genes, let now check the element length +- 2 bp
+    ## Needs to be a hit with no length +- 2bp and no genes +- 1
+    mge_hits = lib_new[(lib_new['mge_genes'] >= (prospective_csv['mge_genes'][0] - 1)) &\
+                       (lib_new['mge_genes'] <= (prospective_csv['mge_genes'][0] + 1))]
+    mge_length_hits = mge_hits[(mge_hits['mge_length'] >= (prospective_csv['mge_length'][0] - 2))\
+                                 & (mge_hits['mge_length'] <= (prospective_csv['mge_length'][0] + 2))]
+
+    if not mge_length_hits.empty:
+
+            ## Lets check if the before or after hits match quite closely with the number of genes +- 1
+            ## Before
+            before_gene_num = prospective_csv['before_flank_gene'][0]
+            after_gene_num = prospective_csv['after_flank_gene'][0]
+
+            before_gene_hits = mge_length_hits[(mge_length_hits['before_flank_gene'] >= (before_gene_num - 1)) & \
+                                               (mge_length_hits['before_flank_gene'] <= (before_gene_num + 1))]
+
+            after_gene_hits = mge_length_hits[(mge_length_hits['after_flank_gene'] >= (after_gene_num - 1)) & \
+                                              (mge_length_hits['after_flank_gene'] <= (after_gene_num + 1))]
+
+            before_empty = before_gene_hits.empty
+            after_empty = after_gene_hits.empty
+
+            if not before_empty or not after_empty:
+                ## So either the before or the after hit or both match to ones already in the database
+                ## check matches +- 25 bp
+                before_flank_empty = True
+                after_flank_empty = True
+
+
+
+                if not before_empty and after_empty:
+                    before_mean_flank = prospective_csv['before_flank_avg'][0]
+
+                    before_flank_means = before_gene_hits[(before_gene_hits['before_flank_avg'] >= (before_mean_flank - 25)) &\
+                                                          (before_gene_hits['before_flank_avg'] <= (before_mean_flank + 25))]
+
+                    before_flank_empty = before_flank_means.empty
+
+                elif before_empty and not after_empty:
+                    after_mean_flank = prospective_csv['after_flank_avg'][0]
+
+                    after_flank_means = after_gene_hits[(after_gene_hits['before_flank_avg'] >= (after_mean_flank - 25)) & \
+                                                         (after_gene_hits['before_flank_avg'] <= (after_mean_flank + 25))]
+
+                    after_flank_empty = after_flank_means.empty
+                elif not before_empty and not after_empty:
+                    before_mean_flank = prospective_csv['before_flank_avg'][0]
+
+                    before_flank_means = before_gene_hits[
+                        (before_gene_hits['before_flank_avg'] >= (before_mean_flank - 25)) & \
+                        (before_gene_hits['before_flank_avg'] <= (before_mean_flank + 25))]
+
+                    before_flank_empty = before_flank_means.empty
+
+                    after_mean_flank = prospective_csv['after_flank_avg'][0]
+
+                    after_flank_means = after_gene_hits[
+                        (after_gene_hits['after_flank_avg'] >= (after_mean_flank - 25)) & \
+                        (after_gene_hits['after_flank_avg'] <= (after_mean_flank + 25))]
+
+                    after_flank_empty = after_flank_means.empty
+
+                if not before_flank_empty or not after_flank_empty:
+
+                    ## So the before or after (or both) flanks seem to match in composition
+                    ## Now lets check if the insert length is similar, if not likely a novel insertion in the
+                    ## same insert site as before.
+
+
+                    insert_genes = prospective_csv['insert_genes'][0]
+                    insert_length = prospective_csv['insert_length'][0]
+
+
+
+                    if "before_flank_means" in locals() and "after_flank_means" in locals():
+
+                        remaining_hits = pandas.concat([before_flank_means, after_flank_means], ignore_index=True, sort=False)
+                        remaining_hits = remaining_hits.drop_duplicates()
+                    elif "before_flank_means" in locals() and "after_flank_means" not in locals():
+                        remaining_hits = before_flank_means
                     else:
+                        remaining_hits = after_flank_means
+
+                    gene_hits = remaining_hits[(remaining_hits['insert_genes'] >= (insert_genes - 2)) & \
+                                               (remaining_hits['insert_genes'] <= (insert_genes + 2))]
+
+                    length_hits = remaining_hits[(remaining_hits['insert_length'] >= (insert_length - 500)) & \
+                                                 (remaining_hits['insert_length'] <= (insert_length + 500))]
+
+
+
+                    if gene_hits.empty and length_hits.empty:
                         novel_hit = True
+                    else:
+                        remain_48 = pandas.concat([gene_hits, length_hits], ignore_index=True, sort = False)
+                        remain_48 = remain_48.drop_duplicates()
+                        flanks_length = remain_48[remain_48['flanks_length'] > prospective_csv['flanks_length'][0]]
+
+
+                        if flanks_length.empty:
+                            ids_to_drop = remain_48['id'].tolist()
+                            novel_hit = True
+                        else:
+                            novel_hit = False
+
+
                 else:
                     novel_hit = True
             else:
                 novel_hit = True
-        else:
-            novel_hit = True
     else:
         novel_hit = True
+
 
     if novel_hit:
         lib_new = lib_new.append(prospective_csv, ignore_index = True, sort = False)
@@ -910,6 +1030,52 @@ def library_integrator(library_csv, prospective_csv):
 
 
     return(lib_new)
+
+def gene_name_finder(flanks_csv, back_it_up):
+    ## Function to find the first row in a flanks region that has a gene name and
+    ## return that gene name
+    ## Input: flanks_csv =  Either before or after 5k region from library pros
+    ##        back_it_up = Whether to work backwards throgh the csv to get the closest
+    ##                  hits
+
+    new_flanks = flanks_csv.reset_index(drop=True)
+    search_res = ""
+
+    if back_it_up:
+        for k in reversed(range(len(new_flanks.index))):
+            search_res = re.findall('gene=.*?;', new_flanks.iloc[k, 8])
+            if search_res == []:
+                continue
+            else:
+                search_res = search_res[0]
+                search_res = re.findall('=.*?;', search_res)
+                search_res = search_res[0]
+
+                search_res = re.sub("=","",search_res)
+                search_res = re.sub(";","",search_res)
+                #search_res = search_res[3:-3]
+
+                break
+    else:
+        for k in range(len(new_flanks.index)):
+            search_res = re.findall('gene=.*?;', new_flanks.iloc[k,8])
+            if search_res == []:
+                continue
+            else:
+                search_res = search_res[0]
+                search_res = re.findall('=.*?;', search_res)
+                search_res = search_res[0]
+
+                search_res = re.sub("=", "", search_res)
+                search_res = re.sub(";", "", search_res)
+
+                break
+
+    if search_res == "":
+        search_res = "NONE"
+
+    return  search_res
+
 
 ## Ok so first lets load up the merged BLAST CSV and narrow it down to just those
 ## over the threshold length.
@@ -940,8 +1106,8 @@ if __name__ == '__main__':
 
     lib_col_names = ["id", "mge_start", "mge_end", "insert_start", "insert_end", "mge_length",
                      "insert_length", "insert_genes", "mge_genes", "flank_genes",
-                     "mean_flank_gene_length",'flanks_length', "ref_name", 'before_flank_gene','after_flank_gene','before_flank_avg',
-                     'after_flank_avg']
+                     "mean_flank_gene_length",'flanks_length', 'before_flank_gene','after_flank_gene','before_flank_avg',
+                     'after_flank_avg','before_gene_name','after_gene_name', 'ref_name']
 
     library_df = pandas.DataFrame(columns=lib_col_names)
     tic_1 = time.perf_counter()
@@ -970,6 +1136,8 @@ if __name__ == '__main__':
         else:
             isolate_id = isolate_id_z
 
+        if isolate_id != "6551_8#20":
+            continue
 
         current_gff_loc, ref_loc = gff_finder(isolate_ref_gff, isolate_id)
         compo_file = absolute_act_path + isolate_id + ".crunch.gz"
@@ -1003,7 +1171,7 @@ if __name__ == '__main__':
 
         if overlap == "No":
 
-            hit_before, hit_after, which_hit = before_and_after_hits(hitters, compo_table, mge_bounds)
+            hit_before, hit_after, which_hit = before_and_after_hits(hitters, compo_table, mge_bounds, hits_to_search="both")
 
         else:
             which_hit = "both"
@@ -1086,7 +1254,8 @@ if __name__ == '__main__':
                         after_loc_lengths.append([current_length])
                     mean_length_after = numpy.mean(after_loc_lengths)
 
-
+                before_gene = gene_name_finder(before_loc_gens, back_it_up=True)
+                after_gene = gene_name_finder(after_loc_gens, back_it_up=False)
 
                 flanks_genes = num_genes_before + num_genes_after
 
@@ -1113,13 +1282,15 @@ if __name__ == '__main__':
                 library_pros['after_flank_avg'] = pandas.Series(numpy.mean(after_loc_lengths), index=library_pros.index)
                 ref_name = os.path.basename(ref_loc.iloc[0])
                 ref_name = re.sub("\.[a-zA-Z]*$", "", ref_name)
+                library_pros['before_gene_name'] = pandas.Series(before_gene, index=library_pros.index)
+                library_pros['after_gene_name'] = pandas.Series(after_gene, index=library_pros.index)
 
                 library_pros['ref_name'] = pandas.Series(ref_name, index=library_pros.index)
 
                 ## check if to add in to library csv
 
                 if genes_mge_num <= gene_insert_num:
-                    library_df = library_integrator(library_df, library_pros)
+                    library_df = library_integrator(library_df, library_pros, isolate_id)
 
 
             elif mge_ori == "reverse":
@@ -1161,6 +1332,9 @@ if __name__ == '__main__':
 
                 flanks_genes = num_genes_before + num_genes_after
 
+                before_gene = gene_name_finder(before_loc_gens, back_it_up=False)
+                after_gene = gene_name_finder(after_loc_gens, back_it_up=True)
+
                 library_flank_gene_length = numpy.mean([mean_length_before, mean_length_after])
                 tot_flanks_length = hit_before_length + hit_after_length
 
@@ -1184,11 +1358,13 @@ if __name__ == '__main__':
                 library_pros['after_flank_avg'] = pandas.Series(numpy.mean(after_loc_lengths), index=library_pros.index)
                 ref_name = os.path.basename(ref_loc.iloc[0])
                 ref_name = re.sub("\.[a-zA-Z]*$", "", ref_name)
+                library_pros['before_gene_name'] = pandas.Series(before_gene, index=library_pros.index)
+                library_pros['after_gene_name'] = pandas.Series(after_gene, index=library_pros.index)
                 library_pros['ref_name'] = pandas.Series(ref_name, index=library_pros.index)
 
                 ## check if to add in to library csv
                 if genes_mge_num <= gene_insert_num:
-                    library_df = library_integrator(library_df, library_pros)
+                    library_df = library_integrator(library_df, library_pros, isolate_id)
 
 
     library_df.to_csv(path_or_buf=files_for_input.output, index=False)
