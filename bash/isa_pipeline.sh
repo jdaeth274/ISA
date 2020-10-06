@@ -127,6 +127,6 @@ then
   ## Now we run the library creation step
   python "${pythondir}library_creator.py" \
   --hit_csv "$4/$5_merged_blast_file" --reference_csv $ref_isolate_gff --align_cutoff $3 \
-  --act_loc ./act_compos/referoo.fasta. --contig_loc ./contig_bounds/ --output "$4_libaray.csv"
+  --act_loc ./act_compos/referoo.fasta. --contig_loc ./contig_bounds/ --output "$4/$5_library.csv"
 
 fi

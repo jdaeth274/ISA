@@ -437,19 +437,18 @@ def ref_contains_hit(compo_table, hitters, mge_bounds, isolate_id):
     if mge_ori == "forward":
         whole_overlap = compo_table[(compo_table['qstart'] < hitters[0]) & (compo_table['qend'] > hitters[1])]
         whole_overlap = whole_overlap.sort_values(by=['qstart'], ascending=False)
-        if isolate_id == "6551_8#20":
-            print(whole_overlap)
+
         if whole_overlap.empty:
             ## Check if one hit is within the mge bounday above the cut off val established above
 
             middle_hits = compo_table[(compo_table['qstart'] > hitters[0]) &\
-                                      (compo_table['qend'] > hitters[1])]
+                                      (compo_table['qend'] < hitters[1])]
             if middle_hits.empty:
                 middle_length = 0
             else:
                 middle_length = middle_hits['align'].sum()
 
-
+            ## Check if there are hits that overlap with the MGE before the MGE insertion.
 
             hits_bef = compo_table[(compo_table['qend'] > hitters[0])  & (compo_table['qstart'] < hitters[0])]
             hits_bef = hits_bef.sort_values(by=['qstart'], ascending=False)
@@ -457,59 +456,114 @@ def ref_contains_hit(compo_table, hitters, mge_bounds, isolate_id):
             if hits_bef.empty:
                 hit_bef_length = 0
                 hit_bef = before_and_after_hits(hitters, compo_table, mge_bounds, "before")
+                if hit_bef.iloc[0] == 0:
+                    hit_bef = "No"
             else:
                 hit_bef = hits_bef.iloc[0]
-                hit_bef_length = hit_bef['qend'][0] - hitters[0]
+                hit_bef_length = hit_bef['qend'] - hitters[0]
+                hit_bef = whole_match_splitter(hit_bef, hitters, "before")
+
+            ## Check if there are hits that overlap with the MGE and the after flank region.
 
             hits_aft = compo_table[(compo_table['qstart'] < hitters[1] ) & (compo_table['qend'] > hitters[1])]
             hits_aft = hits_aft.sort_values(by=['qend'], ascending=True)
             if hits_aft.empty:
                 hit_aft_length = 0
                 hit_aft = before_and_after_hits(hitters, compo_table, mge_bounds, "after")
+                if hit_aft.iloc[0] == 0:
+                    hit_aft = "No"
             else:
                 hit_aft = hits_aft.iloc[0]
-                hit_aft_length = hitters[1] - hit_aft['qstart'][0]
+                hit_aft_length = hitters[1] - hit_aft['qstart']
+                hit_aft = whole_match_splitter(hit_aft, hitters, "after")
 
 
             tot_overlap_length = hit_bef_length + middle_length + hit_aft_length
             bef_aft_length = hit_bef_length + hit_aft_length
 
-            if tot_overlap_length < cut_off_val:
+            ## If the overall overlap is below the threshold and the hit_afts and befs don't
+            ## have a big enough overlap we can use the methods used for other hits.
+            ## If however there is a big overlap (could come from a big middle hit and smaller afters & before
+            ## or big afters and before) then lets use these new hits.
+            ## if however there is a below overlap, but one (or both) of the after and before hits have an overlap
+            ## greater than 50 (which the normal methods would miss) then use these new hits.
+            ## Finally if there is a big overlap but neither of the before or after hits are overlapping (so there is a
+            ## big middle overlap) just use the estimated hits.
+
+            if tot_overlap_length < cut_off_val and hit_bef_length < 50 and hit_aft_length < 50:
                 hit_bef = "No"
                 hit_aft = "No"
             elif tot_overlap_length > cut_off_val and hit_bef_length > 0 and hit_aft_length > 0:
                 hit_bef = hit_bef
                 hit_aft = hit_aft
+            elif tot_overlap_length < cut_off_val and (hit_bef_length > 50 or hit_aft_length > 50):
+                hit_bef = hit_bef
+                hit_aft = hit_aft
+            elif tot_overlap_length > cut_off_val and hit_bef_length == 0 and hit_aft_length == 0:
+                hit_bef = hit_bef
+                hit_aft = hit_aft
 
 
 
-            if isolate_id == "6551_8#20":
-                print(hit_bef, hit_aft)
         else:
             whole_match = whole_overlap.iloc[0]
-            hit_bef, hit_aft = whole_match_splitter(whole_match, hitters)
+            hit_bef, hit_aft = whole_match_splitter(whole_match, hitters, "both")
 
     elif mge_ori == "reverse":
         whole_overlap = compo_table[(compo_table['qstart'] < hitters[1]) & (compo_table['qend'] > hitters[0])]
         whole_overlap = whole_overlap.sort_values(by=['qstart'], ascending=False)
         if whole_overlap.empty:
-            hits_bef = compo_table[(compo_table['qstart'] < hitters[0] - 100) & (compo_table['qend'] > hitters[0])]
-            hits_bef = hits_bef.sort_values(by=['qend'], ascending=True)
-            if hits_bef.empty:
-                hit_bef = "Not"
-                hit_aft = "Not"
-            else:
-                hit_bef = hits_bef.iloc[0]
+            if whole_overlap.empty:
+                ## Check if one hit is within the mge bounday above the cut off val established above
 
-                hits_aft = compo_table[(compo_table['qend'] > hitters[1] + 100) & (compo_table['qstart'] < hitters[1])]
-                hits_aft = hits_aft.sort_values(by=['qstart'], ascending=False)
+                middle_hits = compo_table[(compo_table['qstart'] >= hitters[1]) & \
+                                          (compo_table['qend'] <= hitters[0])]
+                if middle_hits.empty:
+                    middle_length = 0
+                else:
+                    middle_length = middle_hits['align'].sum()
+
+                hits_bef = compo_table[(compo_table['qstart'] < hitters[0]) & (compo_table['qend'] > hitters[0])]
+                hits_bef = hits_bef.sort_values(by=['qstart'], ascending=True)
+
+                if hits_bef.empty:
+                    hit_bef_length = 0
+                    hit_bef = before_and_after_hits(hitters, compo_table, mge_bounds, "before")
+                    if hit_bef.iloc[0] == 0:
+                        hit_bef = "No"
+                else:
+                    hit_bef = hits_bef.iloc[0]
+                    hit_bef_length = hitters[0] - hit_bef['qstart']
+                    hit_bef = whole_match_splitter(hit_bef, hitters, "before")
+
+                hits_aft = compo_table[(compo_table['qend'] > hitters[1]) & (compo_table['qstart'] < hitters[1])]
+                hits_aft = hits_aft.sort_values(by=['qend'], ascending=False)
                 if hits_aft.empty:
-                    hit_aft = "Not"
+                    hit_aft_length = 0
+                    hit_aft = before_and_after_hits(hitters, compo_table, mge_bounds, "after")
+                    if hit_aft.iloc[0] == 0:
+                        hit_aft = "No"
                 else:
                     hit_aft = hits_aft.iloc[0]
+                    hit_aft_length = hit_aft['qend'] - hitters[1]
+                    hit_aft = whole_match_splitter(hit_aft, hitters, "after")
+
+                tot_overlap_length = hit_bef_length + middle_length + hit_aft_length
+                bef_aft_length = hit_bef_length + hit_aft_length
+
+                if tot_overlap_length < cut_off_val and hit_bef_length < 50 and hit_aft_length < 50:
+                    hit_bef = "No"
+                    hit_aft = "No"
+                elif tot_overlap_length > cut_off_val and hit_bef_length > 0 and hit_aft_length > 0:
+                    hit_bef = hit_bef
+                    hit_aft = hit_aft
+                elif tot_overlap_length < cut_off_val and (hit_bef_length > 50 or hit_aft_length > 50):
+                    hit_bef = hit_bef
+                    hit_aft = hit_aft
+
         else:
             whole_match = whole_overlap.iloc[0]
-            hit_bef, hit_aft = whole_match_splitter(whole_match, hitters)
+            hit_bef, hit_aft = whole_match_splitter(whole_match, hitters, "both")
 
     if type(hit_bef) == str or type(hit_aft) == str:
         overlap = "No"
@@ -533,9 +587,11 @@ def whole_match_splitter(match, mge_locs, hit_to_split):
     elif match['sstart'] > match['send']:
         match_ori = "reverse"
 
+
     if match_ori == "forward":
         if mge_ori == "forward":
             if hit_to_split == "both" or hit_to_split == "before":
+
                 length_bef = mge_locs[0] - match['qstart']
                 hit_bef = pandas.Series({'query': match['query'],
                                          'subject': match['subject'],
@@ -652,7 +708,12 @@ def whole_match_splitter(match, mge_locs, hit_to_split):
                                          'eval': match['eval'],
                                          'bitscore': match['bitscore']})
 
-    return hit_bef, hit_aft
+    if hit_to_split == "both":
+        return hit_bef, hit_aft
+    elif hit_to_split == "after":
+        return hit_aft
+    elif hit_to_split == "before":
+        return  hit_bef
 
 def before_and_after_hits(hit_info, compo_table, contig_bounds, hits_to_search):
     ## This function looks for matches around the MGE loc based on their
@@ -660,8 +721,7 @@ def before_and_after_hits(hit_info, compo_table, contig_bounds, hits_to_search):
     ## greater than 2000, then if this isn't on contig looks for hits
     ## simply on the contig, no matter the size.
     overhang = 50
-    hit_after = pandas.Series()
-    hit_before = pandas.Series()
+
     if hit_info[0] < hit_info[1]:
         if hits_to_search == "both" or hits_to_search == "before":
             hits_before = compo_table.loc[compo_table[compo_table.columns[7]] < (hit_info[0] + overhang)]
@@ -720,7 +780,7 @@ def before_and_after_hits(hit_info, compo_table, contig_bounds, hits_to_search):
             hits_before_1k = hits_before.loc[hits_before['align'] > 2000]
 
             if hits_before_1k.empty:
-                hits_before_1k = hits_before
+                hits_before_1k = hits_befores
 
 
             if hits_before_1k.iloc[0, 7] > (contig_bounds[1] + 10):
@@ -769,8 +829,12 @@ def before_and_after_hits(hit_info, compo_table, contig_bounds, hits_to_search):
         if is_bef_within_aft == True:
             hits_to_use = "after"
 
-
-    return hit_before, hit_after, hits_to_use
+    if hits_to_search == "both":
+        return hit_before, hit_after, hits_to_use
+    elif hits_to_search == "before":
+        return  hit_before
+    elif hits_to_search == "after":
+        return  hit_after
 
 def within_a_hit(big_hit, little_hit):
     ## This only works with two hits of the same orientation
@@ -913,6 +977,7 @@ def library_integrator(library_csv, prospective_csv, isolate_id):
     mge_length_hits = mge_hits[(mge_hits['mge_length'] >= (prospective_csv['mge_length'][0] - 2))\
                                  & (mge_hits['mge_length'] <= (prospective_csv['mge_length'][0] + 2))]
 
+
     if not mge_length_hits.empty:
 
             ## Lets check if the before or after hits match quite closely with the number of genes +- 1
@@ -1033,7 +1098,7 @@ def library_integrator(library_csv, prospective_csv, isolate_id):
 
 def gene_name_finder(flanks_csv, back_it_up):
     ## Function to find the first row in a flanks region that has a gene name and
-    ## return that gene name
+    ## return that gene name. Removes the paralog suffix attached.
     ## Input: flanks_csv =  Either before or after 5k region from library pros
     ##        back_it_up = Whether to work backwards throgh the csv to get the closest
     ##                  hits
@@ -1071,10 +1136,795 @@ def gene_name_finder(flanks_csv, back_it_up):
 
                 break
 
-    if search_res == "":
+    if search_res == []:
         search_res = "NONE"
 
+    if re.search("_[0-9]$",search_res):
+        search_res = re.sub("_[0-9]$", "", search_res)
+
+
     return  search_res
+
+def library_trim(library_csv):
+    ## Function to run through the library csv and removes any that look like they could be duplicates
+    ## This will be based solely on the before and after genes
+
+    before_after_combo = library_csv['before_gene_name'].str.cat(library_csv['after_gene_name'], sep = "-")
+    before_after_unique = before_after_combo.unique()
+    indies_to_remove = []
+    for k in range(len(before_after_unique)):
+        combo = before_after_unique[k]
+        before = re.split("-", combo, 2)[0]
+        after = re.split("-", combo, 2)[1]
+
+        bef_and_aft = library_csv[(library_csv['before_gene_name'] == before) &\
+                                  (library_csv['after_gene_name'] == after)]
+        if len(bef_and_aft.index) == 1:
+            continue
+        else:
+            ## Work through each hit to see if they match closely to the others and then
+            ## remove them.
+            ids_to_drop = []
+            for hit in bef_and_aft.index:
+
+                current_hit = bef_and_aft.loc[hit]
+
+                if current_hit['id'] in ids_to_drop:
+                    continue
+                ## hits based on insert length
+                current_hit_length = bef_and_aft[(bef_and_aft['insert_length'] >= (current_hit['insert_length'] - 100)) &\
+                                                 (bef_and_aft['insert_length'] <= (current_hit['insert_length'] + 100))]
+                current_hit_gene = bef_and_aft[(bef_and_aft['insert_genes'] >= (current_hit['insert_genes'] - 1)) &\
+                                               (bef_and_aft['insert_genes'] <= (current_hit['insert_genes'] + 1))]
+
+                tot_hit = pandas.concat([current_hit_length, current_hit_gene], sort=False, ignore_index=True)
+                tot_hit = tot_hit.drop_duplicates()
+
+
+
+                if tot_hit.empty:
+                    continue
+                else:
+
+                    ## choose max flank lengths as hit
+
+                    max_row = pandas.to_numeric(tot_hit['flanks_length']).idxmax()
+                    remove_rows = tot_hit.drop(max_row)
+                    ids_to_lose = remove_rows['id'].tolist()
+                    ids_to_drop.extend(ids_to_lose)
+
+            ids = list(library_csv['id'][library_csv['id'].isin(ids_to_drop)].index)
+            indies_to_remove.extend(ids)
+
+
+    out_lib = library_csv.drop(indies_to_remove)
+    print("Removing this many duplicates from library: %s, now %s hits" % (len(indies_to_remove), len(out_lib.index)))
+    return  out_lib
+
+def subject_checker(hit, ori, compo_csv, mge_bounds, mge_ori):
+    ## Function to take in hits that don't have close hits in the query strand
+    ## from the hit_mover function and then to check if these hits are reasonably
+    ## close in the subject strand to allow for merging.
+    ## Input: hit: the initial hit input into hit_mover
+    ##        ori: The location of the hit before or after
+    ##        compo_csv: The poss_hits csv that is narrowed to those with hits on the same contig and proximate to hit
+    ##        mge_bounds: The contig bounds of the contig the mge is found on
+    ##        mge_ori: The orientation of the MGE in question.
+
+    if hit['sstart'] < hit['send']:
+        hit_subject_ori = "forward"
+    elif hit['send'] < hit['sstart']:
+        hit_subject_ori = "reverse"
+
+        #sys.exit()
+
+    hit_new = hit.copy()
+
+    if ori == "before":
+        if mge_ori == "forward":
+            if hit_subject_ori == "forward":
+                narrowed_poss_hits = compo_csv[(compo_csv['send'] >= (hit['sstart'] - 50)) & \
+                                               (compo_csv['send'] <= (hit['sstart'] + 50))]
+                if not narrowed_poss_hits.empty:
+                    new_align = hit['qend'] - narrowed_poss_hits['qstart'].iloc[0]
+                    if new_align >= 5000:
+                        hit_new = pandas.DataFrame(hit_new).transpose()
+                        current_hit = pandas.DataFrame(narrowed_poss_hits.iloc[0]).transpose()
+                        hit_new = pandas.concat([hit_new, current_hit], sort=False, ignore_index=False)
+                        hit_new = hit_new.reset_index(drop=True)
+                        altered = "merge"
+                    else:
+                        altered = "no"
+                else:
+                    new_align = 0
+            elif hit_subject_ori == "reverse":
+                narrowed_poss_hits = compo_csv[(compo_csv['send'] >= (hit['sstart'] - 50)) & \
+                                               (compo_csv['send'] <= (hit['sstart'] + 50))]
+                if not narrowed_poss_hits.empty:
+                    new_align = hit['qend'] - narrowed_poss_hits['qstart'].iloc[0]
+                    if new_align >= 5000:
+                        hit_new = pandas.DataFrame(hit_new).transpose()
+                        current_hit = pandas.DataFrame(narrowed_poss_hits.iloc[0]).transpose()
+                        hit_new = pandas.concat([hit_new, current_hit], sort=False, ignore_index=False)
+                        hit_new = hit_new.reset_index(drop=True)
+                        altered = "merge"
+                    else:
+                        altered = "no"
+                else:
+                    new_align = 0
+        elif mge_ori == "reverse":
+            if hit_subject_ori == "forward":
+
+                narrowed_poss_hits = compo_csv[(compo_csv['sstart'] <= (hit['send'] + 50))  & \
+                                               (compo_csv['sstart'] >= (hit['send'] - 50))]
+                if not narrowed_poss_hits.empty:
+                    new_align = abs(hit['qstart'] - narrowed_poss_hits['qend'].iloc[0])
+                    if new_align >= 5000:
+                        hit_new = pandas.DataFrame(hit_new).transpose()
+                        current_hit = pandas.DataFrame(narrowed_poss_hits.iloc[0]).transpose()
+                        hit_new = pandas.concat([hit_new, current_hit], sort=False, ignore_index=False)
+                        hit_new = hit_new.reset_index(drop=True)
+                        altered = "merge"
+                    else:
+                        altered = "no"
+                else:
+                    new_align = 0
+            elif hit_subject_ori == "reverse":
+                narrowed_poss_hits = compo_csv[(compo_csv['sstart'] <= (hit['send'] + 50)) & \
+                                               (compo_csv['sstart'] >= (hit['send'] - 50))]
+                if not narrowed_poss_hits.empty:
+                    new_align = abs(hit['qstart'] - narrowed_poss_hits['qend'].iloc[0])
+                    if new_align >= 5000:
+                        hit_new = pandas.DataFrame(hit_new).transpose()
+                        current_hit = pandas.DataFrame(narrowed_poss_hits.iloc[0]).transpose()
+                        hit_new = pandas.concat([hit_new, current_hit], sort=False, ignore_index=False)
+                        hit_new = hit_new.reset_index(drop=True)
+                        altered = "merge"
+                    else:
+                        altered = "no"
+                else:
+                    new_align = 0
+    elif ori == "after":
+        if mge_ori == "forward":
+            if hit_subject_ori == "forward":
+                narrowed_poss_hits = compo_csv[(compo_csv['sstart'] <= (hit['send'] + 50)) &\
+                                               (compo_csv['sstart'] >= (hit['send'] - 50))]
+                if not narrowed_poss_hits.empty:
+                    new_align = abs(hit['qstart'] - narrowed_poss_hits['qend'].iloc[0])
+                    if new_align >= 5000:
+                        hit_new = pandas.DataFrame(hit_new).transpose()
+                        current_hit = pandas.DataFrame(narrowed_poss_hits.iloc[0]).transpose()
+                        hit_new = pandas.concat([hit_new, current_hit], sort=False, ignore_index=False)
+                        hit_new = hit_new.reset_index(drop=True)
+                        altered = "merge"
+                    else:
+                        altered = "no"
+                else:
+                    new_align = 0
+            elif hit_subject_ori == "reverse":
+                narrowed_poss_hits = compo_csv[(compo_csv['sstart'] <= (hit['send'] + 50)) & \
+                                               (compo_csv['sstart'] >= (hit['send'] - 50))]
+                if not narrowed_poss_hits.empty:
+                    new_align = abs(hit['qstart'] - narrowed_poss_hits['qend'].iloc[0])
+                    if new_align >= 5000:
+                        hit_new = pandas.DataFrame(hit_new).transpose()
+                        current_hit = pandas.DataFrame(narrowed_poss_hits.iloc[0]).transpose()
+                        hit_new = pandas.concat([hit_new, current_hit], sort=False, ignore_index=False)
+                        hit_new = hit_new.reset_index(drop=True)
+                        altered = "merge"
+                    else:
+                        altered = "no"
+                else:
+                    new_align = 0
+        elif mge_ori == "reverse":
+            if hit_subject_ori == "forward":
+                narrowed_poss_hits = compo_csv[(compo_csv['send'] >= (hit['sstart'] - 50)) & \
+                                               (compo_csv['send'] <= (hit['sstart'] + 50))]
+                if not narrowed_poss_hits.empty:
+                    new_align = abs(hit['qend'] - narrowed_poss_hits['qstart'].iloc[0])
+                    if new_align >= 5000:
+                        hit_new = pandas.DataFrame(hit_new).transpose()
+                        current_hit = pandas.DataFrame(narrowed_poss_hits.iloc[0]).transpose()
+                        hit_new = pandas.concat([hit_new, current_hit], sort=False, ignore_index=False)
+                        hit_new = hit_new.reset_index(drop=True)
+                        altered = "merge"
+                    else:
+                        altered = "no"
+                else:
+                    new_align = 0
+            elif hit_subject_ori == "reverse":
+                narrowed_poss_hits = compo_csv[(compo_csv['send'] >= (hit['sstart'] - 50) )& \
+                                               (compo_csv['send'] <= (hit['sstart'] + 50))]
+
+                if not narrowed_poss_hits.empty:
+                    new_align = abs(hit['qend'] - narrowed_poss_hits['qstart'].iloc[0])
+
+
+                    if new_align >= 5000:
+                        hit_new = pandas.DataFrame(hit_new).transpose()
+                        current_hit = pandas.DataFrame(narrowed_poss_hits.iloc[0]).transpose()
+                        hit_new = pandas.concat([hit_new, current_hit], sort=False, ignore_index=False)
+                        hit_new = hit_new.reset_index(drop=True)
+                        altered = "merge"
+                    else:
+                        altered = "no"
+                else:
+                    new_align = 0
+
+    return hit_new, new_align
+
+def multi_hit_merger(hit_new_bef):
+    ## Function to merge the many act compos found close to a hit into one hit
+    ## on the compo scale.
+    ## Input: hit_new_bef: Pandas DF of multiple act comparisons to merge together
+    max_row = pandas.to_numeric(hit_new_bef['qend']).idxmax()
+    min_row = pandas.to_numeric(hit_new_bef['qstart']).idxmin()
+    length_bef = hit_new_bef.iloc[max_row, 7] - hit_new_bef.iloc[min_row, 6]
+    hit_bef_out = pandas.Series({'query': hit_new_bef['query'].iloc[0],
+                                 'subject': hit_new_bef['subject'].iloc[0],
+                                 'pid': hit_new_bef['pid'].iloc[0],
+                                 'align': length_bef,
+                                 'gap': hit_new_bef['gap'].iloc[0],
+                                 'mismatch': hit_new_bef['mismatch'].iloc[0],
+                                 'qstart': hit_new_bef.iloc[min_row, 6],
+                                 'qend': hit_new_bef.iloc[max_row, 7],
+                                 'sstart': hit_new_bef.iloc[min_row, 8],
+                                 'send': hit_new_bef.iloc[max_row, 9],
+                                 'eval': hit_new_bef['eval'].iloc[0],
+                                 'bitscore': hit_new_bef['bitscore'].iloc[0]})
+
+    return hit_bef_out
+
+def hit_mover(hit_before, hit_after, compo_csv, isolate_id, mge_bounds, mge_ori):
+    ## Function to include hits after the current if its less than 2k and the new hit
+    ## is very close. Finds closest hits, if they are within 50bp of the next nearest.
+
+    hit_before_length = abs(hit_before.iloc[7] - hit_before.iloc[6])
+    hit_after_length = abs(hit_after.iloc[7] - hit_after.iloc[6])
+
+    hit_new_bef = hit_before.copy()
+    hit_new_aft = hit_after.copy()
+
+
+
+    before_pass = False
+    after_pass = False
+
+    if hit_before_length < 5000:
+        if mge_ori == "forward":
+            ## looking for hits previous to the current before
+            poss_hit_before = compo_csv[(compo_csv['qend'] <= (hit_before['qstart'] + 50)) &\
+                                         (compo_csv['qstart'] >= (mge_bounds[0] - 10)) ]
+            poss_hit_before = poss_hit_before.sort_values(by = 'qend', ascending=False)
+            new_align = hit_before_length
+            if not poss_hit_before.empty:
+                current_hit = poss_hit_before[poss_hit_before['qend'] >= (hit_new_bef.iloc[6] - 50)]
+                if not current_hit.empty:
+                    new_align = hit_new_bef.iloc[7] - current_hit['qstart'].iloc[0]
+                    if new_align >= 5000:
+                        hit_new_bef = pandas.DataFrame(hit_new_bef).transpose()
+                        current_hit = pandas.DataFrame(current_hit.iloc[0]).transpose()
+                        hit_new_bef = pandas.concat([hit_new_bef, current_hit], sort=False, ignore_index=False)
+                        hit_new_bef = hit_new_bef.reset_index(drop=True)
+                    else:
+
+                        hit_new_bef = pandas.DataFrame(hit_new_bef).transpose()
+                        current_hit = pandas.DataFrame(current_hit.iloc[0]).transpose()
+                        hit_new_bef = pandas.concat([hit_new_bef, current_hit], sort=False, ignore_index=False)
+                        hit_new_bef = hit_new_bef.reset_index(drop=True)
+                        while_n = 0
+                        while not current_hit.empty and new_align < 5000:
+                            while_n += 1
+                            if while_n != 1:
+                                hit_new_bef = pandas.concat([hit_new_bef, current_hit.iloc[[0]]], sort=False,ignore_index=False)
+                                hit_new_bef = hit_new_bef.reset_index(drop=True)
+                            end_indy = max(hit_new_bef.index.values) - 1
+                            current_hit = poss_hit_before[(poss_hit_before['qend'] >= (hit_new_bef.iloc[end_indy, 6] - 50))]
+
+
+                            if not current_hit.empty:
+                                new_align = abs(hit_new_bef.iloc[0, 7] - current_hit.iloc[0, 6])
+                                poss_hit_before = poss_hit_before.drop(current_hit.index[0])
+                        if new_align < 5000:
+                            hit_new_bef = multi_hit_merger(hit_new_bef)
+                            hit_new_bef, new_align = subject_checker(hit_new_bef, "before",poss_hit_before, mge_bounds, "forward")
+
+
+                else:
+
+                    hit_new_bef, new_align = subject_checker(hit_before, "before", poss_hit_before, mge_bounds, "forward")
+
+            if isinstance(hit_new_bef, pandas.DataFrame):
+                before_process = "merge"
+            else:
+                before_process = "no"
+
+        elif mge_ori == "reverse":
+            poss_hit_before = compo_csv[(compo_csv['qstart'] >= (hit_before['qend'] - 50)) & \
+                                        (compo_csv['qend'] <= (mge_bounds[1] + 10)) ]
+            poss_hit_before = poss_hit_before.sort_values(by='qstart', ascending=True)
+            new_align = hit_before_length
+            if not poss_hit_before.empty:
+                current_hit = poss_hit_before[poss_hit_before['qstart'] <= (hit_new_bef.iloc[7] + 50)]
+                if not current_hit.empty:
+                    new_align = abs(hit_new_bef.iloc[6] - current_hit['qend'].iloc[0])
+
+                    if new_align >= 5000:
+                        hit_new_bef = pandas.DataFrame(hit_new_bef).transpose()
+                        current_hit = pandas.DataFrame(current_hit.iloc[0]).transpose()
+                        hit_new_bef = pandas.concat([hit_new_bef, current_hit], sort=False, ignore_index=False)
+                        hit_new_bef = hit_new_bef.reset_index(drop=True)
+
+                    else:
+                        hit_new_bef = pandas.DataFrame(hit_new_bef).transpose()
+                        current_hit = pandas.DataFrame(current_hit.iloc[0]).transpose()
+                        hit_new_bef = pandas.concat([hit_new_bef, current_hit], sort=False, ignore_index=False)
+                        hit_new_bef = hit_new_bef.reset_index(drop=True)
+                        while_n = 0
+                        while not current_hit.empty and new_align < 5000:
+                            while_n += 1
+                            if while_n != 1:
+                                hit_new_bef = pandas.concat([hit_new_bef, current_hit.iloc[[0]]], sort=False, ignore_index=False)
+                                hit_new_bef = hit_new_bef.reset_index(drop=True)
+                            end_indy = max(hit_new_bef.index.values) - 1
+                            current_hit = poss_hit_before[poss_hit_before['qstart'] <= (hit_new_bef.iloc[end_indy, 7] + 50)]
+                            if not current_hit.empty:
+                                new_align = abs(hit_new_bef.iloc[0, 6] - current_hit.iloc[0, 7])
+                                poss_hit_before = poss_hit_before.drop(current_hit.index[0])
+                        if new_align < 5000:
+                            hit_new_bef = multi_hit_merger(hit_new_bef)
+                            hit_new_bef, new_align = subject_checker(hit_new_bef, "before",poss_hit_before, mge_bounds, "reverse")
+                else:
+
+                    hit_new_bef, new_align = subject_checker(hit_before, "before", poss_hit_before, mge_bounds, "reverse")
+
+            if isinstance(hit_new_bef, pandas.DataFrame):
+                before_process = "merge"
+            else:
+                before_process = "no"
+
+
+    else:
+        before_pass = True
+        before_process = "No"
+
+    if hit_after_length < 5000:
+        if mge_ori == "forward":
+            poss_hit_after = compo_csv[(compo_csv['qstart'] >= (hit_after['qend'] - 50)) & \
+                                        (compo_csv['qend'] <= (mge_bounds[1] + 10)) ]
+            poss_hit_after = poss_hit_after.sort_values(by='qstart', ascending=True)
+            new_align = hit_after_length
+            if not poss_hit_after.empty:
+                current_hit = poss_hit_after[poss_hit_after['qstart'] <= (hit_new_aft.iloc[7] + 50)]
+                if not current_hit.empty:
+                    new_align = abs(hit_new_aft.iloc[6] - current_hit['qend'].iloc[0])
+                    if new_align >= 5000:
+                        hit_new_aft = pandas.DataFrame(hit_new_aft).transpose()
+                        current_hit = pandas.DataFrame(current_hit.iloc[0]).transpose()
+                        hit_new_aft = pandas.concat([hit_new_aft, current_hit], sort=False, ignore_index=False)
+                        hit_new_aft = hit_new_aft.reset_index(drop=True)
+
+                    else:
+                        hit_new_aft = pandas.DataFrame(hit_new_aft).transpose()
+                        current_hit = pandas.DataFrame(current_hit.iloc[0]).transpose()
+                        hit_new_aft = pandas.concat([hit_new_aft, current_hit], sort=False, ignore_index=False)
+                        hit_new_aft = hit_new_aft.reset_index(drop=True)
+                        while_n = 0
+                        while not current_hit.empty and new_align < 5000:
+                            while_n += 1
+                            if while_n != 1:
+                                hit_new_aft = pandas.concat([hit_new_aft, current_hit.iloc[[0]]], sort=False, ignore_index=False)
+                                hit_new_aft = hit_new_aft.reset_index(drop=True)
+                            end_indy = max(hit_new_aft.index.values) - 1
+                            current_hit = poss_hit_after[poss_hit_after['qstart'] <= (hit_new_aft.iloc[end_indy, 7] + 50)]
+                            if not current_hit.empty:
+                                new_align = abs(hit_new_aft.iloc[0, 6] - current_hit.iloc[0, 7])
+                                poss_hit_after = poss_hit_after.drop(current_hit.index[0])
+                        if new_align < 5000:
+                            hit_new_aft = multi_hit_merger(hit_new_aft)
+                            hit_new_aft, new_align = subject_checker(hit_new_aft, "after",poss_hit_after, mge_bounds, "forward")
+            else:
+                hit_new_aft, new_align = subject_checker(hit_after, "after", poss_hit_after, mge_bounds, "forward")
+
+            if isinstance(hit_new_aft, pandas.DataFrame):
+                after_process = "merge"
+            else:
+                after_process = "no"
+        elif mge_ori == "reverse":
+            ## looking for hits previous to the current before
+            poss_hit_after = compo_csv[(compo_csv['qend'] <= (hit_after['qstart'] + 50)) & \
+                                        (compo_csv['qstart'] >= (mge_bounds[0] - 10)) ]
+            poss_hit_after = poss_hit_after.sort_values(by='qend', ascending=False)
+            new_align = hit_after_length
+            if not poss_hit_after.empty:
+                current_hit = poss_hit_after[poss_hit_after['qend'] >= (hit_new_aft.iloc[ 6] - 50)]
+                if not current_hit.empty:
+
+                    new_align = hit_new_aft.iloc[7] - current_hit['qstart'].iloc[0]
+                    if new_align >= 5000:
+                        hit_new_aft = pandas.DataFrame(hit_new_aft).transpose()
+                        current_hit = pandas.DataFrame(current_hit.iloc[0]).transpose()
+                        hit_new_aft = pandas.concat([hit_new_aft, current_hit], sort=False, ignore_index=False)
+                        hit_new_aft = hit_new_aft.reset_index(drop=True)
+                        hit_new_aft = pandas.concat([hit_new_aft, current_hit.iloc[0]], sort=False, ignore_index=True)
+                    else:
+                        hit_new_aft = pandas.DataFrame(hit_new_aft).transpose()
+                        current_hit = pandas.DataFrame(current_hit.iloc[0]).transpose()
+                        hit_new_aft = pandas.concat([hit_new_aft, current_hit], sort=False, ignore_index=False)
+                        hit_new_aft = hit_new_aft.reset_index(drop=True)
+                        while_n = 0
+                        while not current_hit.empty and new_align < 5000:
+                            while_n += 1
+                            if while_n != 1:
+                                hit_new_aft = pandas.concat([hit_new_aft, current_hit.iloc[[0]]], sort=False, ignore_index=False)
+                                hit_new_aft = hit_new_aft.reset_index(drop=True)
+                            end_indy = max(hit_new_aft.index.values) - 1
+                            current_hit = poss_hit_after[poss_hit_after['qend'] >= (hit_new_aft.iloc[end_indy, 6] - 50)]
+                            if not current_hit.empty:
+                                new_align = hit_new_aft.iloc[0, 7] - current_hit.iloc[0, 6]
+                                poss_hit_after = poss_hit_after.drop(current_hit.index[0])
+                        if new_align < 5000:
+                            hit_new_aft = multi_hit_merger(hit_new_aft)
+                            hit_new_aft, new_align = subject_checker(hit_new_aft, "after",poss_hit_after, mge_bounds, "forward")
+
+
+                else:
+                    hit_new_aft, new_align = subject_checker(hit_after, "after", poss_hit_after, mge_bounds, "reverse")
+
+            if isinstance(hit_new_aft, pandas.DataFrame):
+
+                after_process = "merge"
+            else:
+                after_process = "no"
+    else:
+        after_pass = True
+        after_process = "No"
+
+
+    if before_process == "merge":
+        max_row = pandas.to_numeric(hit_new_bef['qend']).idxmax()
+        min_row = pandas.to_numeric(hit_new_bef['qstart']).idxmin()
+        length_bef = hit_new_bef.iloc[max_row, 7] - hit_new_bef.iloc[min_row, 6]
+        hit_bef_out = pandas.Series({'query': hit_before['query'],
+                                 'subject': hit_before['subject'],
+                                 'pid': hit_before['pid'],
+                                 'align': length_bef,
+                                 'gap': hit_before['gap'],
+                                 'mismatch': hit_before['mismatch'],
+                                 'qstart': hit_new_bef.iloc[min_row, 6],
+                                 'qend': hit_new_bef.iloc[max_row, 7],
+                                 'sstart': hit_new_bef.iloc[min_row,8],
+                                 'send': hit_new_bef.iloc[max_row, 9],
+                                 'eval': hit_before['eval'],
+                                 'bitscore': hit_before['bitscore']})
+
+        before_pass = length_bef >= 5000
+    else:
+        hit_bef_out = hit_before.copy()
+
+    if after_process == "merge":
+        max_row = pandas.to_numeric(hit_new_aft['qend']).idxmax()
+        min_row = pandas.to_numeric(hit_new_aft['qstart']).idxmin()
+        length_aft = hit_new_aft.iloc[max_row, 7] - hit_new_aft.iloc[min_row, 6]
+        hit_aft_out = pandas.Series({'query': hit_after['query'],
+                                     'subject': hit_after['subject'],
+                                     'pid': hit_after['pid'],
+                                     'align': length_aft,
+                                     'gap': hit_after['gap'],
+                                     'mismatch': hit_after['mismatch'],
+                                     'qstart': hit_new_aft.iloc[min_row, 6],
+                                     'qend': hit_new_aft.iloc[max_row, 7],
+                                     'sstart': hit_new_aft.iloc[min_row, 8],
+                                     'send': hit_new_aft.iloc[max_row, 9],
+                                     'eval': hit_after['eval'],
+                                     'bitscore': hit_after['bitscore']})
+        after_pass = length_aft >= 5000
+    else:
+        hit_aft_out = hit_after.copy()
+
+
+    tot_pass = before_pass and after_pass
+
+
+    return hit_bef_out, hit_aft_out, tot_pass
+
+def final_acceptor(hit_before, hit_after, isolate_id, mge_bounds, mge_ori):
+    ## Function to check whether the merged bounds are above 2500 and then
+    ## to just take the 5000 from here if it's within the contig bounds
+    ## input: hit_before: Merged hit before from hit_mover
+    ##        hit_after: Merged hit after from hit_mover
+    ##        compo_csv: The act comparison csv
+    ##        isolate_id: The current isolate_id
+    ##        mge_bounds: The contig bounds for the mge
+    ##        mge_ori: The orientation of the mge
+
+    hit_before_length = abs(hit_before.iloc[7] - hit_before.iloc[6])
+    hit_after_length = abs(hit_after.iloc[7] - hit_after.iloc[6])
+
+    hit_new_bef = hit_before.copy()
+    hit_new_aft = hit_after.copy()
+
+    if hit_before_length < 5000:
+        if mge_ori == "forward":
+            new_end = hit_before.iloc[7] - 5000
+            if new_end > mge_bounds[0]:
+                max_send = max([hit_before['sstart'], hit_before['send']])
+
+                hit_bef_out = pandas.Series({'query': hit_before['query'],
+                                             'subject': hit_before['subject'],
+                                             'pid': hit_before['pid'],
+                                             'align': 5000,
+                                             'gap': hit_before['gap'],
+                                             'mismatch': hit_before['mismatch'],
+                                             'qstart': new_end,
+                                             'qend': hit_new_bef['qend'],
+                                             'sstart': max_send - 5000,
+                                             'send': max_send,
+                                             'eval': hit_before['eval'],
+                                             'bitscore': hit_before['bitscore']})
+                hit_before_length = 5000
+            else:
+                hit_bef_out = hit_new_bef
+        elif mge_ori == "reverse":
+            new_end = hit_before.iloc[6] + 5000
+            if new_end > mge_bounds[0]:
+                min_send = min([hit_before['sstart'], hit_before['send']])
+                hit_bef_out = pandas.Series({'query': hit_before['query'],
+                                             'subject': hit_before['subject'],
+                                             'pid': hit_before['pid'],
+                                             'align': 5000,
+                                             'gap': hit_before['gap'],
+                                             'mismatch': hit_before['mismatch'],
+                                             'qstart': hit_before['qstart'],
+                                             'qend': new_end,
+                                             'sstart': min_send,
+                                             'send': min_send + 5000,
+                                             'eval': hit_before['eval'],
+                                             'bitscore': hit_before['bitscore']})
+                hit_before_length = 5000
+            else:
+                hit_bef_out = hit_new_bef
+    else:
+        hit_bef_out = hit_new_bef
+
+    ## Now for the after hits
+    if hit_after_length < 5000:
+        if mge_ori == "reverse":
+            new_end = hit_after.iloc[6] + 5000
+            if new_end > mge_bounds[0]:
+                min_send = min([hit_after['sstart'], hit_after['send']])
+                hit_aft_out = pandas.Series({'query': hit_after['query'],
+                                             'subject': hit_after['subject'],
+                                             'pid': hit_after['pid'],
+                                             'align': 5000,
+                                             'gap': hit_after['gap'],
+                                             'mismatch': hit_after['mismatch'],
+                                             'qstart': hit_after['qstart'],
+                                             'qend': new_end,
+                                             'sstart': min_send,
+                                             'send': min_send + 5000,
+                                             'eval': hit_after['eval'],
+                                             'bitscore': hit_after['bitscore']})
+                hit_after_length = 5000
+            else:
+                hit_aft_out = hit_new_aft
+        elif mge_ori == "forward":
+            new_end = hit_after.iloc[7] - 5000
+            if new_end > mge_bounds[0]:
+                max_send = max([hit_after['sstart'], hit_after['send']])
+                hit_aft_out = pandas.Series({'query': hit_after['query'],
+                                             'subject': hit_after['subject'],
+                                             'pid': hit_after['pid'],
+                                             'align': 5000,
+                                             'gap': hit_after['gap'],
+                                             'mismatch': hit_after['mismatch'],
+                                             'qstart': new_end,
+                                             'qend': hit_new_aft['qend'],
+                                             'sstart': max_send - 5000,
+                                             'send': max_send,
+                                             'eval': hit_after['eval'],
+                                             'bitscore': hit_after['bitscore']})
+                hit_after_length = 5000
+            else:
+                hit_aft_out = hit_new_aft
+    else:
+        hit_aft_out = hit_new_aft
+
+    if hit_before_length >= 5000 and hit_after_length >= 5000:
+        both_tigs = True
+    else:
+        both_tigs = False
+
+    return  hit_bef_out, hit_aft_out, both_tigs
+
+def before_and_after_check(hit_to_check, mge_locs, compo_table, hit_loc, other_hit, isolate_id):
+    ## This function will take input from the hit distance checker. We're looking for
+    ## any hits that might have been missed by our initial search in before and after
+    ## hits function, i.e they have an align < 2000. They have to be adjacent to the
+    ## mge and adjacent to the hit_to_check in the reference genome.
+
+    hit_check_query = hit_to_check[[6, 7]]
+    hit_check_subject = hit_to_check[[8, 9]]
+    other_hit_subject = other_hit[[8,9]]
+
+    if mge_locs[0] < mge_locs[1]:
+        mge_ori = "forward"
+    elif mge_locs[0] > mge_locs[1]:
+        mge_ori = "reverse"
+
+    if hit_check_subject[0] < hit_check_subject[1]:
+        check_ori = "forward"
+    elif hit_check_subject[0] > hit_check_subject[1]:
+        check_ori = "reverse"
+
+    added_hits = pandas.DataFrame()
+
+    if hit_loc == "before":
+        if mge_ori == "forward":
+            if check_ori == "forward":
+                poss_hits = compo_table[(compo_table['qend'] < (mge_locs[0] + 50)) &\
+                                        (compo_table['qend'] > hit_check_query[0]) &\
+                                        (compo_table['send'] > hit_check_subject[1]) &\
+                                        (compo_table['sstart'] < other_hit_subject[1])]
+                poss_hits = poss_hits.sort_values(by=['qstart'], ascending=True)
+                if not poss_hits.empty:
+                    hit_orig = pandas.DataFrame(hit_to_check).transpose()
+                    poss_hits = poss_hits.reset_index(drop=True)
+                    current_hit = pandas.DataFrame(poss_hits.iloc[0]).transpose()
+                    added_hits = pandas.concat([added_hits,hit_orig, current_hit], ignore_index=True, sort=False)
+                    poss_hits = poss_hits.drop(0)
+                    new_row = 0
+                    while not poss_hits.empty:
+                        new_row += 1
+                        current_hit = pandas.DataFrame(poss_hits.iloc[0]).transpose()
+                        added_hits = pandas.concat([added_hits, current_hit], ignore_index=True, sort=False)
+                        poss_hits = poss_hits.drop(new_row)
+
+
+
+            elif check_ori == "reverse":
+                poss_hits = compo_table[(compo_table['qend'] < (mge_locs[0] + 50)) & \
+                                        (compo_table['qend'] > hit_check_query[0]) & \
+                                        (compo_table['send'] < hit_check_subject[1]) &\
+                                        (compo_table['sstart'] > other_hit_subject[1])]
+                poss_hits = poss_hits.sort_values(by=['qend'], ascending=True)
+                if not poss_hits.empty:
+                    hit_orig = pandas.DataFrame(hit_to_check).transpose()
+                    poss_hits = poss_hits.reset_index(drop=True)
+                    current_hit = pandas.DataFrame(poss_hits.iloc[0]).transpose()
+                    added_hits = pandas.concat([added_hits,hit_orig, current_hit], ignore_index=True, sort=False)
+                    poss_hits = poss_hits.drop(0)
+                    new_row = 0
+                    while not poss_hits.empty:
+                        new_row += 1
+                        current_hit = pandas.DataFrame(poss_hits.iloc[0]).transpose()
+                        added_hits = pandas.concat([added_hits, current_hit], ignore_index=True, sort=False)
+                        poss_hits = poss_hits.drop(new_row)
+
+        elif mge_ori == "reverse":
+            if check_ori == "forward":
+                poss_hits = compo_table[(compo_table['qstart'] > (mge_locs[1] - 50)) & \
+                                        (compo_table['qstart'] < hit_check_query[1]) & \
+                                        (compo_table['sstart'] < hit_check_subject[0]) & \
+                                        (compo_table['send'] > other_hit_subject[0])]
+                poss_hits = poss_hits.sort_values(by=['qstart'], ascending=False)
+                if not poss_hits.empty:
+                    hit_orig = pandas.DataFrame(hit_to_check).transpose()
+                    poss_hits = poss_hits.reset_index(drop=True)
+                    current_hit = pandas.DataFrame(poss_hits.iloc[0]).transpose()
+                    added_hits = pandas.concat([added_hits, hit_orig, current_hit], ignore_index=True, sort=False)
+                    poss_hits = poss_hits.drop(0)
+                    new_row = 0
+                    while not poss_hits.empty:
+                        new_row += 1
+                        current_hit = pandas.DataFrame(poss_hits.iloc[0]).transpose()
+                        added_hits = pandas.concat([added_hits, current_hit], ignore_index=True, sort=False)
+                        poss_hits = poss_hits.drop(new_row)
+
+            elif check_ori == "reverse":
+                poss_hits = compo_table[(compo_table['qstart'] > (mge_locs[1] - 50)) & \
+                                        (compo_table['qstart'] < hit_check_query[1]) & \
+                                        (compo_table['sstart'] > hit_check_subject[0]) &\
+                                        (compo_table['send'] < other_hit_subject[0])]
+                poss_hits = poss_hits.sort_values(by=['qstart'], ascending=False)
+                if not poss_hits.empty:
+                    hit_orig = pandas.DataFrame(hit_to_check).transpose()
+                    poss_hits = poss_hits.reset_index(drop=True)
+                    current_hit = pandas.DataFrame(poss_hits.iloc[0]).transpose()
+                    added_hits = pandas.concat([added_hits, hit_orig, current_hit], ignore_index=True, sort=False)
+                    poss_hits = poss_hits.drop(0)
+                    new_row = 0
+                    while not poss_hits.empty:
+                        new_row += 1
+                        current_hit = pandas.DataFrame(poss_hits.iloc[0]).transpose()
+                        added_hits = pandas.concat([added_hits, current_hit], ignore_index=True, sort=False)
+                        poss_hits = poss_hits.drop(new_row)
+
+    elif hit_loc == "after":
+        if mge_ori == "forward":
+            if check_ori == "forward":
+                poss_hits = compo_table[(compo_table['qstart'] > (mge_locs[1] - 50)) & \
+                                        (compo_table['qstart'] < hit_check_query[1]) & \
+                                        (compo_table['sstart'] < hit_check_subject[0])&\
+                                        (compo_table['send'] > other_hit_subject[0])]
+                poss_hits = poss_hits.sort_values(by=['qstart'], ascending=False)
+                if not poss_hits.empty:
+                    hit_orig = pandas.DataFrame(hit_to_check).transpose()
+                    poss_hits = poss_hits.reset_index(drop=True)
+                    current_hit = pandas.DataFrame(poss_hits.iloc[0]).transpose()
+                    added_hits = pandas.concat([added_hits, hit_orig, current_hit], ignore_index=True, sort=False)
+                    poss_hits = poss_hits.drop(0)
+                    new_row = 0
+                    while not poss_hits.empty:
+                        new_row += 1
+                        current_hit = pandas.DataFrame(poss_hits.iloc[0]).transpose()
+                        added_hits = pandas.concat([added_hits, current_hit], ignore_index=True, sort=False)
+                        poss_hits = poss_hits.drop(new_row)
+
+
+            elif check_ori == "reverse":
+                poss_hits = compo_table[(compo_table['qstart'] > (mge_locs[1] - 50)) & \
+                                        (compo_table['qstart'] < hit_check_query[1]) & \
+                                        (compo_table['sstart'] > hit_check_subject[0]) &\
+                                        (compo_table['send'] < other_hit_subject[0])]
+                poss_hits = poss_hits.sort_values(by=['qstart'], ascending=False)
+                if not poss_hits.empty:
+                    hit_orig = pandas.DataFrame(hit_to_check).transpose()
+                    poss_hits = poss_hits.reset_index(drop=True)
+                    current_hit = pandas.DataFrame(poss_hits.iloc[0]).transpose()
+                    added_hits = pandas.concat([added_hits, hit_orig, current_hit], ignore_index=True, sort=False)
+                    poss_hits = poss_hits.drop(0)
+                    new_row = 0
+                    while not poss_hits.empty:
+                        new_row += 1
+                        current_hit = pandas.DataFrame(poss_hits.iloc[0]).transpose()
+                        added_hits = pandas.concat([added_hits, current_hit], ignore_index=True, sort=False)
+                        poss_hits = poss_hits.drop(new_row)
+
+        elif mge_ori == "reverse":
+            if check_ori == "forward":
+                poss_hits = compo_table[(compo_table['qend'] < (mge_locs[0] + 50)) & \
+                                        (compo_table['qend'] > hit_check_query[0]) & \
+                                        (compo_table['send'] > hit_check_subject[1]) &\
+                                        (compo_table['sstart'] < other_hit_subject[1])]
+                poss_hits = poss_hits.sort_values(by=['qend'], ascending=True)
+                if not poss_hits.empty:
+                    hit_orig = pandas.DataFrame(hit_to_check).transpose()
+                    poss_hits = poss_hits.reset_index(drop=True)
+                    current_hit = pandas.DataFrame(poss_hits.iloc[0]).transpose()
+                    added_hits = pandas.concat([added_hits, hit_orig, current_hit], ignore_index=True, sort=False)
+                    poss_hits = poss_hits.drop(0)
+                    new_row = 0
+                    while not poss_hits.empty:
+                        new_row += 1
+                        current_hit = pandas.DataFrame(poss_hits.iloc[0]).transpose()
+                        added_hits = pandas.concat([added_hits, current_hit], ignore_index=True, sort=False)
+                        poss_hits = poss_hits.drop(new_row)
+
+
+            elif check_ori == "reverse":
+                poss_hits = compo_table[(compo_table['qend'] < (mge_locs[0] + 50)) & \
+                                        (compo_table['qend'] > hit_check_query[0]) & \
+                                        (compo_table['send'] < hit_check_subject[1]) &\
+                                        (compo_table['sstart'] > other_hit_subject[1])]
+                poss_hits = poss_hits.sort_values(by=['qend'], ascending=True)
+                if not poss_hits.empty:
+                    hit_orig = pandas.DataFrame(hit_to_check).transpose()
+                    poss_hits = poss_hits.reset_index(drop=True)
+                    current_hit = pandas.DataFrame(poss_hits.iloc[0]).transpose()
+                    added_hits = pandas.concat([added_hits, hit_orig, current_hit], ignore_index=True, sort=False)
+                    poss_hits = poss_hits.drop(0)
+                    new_row = 0
+                    while not poss_hits.empty:
+                        new_row += 1
+                        current_hit = pandas.DataFrame(poss_hits.iloc[0]).transpose()
+                        added_hits = pandas.concat([added_hits, current_hit], ignore_index=True, sort=False)
+                        poss_hits = poss_hits.drop(new_row)
+
+
+    return added_hits
+
+
 
 
 ## Ok so first lets load up the merged BLAST CSV and narrow it down to just those
@@ -1136,8 +1986,19 @@ if __name__ == '__main__':
         else:
             isolate_id = isolate_id_z
 
-        if isolate_id != "6551_8#20":
-            continue
+
+        #cluster_2 = ["10900_6#9", "15608_3#45", "15608_3#49", "15608_3#55", "15608_3#71", "15608_3#75", "15608_4#18", \
+        #            "15608_4#30", "15608_4#2", "15608_4#24"]
+        #cluster_2 = ["6678_3#5","6569_4#15"]
+
+        #cluster_2 = ["12291_5#65","15682_1#29","15682_1#38","15682_1#51","15682_1#65","15682_2#52","20925_3#47","21127_1#10",\
+        #             "21127_1#104","21127_1#108","21127_1#35","21127_1#44","21127_1#67","21127_1#70","21127_1#83","21127_1#97",\
+        #             "22841_4#117","6569_4#16","6569_4#17","6569_4#18"]
+        #cluster_2 = ["15608_5#88","15682_1#66", "19084_7#62", "19084_7#68","20925_3#60","20925_3#68","6187_5#9"]
+
+        #if isolate_id not in cluster_2:
+        #    continue
+
 
         current_gff_loc, ref_loc = gff_finder(isolate_ref_gff, isolate_id)
         compo_file = absolute_act_path + isolate_id + ".crunch.gz"
@@ -1193,7 +2054,46 @@ if __name__ == '__main__':
             contig_after = contig_checker(contig_tab, hit_after_loc)
 
         all_one_tig = contig_before == contig_mge and contig_mge == contig_after and which_hit == "both"
+
+        if all_one_tig:
+            hit_before_check = before_and_after_check(hit_before, hitters, compo_table, "before", hit_after, isolate_id)
+            hit_after_check = before_and_after_check(hit_after, hitters, compo_table, "after", hit_before, isolate_id)
+
+            if not hit_before_check.empty:
+                hit_before = multi_hit_merger(hit_before_check)
+                hit_before_loc = hit_before.iloc[[6, 7]]
+                hit_before_length = abs(hit_before_loc[1] - hit_before_loc[0])
+
+
+            if not hit_after_check.empty:
+                hit_after = multi_hit_merger(hit_after_check)
+                hit_after_loc = hit_after.iloc[[6,7]]
+                hit_after_length = abs(hit_after_loc[1] - hit_after_loc[0])
+
         all_one_tig_5k = hit_before_length >= 5000 and hit_after_length >= 5000 and all_one_tig
+
+
+
+        if all_one_tig and not all_one_tig_5k:
+            hit_before, hit_after, all_one_tig_5k = hit_mover(hit_before, hit_after, compo_table, isolate_id, mge_bounds, mge_ori)
+            hit_before_loc = hit_before.iloc[[6, 7]]
+            hit_after_loc = hit_after.iloc[[6, 7]]
+
+            #if not all_one_tig_5k:
+            #   hit_before, hit_after, all_one_tig_5k = final_acceptor(hit_before, hit_after, isolate_id, mge_bounds, mge_ori)
+            #   hit_before_loc = hit_before.iloc[[6, 7]]
+            #   hit_after_loc = hit_after.iloc[[6, 7]]
+        # if isolate_id in ['12291_5#65','15682_1#4','21127_1#83','21242_2#137','5468_2#4','11657_4#49',\
+        #                   '21053_8#174','21242_2#136', "15608_3#42"]:
+        #     print("")
+        #     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+        #     print(all_one_tig_5k)
+        #     print(isolate_id)
+        #     print(hit_before)
+        #     print("<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>")
+        #     print(hit_after)
+        #     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+        #     print("")
 
 
         if all_one_tig_5k:
@@ -1239,8 +2139,8 @@ if __name__ == '__main__':
                 mean_length_before = [0]
                 if not before_loc_gens.empty:
                     before_gene_lengths = []
-                    for k in range(len(before_loc_gens.index)):
-                        current_length = before_loc_gens.iloc[k, 4] - before_loc_gens.iloc[k, 3]
+                    for l in range(len(before_loc_gens.index)):
+                        current_length = before_loc_gens.iloc[l, 4] - before_loc_gens.iloc[l, 3]
                         before_gene_lengths.append([current_length])
                     mean_length_before = numpy.mean(before_gene_lengths)
 
@@ -1249,8 +2149,8 @@ if __name__ == '__main__':
                 mean_length_after = [0]
                 if not after_loc_gens.empty:
                     after_loc_lengths = []
-                    for k in range(len(after_loc_gens.index)):
-                        current_length = after_loc_gens.iloc[k, 4] - after_loc_gens.iloc[k, 3]
+                    for l in range(len(after_loc_gens.index)):
+                        current_length = after_loc_gens.iloc[l, 4] - after_loc_gens.iloc[l, 3]
                         after_loc_lengths.append([current_length])
                     mean_length_after = numpy.mean(after_loc_lengths)
 
@@ -1314,8 +2214,8 @@ if __name__ == '__main__':
                 mean_length_before = [0]
                 if not before_loc_gens.empty:
                     before_gene_lengths = []
-                    for k in range(len(before_loc_gens.index)):
-                        current_length = before_loc_gens.iloc[k, 4] - before_loc_gens.iloc[k, 3]
+                    for l in range(len(before_loc_gens.index)):
+                        current_length = before_loc_gens.iloc[l, 4] - before_loc_gens.iloc[l, 3]
                         before_gene_lengths.append([current_length])
                     mean_length_before = numpy.mean(before_gene_lengths)
 
@@ -1325,12 +2225,13 @@ if __name__ == '__main__':
                 mean_length_after = [0]
                 if not after_loc_gens.empty:
                     after_loc_lengths = []
-                    for k in range(len(after_loc_gens.index)):
-                        current_length = after_loc_gens.iloc[k, 4] - after_loc_gens.iloc[k, 3]
+                    for l in range(len(after_loc_gens.index)):
+                        current_length = after_loc_gens.iloc[l, 4] - after_loc_gens.iloc[l, 3]
                         after_loc_lengths.append([current_length])
                     mean_length_after = numpy.mean(after_loc_lengths)
 
                 flanks_genes = num_genes_before + num_genes_after
+
 
                 before_gene = gene_name_finder(before_loc_gens, back_it_up=False)
                 after_gene = gene_name_finder(after_loc_gens, back_it_up=True)
@@ -1366,7 +2267,7 @@ if __name__ == '__main__':
                 if genes_mge_num <= gene_insert_num:
                     library_df = library_integrator(library_df, library_pros, isolate_id)
 
-
+    library_df = library_trim(library_df)
     library_df.to_csv(path_or_buf=files_for_input.output, index=False)
     toc1 = time.perf_counter()
     toc = time.perf_counter()
