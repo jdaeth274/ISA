@@ -16,8 +16,8 @@ from Bio.Seq import Seq
 import math
 import argparse
 import time
-
-
+import pyfastx
+import subprocess
 
 def get_options():
     purpose = '''This is a python script to intake a csv of hit locations for an MGE for a large collection of 
@@ -30,6 +30,7 @@ def get_options():
 
     parser.add_argument('--hit_csv', required=True, help='Out merged BLAST csv (required)', type=str)
     parser.add_argument('--reference_csv', required=True, help='Isolates gff and references gff csv (required)', type=str)
+    parser.add_argument('--fasta_csv', required=True, help= "isolates fasta and reference fasta csv", type = str)
     parser.add_argument('--align_cutoff', required=True, help='Alignment length cut_off for hit  (required)', type=int)
     parser.add_argument('--act_loc', required=True, help='Directory where act comparisons stored (required)', type=str)
     parser.add_argument('--contig_loc', required=True, help='Directory where contig_numbers stored  (required)', type=str)
@@ -38,6 +39,33 @@ def get_options():
     args = parser.parse_args()
 
     return args
+
+def n50_calc(fasta_list, reference_id):
+    ## Function to calculate the largest n50 to take as new comparison for ACT
+    ## given that the reference has the mge within
+    ## Input: fasta_list: The list of the locations of the fastas for a cluster
+    ##        reference_id: The old reference
+
+    n50s = []
+    ids = []
+
+    for k in fasta_list:
+        current_isolate = k
+        current_basename = os.path.basename(current_isolate)
+        current_id = re.sub("\..*[a-z,A-Z]*.$","",current_basename)
+        if current_id != reference_id:
+            current_fasta = pyfastx.Fasta(current_isolate)
+            current_n50 = current_fasta.nl(50)[0]
+            n50s.append(current_n50)
+            ids.append(current_isolate)
+
+
+    max_n50 = n50s.index(max(n50s))
+
+    new_act_iso = ids[max_n50]
+
+    return new_act_iso
+
 
 def contig_checker(contig_csv, hit_to_check):
     ## This is a function to check what contig a BLAST hit appears on
@@ -409,7 +437,7 @@ def merged_contig_checker(merged_csv, contig_file_abs_path, act_path):
                 merged_locs.append(merged_loc)
 
 
-        iter_val = "{0:0=3d}".format((k + 1))
+        iter_val = "{0:0=5d}".format((k + 1))
         print("Completed %s of %s rows. Just finished: %s" % (iter_val, len(file_locs), isolate_id),
               end="\r",flush=True)
 
@@ -850,7 +878,7 @@ def within_a_hit(big_hit, little_hit):
 
     return output
 
-def gff_finder(gff_csv, isolate_id):
+def gff_finder(gff_csv, isolate_id, clus_name):
     ## Function to get the location of an isolates gff file
     isolate_check = isolate_id + "\."
     isolate_rows = gff_csv['isolate'].str.contains(isolate_check)
@@ -861,8 +889,12 @@ def gff_finder(gff_csv, isolate_id):
         print(isolate_row_indy)
     isolate_loc = gff_csv.iloc[isolate_row_indy,0]
     isolate_ref = gff_csv.iloc[isolate_row_indy,1]
+    if clus_name:
+        cluster_name = gff_csv.iloc[isolate_row_indy,2]
+    else:
+        cluster_name = "BOO!"
 
-    return isolate_loc, isolate_ref
+    return isolate_loc, isolate_ref, cluster_name
 
 def gff_to_dna(gff_csv, contig_csv, isolate_id, input_k):
     ## Function to turn the contigs based values of gff gene locs into a continuous DNA
@@ -1149,16 +1181,17 @@ def library_trim(library_csv):
     ## Function to run through the library csv and removes any that look like they could be duplicates
     ## This will be based solely on the before and after genes
 
-    before_after_combo = library_csv['before_gene_name'].str.cat(library_csv['after_gene_name'], sep = "-")
+    before_after_combo = library_csv['before_gene_name'].str.cat(library_csv['after_gene_name'], sep = "£")
     before_after_unique = before_after_combo.unique()
     indies_to_remove = []
     for k in range(len(before_after_unique)):
         combo = before_after_unique[k]
-        before = re.split("-", combo, 2)[0]
-        after = re.split("-", combo, 2)[1]
+        before = re.split("£", combo, 2)[0]
+        after = re.split("£", combo, 2)[1]
 
         bef_and_aft = library_csv[(library_csv['before_gene_name'] == before) &\
                                   (library_csv['after_gene_name'] == after)]
+
         if len(bef_and_aft.index) == 1:
             continue
         else:
@@ -1234,7 +1267,27 @@ def subject_checker(hit, ori, compo_csv, mge_bounds, mge_ori):
                         hit_new = hit_new.reset_index(drop=True)
                         altered = "merge"
                     else:
-                        altered = "no"
+                        hit_new = pandas.DataFrame(hit_new).transpose()
+                        current_hit = pandas.DataFrame(narrowed_poss_hits.iloc[0]).transpose()
+                        hit_new = pandas.concat([hit_new, current_hit], sort=False, ignore_index=False)
+                        hit_new = hit_new.reset_index(drop=True)
+                        narrowed_poss_hits_2 = compo_csv[(compo_csv['send'] >= (narrowed_poss_hits['sstart'].iloc[0] - 50)) & \
+                                                         (compo_csv['send'] <= (narrowed_poss_hits['sstart'].iloc[0] + 50))]
+                        narrowed_poss_hits_2 = narrowed_poss_hits_2.sort_values(by='align', ascending=False)
+
+                        while not narrowed_poss_hits_2.empty and new_align < 5000:
+                            new_align = abs(hit['qend'] - narrowed_poss_hits_2['qstart'].iloc[0])
+                            extra_hit = pandas.DataFrame(narrowed_poss_hits_2.iloc[0]).transpose()
+
+                            hit_new = pandas.concat([hit_new, extra_hit.iloc[[0]]], sort=False, ignore_index=False)
+                            hit_new = hit_new.reset_index(drop=True)
+                            if new_align < 5000:
+                                narrowed_poss_hits_2 = compo_csv[(compo_csv['send'] >= (narrowed_poss_hits['sstart'].iloc[0] - 50)) & \
+                                                                 (compo_csv['send'] <= (narrowed_poss_hits['sstart'].iloc[0] + 50))]
+                                narrowed_poss_hits_2 = narrowed_poss_hits_2.sort_values(by='align', ascending=False)
+
+                        if new_align >= 5000:
+                            altered = "merge"
                 else:
                     new_align = 0
             elif hit_subject_ori == "reverse":
@@ -1249,7 +1302,27 @@ def subject_checker(hit, ori, compo_csv, mge_bounds, mge_ori):
                         hit_new = hit_new.reset_index(drop=True)
                         altered = "merge"
                     else:
-                        altered = "no"
+                        hit_new = pandas.DataFrame(hit_new).transpose()
+                        current_hit = pandas.DataFrame(narrowed_poss_hits.iloc[0]).transpose()
+                        hit_new = pandas.concat([hit_new, current_hit], sort=False, ignore_index=False)
+                        hit_new = hit_new.reset_index(drop=True)
+                        narrowed_poss_hits_2 = compo_csv[(compo_csv['send'] >= (narrowed_poss_hits['sstart'].iloc[0] - 50)) & \
+                                                         (compo_csv['send'] <= (narrowed_poss_hits['sstart'].iloc[0] + 50))]
+                        narrowed_poss_hits_2 = narrowed_poss_hits_2.sort_values(by='align', ascending=False)
+
+                        while not narrowed_poss_hits_2.empty and new_align < 5000:
+                            new_align = abs(hit['qend'] - narrowed_poss_hits_2['qstart'].iloc[0])
+                            extra_hit = pandas.DataFrame(narrowed_poss_hits_2.iloc[0]).transpose()
+
+                            hit_new = pandas.concat([hit_new, extra_hit.iloc[[0]]], sort=False, ignore_index=False)
+                            hit_new = hit_new.reset_index(drop=True)
+                            if new_align < 5000:
+                                narrowed_poss_hits_2 = compo_csv[(compo_csv['send'] >= (narrowed_poss_hits['sstart'].iloc[0] - 50)) & \
+                                                                 (compo_csv['send'] <= (narrowed_poss_hits['sstart'].iloc[0] + 50))]
+                                narrowed_poss_hits_2 = narrowed_poss_hits_2.sort_values(by='align', ascending=False)
+
+                        if new_align >= 5000:
+                            altered = "merge"
                 else:
                     new_align = 0
         elif mge_ori == "reverse":
@@ -1266,7 +1339,29 @@ def subject_checker(hit, ori, compo_csv, mge_bounds, mge_ori):
                         hit_new = hit_new.reset_index(drop=True)
                         altered = "merge"
                     else:
-                        altered = "no"
+                        hit_new = pandas.DataFrame(hit_new).transpose()
+                        current_hit = pandas.DataFrame(narrowed_poss_hits.iloc[0]).transpose()
+                        hit_new = pandas.concat([hit_new, current_hit], sort=False, ignore_index=False)
+                        hit_new = hit_new.reset_index(drop=True)
+                        narrowed_poss_hits_2 = compo_csv[
+                            (compo_csv['sstart'] >= (narrowed_poss_hits['send'].iloc[0] - 50)) & \
+                            (compo_csv['sstart'] <= (narrowed_poss_hits['send'].iloc[0] + 50))]
+                        narrowed_poss_hits_2 = narrowed_poss_hits_2.sort_values(by='align', ascending=False)
+
+                        while not narrowed_poss_hits_2.empty and new_align < 5000:
+                            new_align = abs(hit['qstart'] - narrowed_poss_hits_2['qend'].iloc[0])
+                            extra_hit = pandas.DataFrame(narrowed_poss_hits_2.iloc[0]).transpose()
+
+                            hit_new = pandas.concat([hit_new, extra_hit.iloc[[0]]], sort=False, ignore_index=False)
+                            hit_new = hit_new.reset_index(drop=True)
+                            if new_align < 5000:
+                                narrowed_poss_hits_2 = compo_csv[
+                                    (compo_csv['sstart'] >= (narrowed_poss_hits['send'].iloc[0] - 50)) & \
+                                    (compo_csv['sstart'] <= (narrowed_poss_hits['send'].iloc[0] + 50))]
+                                narrowed_poss_hits_2 = narrowed_poss_hits_2.sort_values(by='align', ascending=False)
+
+                        if new_align >= 5000:
+                            altered = "merge"
                 else:
                     new_align = 0
             elif hit_subject_ori == "reverse":
@@ -1281,7 +1376,28 @@ def subject_checker(hit, ori, compo_csv, mge_bounds, mge_ori):
                         hit_new = hit_new.reset_index(drop=True)
                         altered = "merge"
                     else:
-                        altered = "no"
+                        hit_new = pandas.DataFrame(hit_new).transpose()
+                        current_hit = pandas.DataFrame(narrowed_poss_hits.iloc[0]).transpose()
+                        hit_new = pandas.concat([hit_new, current_hit], sort=False, ignore_index=False)
+                        hit_new = hit_new.reset_index(drop=True)
+                        narrowed_poss_hits_2 = compo_csv[(compo_csv['sstart'] >= (narrowed_poss_hits['send'].iloc[0] - 50)) & \
+                                                         (compo_csv['sstart'] <= (narrowed_poss_hits['send'].iloc[0] + 50))]
+                        narrowed_poss_hits_2 = narrowed_poss_hits_2.sort_values(by='align', ascending=False)
+
+                        while not narrowed_poss_hits_2.empty and new_align < 5000:
+                            new_align = abs(hit['qstart'] - narrowed_poss_hits_2['qend'].iloc[0])
+                            extra_hit = pandas.DataFrame(narrowed_poss_hits_2.iloc[0]).transpose()
+
+                            hit_new = pandas.concat([hit_new, extra_hit.iloc[[0]]], sort=False, ignore_index=False)
+                            hit_new = hit_new.reset_index(drop=True)
+                            if new_align < 5000:
+                                narrowed_poss_hits_2 = compo_csv[(compo_csv['sstart'] >= (narrowed_poss_hits['send'].iloc[0] - 50)) & \
+                                                                 (compo_csv['sstart'] <= (narrowed_poss_hits['send'].iloc[0] + 50))]
+                                narrowed_poss_hits_2 = narrowed_poss_hits_2.sort_values(by='align', ascending=False)
+
+                        if new_align >= 5000:
+                            altered = "merge"
+
                 else:
                     new_align = 0
     elif ori == "after":
@@ -1298,7 +1414,29 @@ def subject_checker(hit, ori, compo_csv, mge_bounds, mge_ori):
                         hit_new = hit_new.reset_index(drop=True)
                         altered = "merge"
                     else:
-                        altered = "no"
+                        hit_new = pandas.DataFrame(hit_new).transpose()
+                        current_hit = pandas.DataFrame(narrowed_poss_hits.iloc[0]).transpose()
+                        hit_new = pandas.concat([hit_new, current_hit], sort=False, ignore_index=False)
+                        hit_new = hit_new.reset_index(drop=True)
+                        narrowed_poss_hits_2 = compo_csv[
+                            (compo_csv['sstart'] >= (narrowed_poss_hits['send'].iloc[0] - 50)) & \
+                            (compo_csv['sstart'] <= (narrowed_poss_hits['send'].iloc[0] + 50))]
+                        narrowed_poss_hits_2 = narrowed_poss_hits_2.sort_values(by='align', ascending=False)
+
+                        while not narrowed_poss_hits_2.empty and new_align < 5000:
+                            new_align = abs(hit['qstart'] - narrowed_poss_hits_2['qend'].iloc[0])
+                            extra_hit = pandas.DataFrame(narrowed_poss_hits_2.iloc[0]).transpose()
+
+                            hit_new = pandas.concat([hit_new, extra_hit.iloc[[0]]], sort=False, ignore_index=False)
+                            hit_new = hit_new.reset_index(drop=True)
+                            if new_align < 5000:
+                                narrowed_poss_hits_2 = compo_csv[
+                                    (compo_csv['sstart'] >= (narrowed_poss_hits['send'].iloc[0] - 50)) & \
+                                    (compo_csv['sstart'] <= (narrowed_poss_hits['send'].iloc[0] + 50))]
+                                narrowed_poss_hits_2 = narrowed_poss_hits_2.sort_values(by='align', ascending=False)
+
+                        if new_align >= 5000:
+                            altered = "merge"
                 else:
                     new_align = 0
             elif hit_subject_ori == "reverse":
@@ -1313,6 +1451,29 @@ def subject_checker(hit, ori, compo_csv, mge_bounds, mge_ori):
                         hit_new = hit_new.reset_index(drop=True)
                         altered = "merge"
                     else:
+                        hit_new = pandas.DataFrame(hit_new).transpose()
+                        current_hit = pandas.DataFrame(narrowed_poss_hits.iloc[0]).transpose()
+                        hit_new = pandas.concat([hit_new, current_hit], sort=False, ignore_index=False)
+                        hit_new = hit_new.reset_index(drop=True)
+                        narrowed_poss_hits_2 = compo_csv[
+                            (compo_csv['sstart'] >= (narrowed_poss_hits['send'].iloc[0] - 50)) & \
+                            (compo_csv['sstart'] <= (narrowed_poss_hits['send'].iloc[0] + 50))]
+                        narrowed_poss_hits_2 = narrowed_poss_hits_2.sort_values(by='align', ascending=False)
+
+                        while not narrowed_poss_hits_2.empty and new_align < 5000:
+                            new_align = abs(hit['qstart'] - narrowed_poss_hits_2['qend'].iloc[0])
+                            extra_hit = pandas.DataFrame(narrowed_poss_hits_2.iloc[0]).transpose()
+
+                            hit_new = pandas.concat([hit_new, extra_hit.iloc[[0]]], sort=False, ignore_index=False)
+                            hit_new = hit_new.reset_index(drop=True)
+                            if new_align < 5000:
+                                narrowed_poss_hits_2 = compo_csv[
+                                    (compo_csv['sstart'] >= (narrowed_poss_hits['send'].iloc[0] - 50)) & \
+                                    (compo_csv['sstart'] <= (narrowed_poss_hits['send'].iloc[0] + 50))]
+                                narrowed_poss_hits_2 = narrowed_poss_hits_2.sort_values(by='align', ascending=False)
+
+                        if new_align >= 5000:
+                            altered = "merge"
                         altered = "no"
                 else:
                     new_align = 0
@@ -1320,8 +1481,11 @@ def subject_checker(hit, ori, compo_csv, mge_bounds, mge_ori):
             if hit_subject_ori == "forward":
                 narrowed_poss_hits = compo_csv[(compo_csv['send'] >= (hit['sstart'] - 50)) & \
                                                (compo_csv['send'] <= (hit['sstart'] + 50))]
+                narrowed_poss_hits = narrowed_poss_hits.sort_values(by= 'align', ascending=False)
+
                 if not narrowed_poss_hits.empty:
                     new_align = abs(hit['qend'] - narrowed_poss_hits['qstart'].iloc[0])
+
                     if new_align >= 5000:
                         hit_new = pandas.DataFrame(hit_new).transpose()
                         current_hit = pandas.DataFrame(narrowed_poss_hits.iloc[0]).transpose()
@@ -1329,12 +1493,34 @@ def subject_checker(hit, ori, compo_csv, mge_bounds, mge_ori):
                         hit_new = hit_new.reset_index(drop=True)
                         altered = "merge"
                     else:
-                        altered = "no"
+                        hit_new = pandas.DataFrame(hit_new).transpose()
+                        current_hit = pandas.DataFrame(narrowed_poss_hits.iloc[0]).transpose()
+                        hit_new = pandas.concat([hit_new, current_hit], sort=False, ignore_index=False)
+                        hit_new = hit_new.reset_index(drop=True)
+                        narrowed_poss_hits_2 = compo_csv[(compo_csv['send'] >= (narrowed_poss_hits['sstart'].iloc[0] - 50)) & \
+                                                       (compo_csv['send'] <= (narrowed_poss_hits['sstart'].iloc[0] + 50))]
+                        narrowed_poss_hits_2 = narrowed_poss_hits_2.sort_values(by='align', ascending=False)
+
+                        while not narrowed_poss_hits_2.empty and new_align < 5000:
+                            new_align = abs(hit['qend'] - narrowed_poss_hits_2['qstart'].iloc[0])
+                            extra_hit = pandas.DataFrame(narrowed_poss_hits_2.iloc[0]).transpose()
+
+                            hit_new = pandas.concat([hit_new, extra_hit.iloc[[0]]], sort=False, ignore_index=False)
+                            hit_new = hit_new.reset_index(drop=True)
+                            if new_align < 5000:
+                                narrowed_poss_hits_2 = compo_csv[(compo_csv['send'] >= (narrowed_poss_hits['sstart'].iloc[0] - 50)) & \
+                                                                 (compo_csv['send'] <= (narrowed_poss_hits['sstart'].iloc[0] + 50))]
+                                narrowed_poss_hits_2 = narrowed_poss_hits_2.sort_values(by='align', ascending=False)
+
+                        if new_align >= 5000:
+                            altered = "merge"
+
+
                 else:
                     new_align = 0
             elif hit_subject_ori == "reverse":
-                narrowed_poss_hits = compo_csv[(compo_csv['send'] >= (hit['sstart'] - 50) )& \
-                                               (compo_csv['send'] <= (hit['sstart'] + 50))]
+                narrowed_poss_hits = compo_csv[(compo_csv['sstart'] >= (hit['send'] - 50) )& \
+                                               (compo_csv['sstart'] <= (hit['send'] + 50))]
 
                 if not narrowed_poss_hits.empty:
                     new_align = abs(hit['qend'] - narrowed_poss_hits['qstart'].iloc[0])
@@ -1346,8 +1532,28 @@ def subject_checker(hit, ori, compo_csv, mge_bounds, mge_ori):
                         hit_new = pandas.concat([hit_new, current_hit], sort=False, ignore_index=False)
                         hit_new = hit_new.reset_index(drop=True)
                         altered = "merge"
-                    else:
-                        altered = "no"
+                        hit_new = pandas.DataFrame(hit_new).transpose()
+                        current_hit = pandas.DataFrame(narrowed_poss_hits.iloc[0]).transpose()
+                        hit_new = pandas.concat([hit_new, current_hit], sort=False, ignore_index=False)
+                        hit_new = hit_new.reset_index(drop=True)
+                        narrowed_poss_hits_2 = compo_csv[(compo_csv['sstart'] >= (narrowed_poss_hits['send'].iloc[0] - 50)) & \
+                                                         (compo_csv['sstart'] <= (narrowed_poss_hits['send'].iloc[0] + 50))]
+                        narrowed_poss_hits_2 = narrowed_poss_hits_2.sort_values(by='align', ascending=False)
+
+                        while not narrowed_poss_hits_2.empty and new_align < 5000:
+                            new_align = abs(hit['qend'] - narrowed_poss_hits_2['qstart'].iloc[0])
+                            extra_hit = pandas.DataFrame(narrowed_poss_hits_2.iloc[0]).transpose()
+
+                            hit_new = pandas.concat([hit_new, extra_hit.iloc[[0]]], sort=False, ignore_index=False)
+                            hit_new = hit_new.reset_index(drop=True)
+                            if new_align < 5000:
+                                narrowed_poss_hits_2 = compo_csv[
+                                    (compo_csv['sstart'] >= (narrowed_poss_hits['send'].iloc[0] - 50)) & \
+                                    (compo_csv['sstart'] <= (narrowed_poss_hits['send'].iloc[0] + 50))]
+                                narrowed_poss_hits_2 = narrowed_poss_hits_2.sort_values(by='align', ascending=False)
+
+                        if new_align >= 5000:
+                            altered = "merge"
                 else:
                     new_align = 0
 
@@ -1924,7 +2130,48 @@ def before_and_after_check(hit_to_check, mge_locs, compo_table, hit_loc, other_h
 
     return added_hits
 
+def isolate_name_producer(names_series):
+    ## Function to turn a series of isolate gff/fasta locations into a list of isolates:
+    ## Input: names_series: A series object of fasta locations to work through
 
+    ids = []
+
+    for k in range(len(names_series.index)):
+        current_id = names_series.iloc[k]
+        current_base = os.path.basename(current_id)
+        current_isolate = re.sub("\..*[a-z,A-Z].*$","", current_base)
+        ids.append(current_isolate)
+
+    return  ids
+
+def all_presence_checker(id_list, series_ids):
+    ## Function to check whether the total list of ids is within the blast csv
+    ## Input: id_list: List of ids to check for presence all must be within the series ids
+    ##        series_ids: the series of ids to check through
+    skip = False
+    num_in = 0
+    for k in range(len(id_list)):
+        if any(series_ids.isin([id_list[k]])):
+            num_in += 1
+
+    if num_in == len(id_list):
+        skip = True
+
+    return skip
+
+def nice_proper_hits_ids(ids_list):
+    ## Function to turn all the double underscore ids into standard isolate names for the act compos:
+    ## Input: ids_list: list format of the first column of the proper hits
+    nicer = []
+    for id in ids_list:
+        if id.count('_') == 2:
+            last_occy = id.rfind('_')
+            isolate_id = id[0:last_occy]
+            nicer.append(isolate_id)
+        else:
+            nicer.append(id)
+
+    return nicer
 
 
 ## Ok so first lets load up the merged BLAST CSV and narrow it down to just those
@@ -1935,11 +2182,17 @@ if __name__ == '__main__':
     tic = time.perf_counter()
     files_for_input = get_options()
 
+    python_dir = os.path.dirname(os.path.abspath(__file__))
+    perl_dir = re.sub("python$","perl", python_dir)
+
     pandas.set_option('display.max_columns', 500)
 
     hit_csv = pandas.read_csv(files_for_input.hit_csv)
     contig_file_abs_path = files_for_input.contig_loc
     absolute_act_path = files_for_input.act_loc
+    fasta_csv = files_for_input.fasta_csv
+    fasta_pandas = pandas.read_csv(fasta_csv)
+    fasta_pandas.columns = ['isolate', 'reference']
 
 
     merged_csv , merged_locs = merged_contig_checker(hit_csv, contig_file_abs_path, absolute_act_path)
@@ -1947,6 +2200,8 @@ if __name__ == '__main__':
 
     proper_hits = merged_csv[is_2k]
     proper_hits = proper_hits.reset_index(drop=True)
+
+    nice_ids = nice_proper_hits_ids(proper_hits.iloc[:,0].tolist())
 
     ## Now lets load up the csv with the isolate names and their reference location
 
@@ -1957,7 +2212,7 @@ if __name__ == '__main__':
     lib_col_names = ["id", "mge_start", "mge_end", "insert_start", "insert_end", "mge_length",
                      "insert_length", "insert_genes", "mge_genes", "flank_genes",
                      "mean_flank_gene_length",'flanks_length', 'before_flank_gene','after_flank_gene','before_flank_avg',
-                     'after_flank_avg','before_gene_name','after_gene_name', 'ref_name']
+                     'after_flank_avg','before_gene_name','after_gene_name', 'ref_name','cluster_name']
 
     library_df = pandas.DataFrame(columns=lib_col_names)
     tic_1 = time.perf_counter()
@@ -1965,6 +2220,9 @@ if __name__ == '__main__':
     print("This many hits to get through: %s" % len(proper_hits.index))
     print("")
 
+
+    refs_to_alter = []
+    clusters_to_skip = []
     ## Now loop through the blast results ##
 
     for k in range(len(proper_hits.index)):
@@ -2000,7 +2258,73 @@ if __name__ == '__main__':
         #    continue
 
 
-        current_gff_loc, ref_loc = gff_finder(isolate_ref_gff, isolate_id)
+        current_gff_loc, ref_loc, cluster_name = gff_finder(isolate_ref_gff, isolate_id, True)
+        ref_name = os.path.basename(ref_loc.iloc[0])
+        ref_name = re.sub("\..*[a-zA-Z]*$", "", ref_name)
+        cluster_name = cluster_name.iloc[0]
+
+        if cluster_name in clusters_to_skip:
+            continue
+
+
+        if ref_name not in refs_to_alter:
+
+            if ref_name in nice_ids:
+
+                ## Need to re-run act for this cluster with a different id. First check if all the cluster
+                ## are in the isolate_ids. If so, we have to skip the whole cluster
+                current_cluster_vals = isolate_ref_gff[isolate_ref_gff['reference'] == ref_loc.iloc[0]]
+
+                current_ids = isolate_name_producer(current_cluster_vals['isolate'])
+                skip = all_presence_checker(current_ids, proper_hits.iloc[:,0])
+            if skip:
+                clusters_to_skip.append(cluster_name)
+                continue
+            else:
+                ## Find n50 of those not in the blast file  re-run act compos
+                all_ids = nice_ids
+                no_element_ids = numpy.setdiff1d(current_ids, all_ids).tolist()
+
+                element_ids = list(set(current_ids) & set(all_ids))
+                ## no element ids contains the isolates without the element in this cluster
+                ## Now we need to find their fastas and then run through the act comparison
+                fastas_to_run = []
+                for fasta_fn in no_element_ids:
+                    current_loc, ref_loc, ignore_me = gff_finder(fasta_pandas, fasta_fn, False)
+                    fastas_to_run.append(current_loc.iloc[0])
+
+                fastas_to_act = []
+                for fasta_fn in element_ids:
+                    current_loc, ref_loc, ignore_me = gff_finder(fasta_pandas, fasta_fn, False)
+                    fastas_to_act.append(current_loc.iloc[0])
+
+                ## Now we've got the fasta list lets get the best n50 loc
+
+                new_ref = n50_calc(fastas_to_run, ref_name)
+                new_ref_name = os.path.basename(re.sub("\..*[a-z,A-Z].*$","",new_ref))
+                ## Now create the new fastas df to input to the act compo script
+                new_act_df = pandas.DataFrame()
+                new_act_df['isolate'] = pandas.Series(fastas_to_act)
+                new_act_df['reference'] = pandas.Series(numpy.repeat(new_ref, len(fastas_to_act)).tolist(), \
+                                                        index=new_act_df.index)
+
+                df_loc = "./" + cluster_name + "_altered_fasta_for_ACT.csv"
+                new_act_df.to_csv(path_or_buf= df_loc, index=False)
+                print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+                print("Rerunning act comparisons for %s isolates in cluster %s with new ref %s" % (len(element_ids), cluster_name, new_ref_name))
+                print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+                ## Now lets run these new acts to replace the current ones with the reference
+                act_command = "python " + python_dir + "/running_act_comparisons.py" + \
+                              " --csv " + df_loc + " --perl_dir " + perl_dir + "/"  + " --act_dir ./act_compos/"
+
+
+                subprocess.call(act_command, shell=True)#, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+                refs_to_alter.append(ref_name)
+
+
+
+
         compo_file = absolute_act_path + isolate_id + ".crunch.gz"
         compo_names = ['query', 'subject', 'pid', 'align', 'gap', 'mismatch', 'qstart',
                        'qend', 'sstart', 'send', 'eval', 'bitscore']
@@ -2016,10 +2340,13 @@ if __name__ == '__main__':
         contig_suffix = "#contig_bounds.csv"
         contig_isolate = re.sub("#", "_", isolate_id)
         contig_file_path = contig_file_abs_path + contig_isolate + contig_suffix
-
+        ref_contig = re.sub("#","_", ref_name)
+        ref_contig_file = contig_file_abs_path + ref_contig + contig_suffix
         contig_tab = pandas.read_csv(contig_file_path)
+        ref_contig_tab = pandas.read_csv(ref_contig_file)
 
         contig_mge = contig_checker(contig_tab, hitters)
+
 
         mge_bounds = bounds_of_contig(contig_tab, contig_mge)
 
@@ -2042,20 +2369,29 @@ if __name__ == '__main__':
             hit_before_length = 0
         else:
             hit_before_loc = hit_before.iloc[[6, 7]]
+            hit_before_sub_loc = hit_before.iloc[[8,9]]
             hit_before_length = abs(hit_before_loc[1] - hit_before_loc[0])
             contig_before = contig_checker(contig_tab, hit_before_loc)
+            hit_before_sub_loc = hit_before_sub_loc.sort_values(ascending=True)
+            contig_bef_ref = contig_checker(ref_contig_tab, hit_before_sub_loc)
+
 
         if hit_after[0] == 0:
             contig_after = None
             hit_after_length = 0
         else:
             hit_after_loc = hit_after.iloc[[6, 7]]
+            hit_after_sub_loc = hit_after.iloc[[8,9]]
             hit_after_length = abs(hit_after_loc[1] - hit_after_loc[0])
             contig_after = contig_checker(contig_tab, hit_after_loc)
+            hit_after_sub_loc = hit_after_sub_loc.sort_values(ascending=True)
+            contig_aft_ref = contig_checker(ref_contig_tab, hit_after_sub_loc)
+
 
         all_one_tig = contig_before == contig_mge and contig_mge == contig_after and which_hit == "both"
 
-        if all_one_tig:
+        if all_one_tig and contig_bef_ref == contig_aft_ref and overlap == "No":
+
             hit_before_check = before_and_after_check(hit_before, hitters, compo_table, "before", hit_after, isolate_id)
             hit_after_check = before_and_after_check(hit_after, hitters, compo_table, "after", hit_before, isolate_id)
 
@@ -2180,13 +2516,12 @@ if __name__ == '__main__':
                 library_pros['after_flank_gene'] = pandas.Series(num_genes_after, index=library_pros.index)
                 library_pros['before_flank_avg'] = pandas.Series(numpy.mean(before_gene_lengths), index=library_pros.index)
                 library_pros['after_flank_avg'] = pandas.Series(numpy.mean(after_loc_lengths), index=library_pros.index)
-                ref_name = os.path.basename(ref_loc.iloc[0])
-                ref_name = re.sub("\.[a-zA-Z]*$", "", ref_name)
+
                 library_pros['before_gene_name'] = pandas.Series(before_gene, index=library_pros.index)
                 library_pros['after_gene_name'] = pandas.Series(after_gene, index=library_pros.index)
 
                 library_pros['ref_name'] = pandas.Series(ref_name, index=library_pros.index)
-
+                library_pros['cluster_name'] = pandas.Series(cluster_name, index=library_pros.index)
                 ## check if to add in to library csv
 
                 if genes_mge_num <= gene_insert_num:
@@ -2257,11 +2592,11 @@ if __name__ == '__main__':
                 library_pros['after_flank_gene'] = pandas.Series(num_genes_after, index=library_pros.index)
                 library_pros['before_flank_avg'] = pandas.Series(numpy.mean(before_gene_lengths), index=library_pros.index)
                 library_pros['after_flank_avg'] = pandas.Series(numpy.mean(after_loc_lengths), index=library_pros.index)
-                ref_name = os.path.basename(ref_loc.iloc[0])
-                ref_name = re.sub("\.[a-zA-Z]*$", "", ref_name)
+
                 library_pros['before_gene_name'] = pandas.Series(before_gene, index=library_pros.index)
                 library_pros['after_gene_name'] = pandas.Series(after_gene, index=library_pros.index)
                 library_pros['ref_name'] = pandas.Series(ref_name, index=library_pros.index)
+                library_pros['cluster_name'] = pandas.Series(cluster_name, index=library_pros.index)
 
                 ## check if to add in to library csv
                 if genes_mge_num <= gene_insert_num:

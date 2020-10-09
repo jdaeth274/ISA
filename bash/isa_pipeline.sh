@@ -24,11 +24,15 @@ pythondir="${parentdir}/python/"
 perldir="${parentdir}/perl/"
 rdir="${parentdir}/R/"
 
-read -p "Are you sure? " -n 1 -r
-echo    # (optional) move to a new line
-if [[ $REPLY =~ ^[Nn]$ ]]
+#read -p "Are you sure? " -n 1 -r
+#echo    # (optional) move to a new line
+#if [[ $REPLY =~ ^[Nn]$ ]]
+if [ ! -f $ref_isolate_gff ] || [ ! -f $ref_isolate_fasta ] || [ ! -f $fasta_list ] || [ ! -f $2 ]
 then
+    echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+    echo "Input files don't exist"
     echo "exiting script now"
+    echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
   else
     Lines=$(cat $fasta_list | wc -l)
 
@@ -94,7 +98,7 @@ then
       grep -n ">" $line > "grep_output_temp"
 
       python "${pythondir}contig_bound_check.py" \
-      ./grep_output_temp $line
+      --grep_file ./grep_output_temp --fasta_file $line
 
        counter=$(expr $counter + 1)
 
@@ -127,6 +131,7 @@ then
   ## Now we run the library creation step
   python "${pythondir}library_creator.py" \
   --hit_csv "$4/$5_merged_blast_file" --reference_csv $ref_isolate_gff --align_cutoff $3 \
-  --act_loc ./act_compos/referoo.fasta. --contig_loc ./contig_bounds/ --output "$4/$5_library.csv"
+  --act_loc ./act_compos/referoo.fasta. --contig_loc ./contig_bounds/ --output "$4/$5_library.csv" \
+  --fasta_csv $ref_isolate_fasta
 
 fi
