@@ -28,10 +28,10 @@ def get_options():
     parser = argparse.ArgumentParser(description=purpose,
                                      prog='pen_checker_cdc.py')
 
-    parser.add_argument('--hit_csv', required=True, help='Out merged BLAST csv (required)', type=str)
+    parser.add_argument('--lib_csv', required=True, help='Out merged BLAST csv (required)', type=str)
     parser.add_argument('--reference_csv', required=True, help='Isolates gff and references gff csv (required)', type=str)
+    parser.add_argument('--blast_csv', required=True, help='Merged blast csv (required)', type=str)
     parser.add_argument('--fasta_csv', required=True, help= "isolates fasta and reference fasta csv", type = str)
-    parser.add_argument('--align_cutoff', required=True, help='Alignment length cut_off for hit  (required)', type=int)
     parser.add_argument('--act_loc', required=True, help='Directory where act comparisons stored (required)', type=str)
     parser.add_argument('--contig_loc', required=True, help='Directory where contig_numbers stored  (required)', type=str)
     parser.add_argument('--output', required=True, help='Out Library csv name (required)', type=str)
@@ -937,9 +937,12 @@ def gff_to_dna(gff_csv, contig_csv, isolate_id, input_k):
                 contig_rows = narrowed_gff['seqid'].str.contains(contig_finder)
                 contig_rows_indy = contig_rows.where(contig_rows == True)
                 contig_rows_indy = contig_rows_indy.index[contig_rows_indy == True].tolist()
+                if len(contig_rows_indy) == 0:
+                    continue
 
                 narrowed_gff.iloc[contig_rows_indy,3] = narrowed_gff.iloc[contig_rows_indy, 3] + num_to_add - 1
                 narrowed_gff.iloc[contig_rows_indy, 4] =  narrowed_gff.iloc[contig_rows_indy, 4] + num_to_add - 1
+
                 last_indy = max(contig_rows_indy)
 
         gff_index_to_drop = range((last_indy + 1), (len(narrowed_gff.index) - 1))
@@ -966,6 +969,8 @@ def gff_to_dna(gff_csv, contig_csv, isolate_id, input_k):
                 contig_rows = narrowed_gff['seqid'].str.contains(contig_finder)
                 contig_rows_indy = contig_rows.where(contig_rows == True)
                 contig_rows_indy = contig_rows_indy.index[contig_rows_indy == True].tolist()
+                if len(contig_rows_indy) == 0:
+                    continue
 
 
                 narrowed_gff.iloc[contig_rows_indy,3] = narrowed_gff.iloc[contig_rows_indy, 3] + num_to_add - 1
@@ -983,15 +988,78 @@ def gff_to_dna(gff_csv, contig_csv, isolate_id, input_k):
 
     return out_gff_csv
 
-def library_integrator(library_csv, prospective_csv, isolate_id):
-    ## Function to decide whether to merge a hits data into the library csv.
+def gene_name_tryer(prospective_csv, library_csv, out_hit, missing_isolate):
+    ## Function to take in hits they have missed the first few cutoffs in the hit_integrator function
+    ## And try to merge them instead using the flank gene names and then the mge charecteristics
+    ## Input: prospective_csv: The single line isolate from the hit_integrator function
+    ##        library_csv: The library csv
+    ##        out_hit: The total hit df
+    ##        missing_isolate: The df for the isolates with not library hit
+
+    missing_copy = missing_isolate.copy()
+    out_hit_copy = out_hit.copy()
+
+    bef_and_aft = library_csv[(library_csv['before_gene_name'] == prospective_csv['before_gene_name'][0]) & \
+                              (library_csv['after_gene_name'] == prospective_csv['after_gene_name'][0])]
+
+    if not bef_and_aft.empty:
+
+        current_hit_length = bef_and_aft[(bef_and_aft['mge_length'] >= (prospective_csv['mge_length'][0] - 100)) & \
+                                         (bef_and_aft['mge_length'] <= (prospective_csv['mge_length'][0] + 100))]
+        current_hit_gene = bef_and_aft[(bef_and_aft['mge_genes'] >= (prospective_csv['mge_genes'][0] - 1)) & \
+                                       (bef_and_aft['mge_genes'] <= (prospective_csv['mge_genes'][0] + 1))]
+
+        tot_hit = pandas.concat([current_hit_length, current_hit_gene], sort=False, ignore_index=True)
+        tot_hit = tot_hit.drop_duplicates()
+
+
+        if len(tot_hit.index) == 1:
+            prospective_csv['insert_name'] = pandas.Series(tot_hit['insert_name'], index=prospective_csv.index)
+            out_hit_copy = out_hit_copy.append(prospective_csv, sort = False)
+        elif len(tot_hit.index) > 1:
+            tot_hit = tot_hit.reset_index(drop=True)
+            length_target = prospective_csv['mge_length'][0]
+            mge_dist = abs(tot_hit['mge_length'] - length_target)
+            min_val = mge_dist.idxmin()
+            single_hit = tot_hit.iloc[min_val].to_frame().transpose()
+            prospective_csv['insert_name'] = pandas.Series(single_hit['insert_name'], index=prospective_csv.index)
+            out_hit_copy = out_hit_copy.append(prospective_csv, sort = False)
+        else:
+            missing_current = pandas.DataFrame()
+            missing_current['id'] = pandas.Series(prospective_csv['id'])
+            missing_current['mge_start'] = pandas.Series(prospective_csv['mge_start'], index=missing_current.index)
+            missing_current['mge_end'] = pandas.Series(prospective_csv['mge_end'], index=missing_current.index)
+            missing_current['ref_name'] = pandas.Series(prospective_csv['ref_name'], index=missing_current.index)
+            missing_current['cluster_name'] = pandas.Series(prospective_csv['cluster_name'], index=missing_current.index)
+            missing_current['mge_length'] = pandas.Series(prospective_csv['mge_length'], index=missing_current.index)
+            missing_current['reason'] = pandas.Series(["No gene name matches"], index=missing_current.index)
+            missing_copy = missing_copy.append(missing_current, sort = False)
+    else:
+        missing_current = pandas.DataFrame()
+        missing_current['id'] = pandas.Series(prospective_csv['id'])
+        missing_current['mge_start'] = pandas.Series(prospective_csv['mge_start'], index=missing_current.index)
+        missing_current['mge_end'] = pandas.Series(prospective_csv['mge_end'], index=missing_current.index)
+        missing_current['ref_name'] = pandas.Series(prospective_csv['ref_name'], index=missing_current.index)
+        missing_current['cluster_name'] = pandas.Series(prospective_csv['cluster_name'], index=missing_current.index)
+        missing_current['mge_length'] = pandas.Series(prospective_csv['mge_length'], index=missing_current.index)
+        missing_current['reason'] = pandas.Series(["No gene name matches"], index=missing_current.index)
+        missing_copy = missing_copy.append(missing_current, sort = False)
+
+    return out_hit_copy, missing_copy
+
+def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isolates):
+    ## Function to allocate hit location
     ## Input: library_csv: The current library csv to search for matches against
-    ##        prospective_csv: The prospective set of results to be potentially merged
+    ##        prospective_csv: The prospective set of results to be sorted
+    ##        isolate_id: The current isolate id (mainly for debugging)
+    ##        hit_csv: The total hit csv the isolate to be integrated into
     ## This will first work on the basis of hits sharing almost identical blast matches
     ## Then we'll look into flank region composition and finally the total insert composition
     ## to see if this is a novel hit or not.
 
     lib_new = library_csv.copy()
+    out_hit = hit_csv.copy()
+    missing_df = missing_isolates.copy()
     ids_to_drop = []
 
     ## lets narrow down first by number of genes in the element if this is not exact I think its
@@ -1096,37 +1164,38 @@ def library_integrator(library_csv, prospective_csv, isolate_id):
 
 
                     if gene_hits.empty and length_hits.empty:
-                        novel_hit = True
+                        out_hit, missing_df = gene_name_tryer(prospective_csv, library_csv, out_hit, missing_df)
                     else:
                         remain_48 = pandas.concat([gene_hits, length_hits], ignore_index=True, sort = False)
                         remain_48 = remain_48.drop_duplicates()
-                        flanks_length = remain_48[remain_48['flanks_length'] > prospective_csv['flanks_length'][0]]
 
 
-                        if flanks_length.empty:
-                            ids_to_drop = remain_48['id'].tolist()
-                            novel_hit = True
+                        if len(remain_48.index) == 1:
+                            prospective_csv['insert_name'] = pandas.Series(remain_48['insert_name'], index=prospective_csv.index)
+                            out_hit = out_hit.append(prospective_csv, sort = False)
+                        elif len(remain_48.index) > 1:
+                            ## If there are two hits with similar tendencies base on insert length
+                            remain_48 = remain_48.reset_index(drop=True)
+                            target_insert = prospective_csv['insert_length'][0]
+                            lengers = abs(remain_48['insert_length'] - target_insert)
+                            closest_index = lengers.idxmin()
+                            prospective_csv['insert_name'] = pandas.Series(remain_48['insert_name'].iloc[closest_index], index = remain_48.index)
+                            out_hit = out_hit.append(prospective_csv, sort = False)
                         else:
-                            novel_hit = False
-
+                            print("Odd behaviour here")
 
                 else:
-                    novel_hit = True
+                    out_hit, missing_df = gene_name_tryer(prospective_csv, library_csv, out_hit, missing_df)
             else:
-                novel_hit = True
+                out_hit, missing_df = gene_name_tryer(prospective_csv, library_csv, out_hit, missing_df)
     else:
-        novel_hit = True
+        ## Try to see if there is a hit with the same start and end gene names and mge_length +- 50 bp or gene +- 1
+        out_hit, missing_df = gene_name_tryer(prospective_csv, library_csv, out_hit, missing_df)
 
 
-    if novel_hit:
-        lib_new = lib_new.append(prospective_csv, ignore_index = True, sort = False)
-    if len(ids_to_drop) > 0:
-        indies_to_drop = lib_new[lib_new['id'].isin(ids_to_drop)].index
-        lib_new = lib_new.drop(indies_to_drop)
-        lib_new = lib_new.reset_index(drop=True)
 
 
-    return(lib_new)
+    return(out_hit, missing_df)
 
 def gene_name_finder(flanks_csv, back_it_up):
     ## Function to find the first row in a flanks region that has a gene name and
@@ -1591,7 +1660,6 @@ def multi_hit_merger(hit_new_bef):
 def hit_mover(hit_before, hit_after, compo_csv, isolate_id, mge_bounds, mge_ori):
     ## Function to include hits after the current if its less than 2k and the new hit
     ## is very close. Finds closest hits, if they are within 50bp of the next nearest.
-
 
     hit_before_length = abs(hit_before.iloc[7] - hit_before.iloc[6])
     hit_after_length = abs(hit_after.iloc[7] - hit_after.iloc[6])
@@ -2182,8 +2250,6 @@ def nice_proper_hits_ids(ids_list):
     return nicer
 
 
-## Ok so first lets load up the merged BLAST CSV and narrow it down to just those
-## over the threshold length.
 
 if __name__ == '__main__':
     tab = str.maketrans("ACTG", "TGAC")
@@ -2191,54 +2257,67 @@ if __name__ == '__main__':
     files_for_input = get_options()
 
     python_dir = os.path.dirname(os.path.abspath(__file__))
-    perl_dir = re.sub("python$","perl", python_dir)
+    perl_dir = re.sub("python$", "perl", python_dir)
 
     pandas.set_option('display.max_columns', 500)
 
-    hit_csv = pandas.read_csv(files_for_input.hit_csv)
     contig_file_abs_path = files_for_input.contig_loc
     absolute_act_path = files_for_input.act_loc
     fasta_csv = files_for_input.fasta_csv
     fasta_pandas = pandas.read_csv(fasta_csv)
     fasta_pandas.columns = ['isolate', 'reference']
 
+    proper_hits = pandas.read_csv(files_for_input.blast_csv)
 
-    merged_csv , merged_locs = merged_contig_checker(hit_csv, contig_file_abs_path, absolute_act_path)
-    is_2k = merged_csv['align'] >= int(files_for_input.align_cutoff)
 
-    proper_hits = merged_csv[is_2k]
-    proper_hits = proper_hits.reset_index(drop=True)
-    proper_hits.to_csv(path_or_buf= (files_for_input.output + "_proper_hits.csv"), index=False)
-
-    nice_ids = nice_proper_hits_ids(proper_hits.iloc[:,0].tolist())
-
+    nice_ids = nice_proper_hits_ids(proper_hits.iloc[:, 0].tolist())
+    proper_hits['nicest_ids'] = pandas.Series(nice_ids, index=proper_hits.index)
     ## Now lets load up the csv with the isolate names and their reference location
 
     isolate_ref_gff = pandas.read_csv(files_for_input.reference_csv)
 
-    ## Set up the library df
+    library_dat = pandas.read_csv(files_for_input.lib_csv)
 
-    lib_col_names = ["id", "mge_start", "mge_end", "insert_start", "insert_end", "mge_length",
+    ## Now lets remove the library ids from the proper hits index
+
+    narrowed_prop = proper_hits[proper_hits['nicest_ids'].isin(library_dat['id']) == False]
+
+    ## Ok so narrowed prop now contains all the hits we have to loop through and assign as hits in the
+    ## library or not
+
+
+    library_dat['insert_name'] = pandas.Series(range(1,(len(library_dat.index) + 1)))
+
+    refs_to_alter = []
+    clusters_to_skip = []
+
+    ## Set up the csv for isolates that were missed due to incomplete hits
+    missing_colnames = ["id","mge_start","mge_end","mge_length","ref_name","cluster_name","reason"]
+    missing_isolate = pandas.DataFrame(columns=missing_colnames)
+
+    ## Set up the csv for the isolates with matching hits
+
+    hit_col_names = ["id", "mge_start", "mge_end", "insert_start", "insert_end", "mge_length",
                      "insert_length", "insert_genes", "mge_genes", "flank_genes",
-                     "mean_flank_gene_length",'flanks_length', 'before_flank_gene','after_flank_gene','before_flank_avg',
-                     'after_flank_avg','before_gene_name','after_gene_name', 'ref_name','cluster_name']
+                     "mean_flank_gene_length", 'flanks_length', 'before_flank_gene', 'after_flank_gene',
+                     'before_flank_avg',
+                     'after_flank_avg', 'before_gene_name', 'after_gene_name', 'ref_name', 'cluster_name',
+                     'insert_name']
 
-    library_df = pandas.DataFrame(columns=lib_col_names)
+    hit_df = pandas.DataFrame(columns=hit_col_names)
     tic_1 = time.perf_counter()
     print("")
     print("This many hits to get through: %s" % len(proper_hits.index))
     print("")
 
-
-    refs_to_alter = []
-    clusters_to_skip = []
     ## Now loop through the blast results ##
 
-    for k in range(len(proper_hits.index)):
+    for k in range(len(narrowed_prop.index)):
         ## First we'll get the hit locs in place for each of the hits
+        start_len = len(missing_isolate.index) + len(hit_df.index)
         print("On isolate: ", k, end='\r', flush=True)
 
-        current_row = proper_hits.iloc[[k]]
+        current_row = narrowed_prop.iloc[[k]]
         hitters = (list(current_row.iloc[0, [5, 6]]))
         if hitters[0] < hitters[1]:
             mge_ori = "forward"
@@ -2246,26 +2325,25 @@ if __name__ == '__main__':
             mge_ori = "reverse"
 
         ## Now we'll go into the tab files and get the compo files
-        isolate_id_z = proper_hits.iloc[k, 0]
+        isolate_id_z = narrowed_prop.iloc[k, 0]
         if isolate_id_z.count('_') == 2:
             last_occy = isolate_id_z.rfind('_')
             isolate_id = isolate_id_z[0:last_occy]
         else:
             isolate_id = isolate_id_z
 
-
-        #cluster_2 = ["10900_6#9", "15608_3#45", "15608_3#49", "15608_3#55", "15608_3#71", "15608_3#75", "15608_4#18", \
+        current_mge_length = abs(hitters[1] - hitters[0])
+        # cluster_2 = ["10900_6#9", "15608_3#45", "15608_3#49", "15608_3#55", "15608_3#71", "15608_3#75", "15608_4#18", \
         #            "15608_4#30", "15608_4#2", "15608_4#24"]
-        #cluster_2 = ["6678_3#5","6569_4#15"]
+        # cluster_2 = ["6678_3#5","6569_4#15"]
 
-        #cluster_2 = ["12291_5#65","15682_1#29","15682_1#38","15682_1#51","15682_1#65","15682_2#52","20925_3#47","21127_1#10",\
+        # cluster_2 = ["12291_5#65","15682_1#29","15682_1#38","15682_1#51","15682_1#65","15682_2#52","20925_3#47","21127_1#10",\
         #             "21127_1#104","21127_1#108","21127_1#35","21127_1#44","21127_1#67","21127_1#70","21127_1#83","21127_1#97",\
         #             "22841_4#117","6569_4#16","6569_4#17","6569_4#18"]
-        #cluster_2 = ["15608_5#88","15682_1#66", "19084_7#62", "19084_7#68","20925_3#60","20925_3#68","6187_5#9"]
+        # cluster_2 = ["15608_5#88","15682_1#66", "19084_7#62", "19084_7#68","20925_3#60","20925_3#68","6187_5#9"]
 
-        #if isolate_id not in cluster_2:
+        # if isolate_id not in cluster_2:
         #    continue
-
 
         current_gff_loc, ref_loc, cluster_name = gff_finder(isolate_ref_gff, isolate_id, True)
         ref_name = os.path.basename(ref_loc.iloc[0])
@@ -2273,21 +2351,38 @@ if __name__ == '__main__':
         cluster_name = cluster_name.iloc[0]
 
         if cluster_name in clusters_to_skip:
-            continue
+            missing_current = pandas.DataFrame()
+            missing_current['id'] = pandas.Series(isolate_id)
+            missing_current['mge_start'] = pandas.Series(hitters[0], index=missing_current.index)
+            missing_current['mge_end'] = pandas.Series(hitters[1], index=missing_current.index)
+            missing_current['ref_name'] = pandas.Series(ref_name, index=missing_current.index)
+            missing_current['cluster_name'] = pandas.Series(cluster_name, index=missing_current.index)
+            missing_current['mge_length'] = pandas.Series(current_mge_length, index=missing_current.index)
+            missing_current['reason'] = pandas.Series(["In clusters to skip"], index=missing_current.index)
+            missing_isolate = missing_isolate.append(missing_current, sort = False)
 
+            continue
 
         if ref_name not in refs_to_alter:
 
             if ref_name in nice_ids:
-
                 ## Need to re-run act for this cluster with a different id. First check if all the cluster
                 ## are in the isolate_ids. If so, we have to skip the whole cluster
                 current_cluster_vals = isolate_ref_gff[isolate_ref_gff['reference'] == ref_loc.iloc[0]]
 
                 current_ids = isolate_name_producer(current_cluster_vals['isolate'])
-                skip = all_presence_checker(current_ids, proper_hits.iloc[:,0])
+                skip = all_presence_checker(current_ids, narrowed_prop.iloc[:, 0])
                 if skip:
-                    clusters_to_skip.append(cluster_name)
+                    missing_current = pandas.DataFrame()
+                    missing_current['id'] = pandas.Series(isolate_id)
+                    missing_current['mge_start'] = pandas.Series(hitters[0], index=missing_current.index)
+                    missing_current['mge_end'] = pandas.Series(hitters[1], index=missing_current.index)
+                    missing_current['ref_name'] = pandas.Series(ref_name,  index=missing_current.index)
+                    missing_current['cluster_name'] = pandas.Series(cluster_name,  index=missing_current.index)
+                    missing_current['mge_length'] = pandas.Series(current_mge_length,  index=missing_current.index)
+                    missing_current['reason'] = pandas.Series(["In clusters to skip"],  index=missing_current.index)
+                    missing_isolate = missing_isolate.append(missing_current)
+                    clusters_to_skip.append(cluster_name, sort = False)
                     continue
                 else:
                     ## Find n50 of those not in the blast file  re-run act compos
@@ -2310,29 +2405,25 @@ if __name__ == '__main__':
                     ## Now we've got the fasta list lets get the best n50 loc
 
                     new_ref = n50_calc(fastas_to_run, ref_name)
-                    new_ref_name = os.path.basename(re.sub("\..*[a-z,A-Z].*$","",new_ref))
+                    new_ref_name = os.path.basename(re.sub("\..*[a-z,A-Z].*$", "", new_ref))
                     ## Now create the new fastas df to input to the act compo script
                     new_act_df = pandas.DataFrame()
                     new_act_df['isolate'] = pandas.Series(fastas_to_act)
-                    new_act_df['reference'] = pandas.Series(numpy.repeat(new_ref, len(fastas_to_act)).tolist(), \
-                                                            index=new_act_df.index)
+                    new_act_df['reference'] = pandas.Series(numpy.repeat(new_ref, len(fastas_to_act)).tolist(),index=new_act_df.index)
 
                     df_loc = "./" + cluster_name + "_altered_fasta_for_ACT.csv"
-                    new_act_df.to_csv(path_or_buf= df_loc, index=False)
+                    new_act_df.to_csv(path_or_buf=df_loc, index=False)
                     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-                    print("Rerunning act comparisons for %s isolates in cluster %s with new ref %s" % (len(element_ids), cluster_name, new_ref_name))
+                    print("Rerunning act comparisons for %s isolates in cluster %s with new ref %s" % (
+                    len(element_ids), cluster_name, new_ref_name))
                     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
                     ## Now lets run these new acts to replace the current ones with the reference
                     act_command = "python " + python_dir + "/running_act_comparisons.py" + \
-                                  " --csv " + df_loc + " --perl_dir " + perl_dir + "/"  + " --act_dir ./act_compos/"
+                                  " --csv " + df_loc + " --perl_dir " + perl_dir + "/" + " --act_dir ./act_compos/"
 
-
-                    subprocess.call(act_command, shell=True)#, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    subprocess.call(act_command, shell=True)  # , stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
                     refs_to_alter.append(ref_name)
-
-
-
 
         compo_file = absolute_act_path + isolate_id + ".crunch.gz"
         compo_names = ['query', 'subject', 'pid', 'align', 'gap', 'mismatch', 'qstart',
@@ -2342,20 +2433,18 @@ if __name__ == '__main__':
         ## Now we've got and opened the tab blast file, we should look for hits
         ## before the start of the MGE in the host genome.
 
-
         ## So now we've got the hits before and after the insertion site, we need to check if they're on the same
         ## contig as each other.
 
         contig_suffix = "#contig_bounds.csv"
         contig_isolate = re.sub("#", "_", isolate_id)
         contig_file_path = contig_file_abs_path + contig_isolate + contig_suffix
-        ref_contig = re.sub("#","_", ref_name)
+        ref_contig = re.sub("#", "_", ref_name)
         ref_contig_file = contig_file_abs_path + ref_contig + contig_suffix
         contig_tab = pandas.read_csv(contig_file_path)
         ref_contig_tab = pandas.read_csv(ref_contig_file)
 
         contig_mge = contig_checker(contig_tab, hitters)
-
 
         mge_bounds = bounds_of_contig(contig_tab, contig_mge)
 
@@ -2368,7 +2457,8 @@ if __name__ == '__main__':
 
         if overlap == "No":
 
-            hit_before, hit_after, which_hit = before_and_after_hits(hitters, compo_table, mge_bounds, hits_to_search="both")
+            hit_before, hit_after, which_hit = before_and_after_hits(hitters, compo_table, mge_bounds,
+                                                                     hits_to_search="both")
 
         else:
             which_hit = "both"
@@ -2378,24 +2468,22 @@ if __name__ == '__main__':
             hit_before_length = 0
         else:
             hit_before_loc = hit_before.iloc[[6, 7]]
-            hit_before_sub_loc = hit_before.iloc[[8,9]]
+            hit_before_sub_loc = hit_before.iloc[[8, 9]]
             hit_before_length = abs(hit_before_loc[1] - hit_before_loc[0])
             contig_before = contig_checker(contig_tab, hit_before_loc)
             hit_before_sub_loc = hit_before_sub_loc.sort_values(ascending=True)
             contig_bef_ref = contig_checker(ref_contig_tab, hit_before_sub_loc)
-
 
         if hit_after[0] == 0:
             contig_after = None
             hit_after_length = 0
         else:
             hit_after_loc = hit_after.iloc[[6, 7]]
-            hit_after_sub_loc = hit_after.iloc[[8,9]]
+            hit_after_sub_loc = hit_after.iloc[[8, 9]]
             hit_after_length = abs(hit_after_loc[1] - hit_after_loc[0])
             contig_after = contig_checker(contig_tab, hit_after_loc)
             hit_after_sub_loc = hit_after_sub_loc.sort_values(ascending=True)
             contig_aft_ref = contig_checker(ref_contig_tab, hit_after_sub_loc)
-
 
         all_one_tig = contig_before == contig_mge and contig_mge == contig_after and which_hit == "both"
 
@@ -2409,36 +2497,25 @@ if __name__ == '__main__':
                 hit_before_loc = hit_before.iloc[[6, 7]]
                 hit_before_length = abs(hit_before_loc[1] - hit_before_loc[0])
 
-
             if not hit_after_check.empty:
                 hit_after = multi_hit_merger(hit_after_check)
-                hit_after_loc = hit_after.iloc[[6,7]]
+                hit_after_loc = hit_after.iloc[[6, 7]]
                 hit_after_length = abs(hit_after_loc[1] - hit_after_loc[0])
 
         all_one_tig_5k = hit_before_length >= 5000 and hit_after_length >= 5000 and all_one_tig
 
-
-
         if all_one_tig and not all_one_tig_5k:
-            hit_before, hit_after, all_one_tig_5k = hit_mover(hit_before, hit_after, compo_table, isolate_id, mge_bounds, mge_ori)
+            hit_before, hit_after, all_one_tig_5k = hit_mover(hit_before, hit_after, compo_table, isolate_id,
+                                                              mge_bounds, mge_ori)
             hit_before_loc = hit_before.iloc[[6, 7]]
             hit_after_loc = hit_after.iloc[[6, 7]]
 
-            #if not all_one_tig_5k:
-            #   hit_before, hit_after, all_one_tig_5k = final_acceptor(hit_before, hit_after, isolate_id, mge_bounds, mge_ori)
-            #   hit_before_loc = hit_before.iloc[[6, 7]]
-            #   hit_after_loc = hit_after.iloc[[6, 7]]
-        # if isolate_id in ['12291_5#65','15682_1#4','21127_1#83','21242_2#137','5468_2#4','11657_4#49',\
-        #                   '21053_8#174','21242_2#136', "15608_3#42"]:
-        #     print("")
-        #     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-        #     print(all_one_tig_5k)
-        #     print(isolate_id)
-        #     print(hit_before)
-        #     print("<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>")
-        #     print(hit_after)
-        #     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-        #     print("")
+            if not all_one_tig_5k:
+
+               hit_before, hit_after, all_one_tig_5k = final_acceptor(hit_before, hit_after, isolate_id, mge_bounds, mge_ori)
+               hit_before_loc = hit_before.iloc[[6, 7]]
+               hit_after_loc = hit_after.iloc[[6, 7]]
+
 
 
         if all_one_tig_5k:
@@ -2447,19 +2524,14 @@ if __name__ == '__main__':
             ## a good enough hit to be used in library creation. Also needs to have at least 5k bp either side
             ## in this hit
 
-
             current_gff = pandas.read_csv(current_gff_loc.iloc[0], sep='\t',
-                                       names=['seqid', 'source', 'type', 'start', 'end', 'score', 'strand', 'phase',
-                                             'attributes'],
-                                       header=None)
-
-
+                                          names=['seqid', 'source', 'type', 'start', 'end', 'score', 'strand', 'phase',
+                                                 'attributes'],
+                                          header=None)
 
             if len(contig_tab.index) > 1:
+
                 current_gff = gff_to_dna(current_gff, contig_tab, isolate_id, input_k=k)
-
-
-
 
             if mge_ori == "forward":
                 ## Lets get the element length
@@ -2470,16 +2542,17 @@ if __name__ == '__main__':
                 current_mge_length = hitters[1] - hitters[0]
                 current_insert_locs = [hit_before_loc[1], hit_after_loc[0]]
                 current_insert_length = int(hit_after_loc[0]) - int(hit_before_loc[1])
-                genes_insert = current_gff[(current_gff['start'] >= current_insert_locs[0]) & (current_gff['end'] <= current_insert_locs[1])]
+                genes_insert = current_gff[
+                    (current_gff['start'] >= current_insert_locs[0]) & (current_gff['end'] <= current_insert_locs[1])]
                 genes_mge = current_gff[(current_gff['start'] >= hitters[0]) & (current_gff['end'] <= hitters[1])]
                 genes_mge_num = len(genes_mge.index)
                 gene_insert_num = len(genes_insert.index)
 
-
                 ## 5000 bp regions.
                 ## Include any genes overlapping region, so just based on end
 
-                before_loc_gens = current_gff[(current_gff['end'] > (hit_before_loc[1] - 5000)) & (current_gff['end'] <= (hit_before_loc[1] + 100))]
+                before_loc_gens = current_gff[(current_gff['end'] > (hit_before_loc[1] - 5000)) & (
+                            current_gff['end'] <= (hit_before_loc[1] + 100))]
                 num_genes_before = len(before_loc_gens.index)
                 mean_length_before = [0]
                 if not before_loc_gens.empty:
@@ -2489,7 +2562,8 @@ if __name__ == '__main__':
                         before_gene_lengths.append([current_length])
                     mean_length_before = numpy.mean(before_gene_lengths)
 
-                after_loc_gens = current_gff[(current_gff['start'] >= (hit_after_loc[0] - 100) ) & (current_gff['start'] < (hit_after_loc[0] + 5000))]
+                after_loc_gens = current_gff[(current_gff['start'] >= (hit_after_loc[0] - 100)) & (
+                            current_gff['start'] < (hit_after_loc[0] + 5000))]
                 num_genes_after = len(after_loc_gens.index)
                 mean_length_after = [0]
                 if not after_loc_gens.empty:
@@ -2505,7 +2579,7 @@ if __name__ == '__main__':
                 flanks_genes = num_genes_before + num_genes_after
 
                 library_flank_gene_length = numpy.mean(before_gene_lengths + after_loc_lengths)
-                #library_flank_gene_length = numpy.mean([mean_length_before, mean_length_after])
+                # library_flank_gene_length = numpy.mean([mean_length_before, mean_length_after])
                 tot_flanks_length = hit_before_length + hit_after_length
 
                 library_pros = pandas.DataFrame()
@@ -2519,11 +2593,13 @@ if __name__ == '__main__':
                 library_pros['insert_genes'] = pandas.Series(gene_insert_num, index=library_pros.index)
                 library_pros['mge_genes'] = pandas.Series(genes_mge_num, index=library_pros.index)
                 library_pros['flank_genes'] = pandas.Series(flanks_genes, index=library_pros.index)
-                library_pros['mean_flank_gene_length'] = pandas.Series(library_flank_gene_length, index=library_pros.index)
-                library_pros['flanks_length'] = pandas.Series(tot_flanks_length, index = library_pros.index)
+                library_pros['mean_flank_gene_length'] = pandas.Series(library_flank_gene_length,
+                                                                       index=library_pros.index)
+                library_pros['flanks_length'] = pandas.Series(tot_flanks_length, index=library_pros.index)
                 library_pros['before_flank_gene'] = pandas.Series(num_genes_before, index=library_pros.index)
                 library_pros['after_flank_gene'] = pandas.Series(num_genes_after, index=library_pros.index)
-                library_pros['before_flank_avg'] = pandas.Series(numpy.mean(before_gene_lengths), index=library_pros.index)
+                library_pros['before_flank_avg'] = pandas.Series(numpy.mean(before_gene_lengths),
+                                                                 index=library_pros.index)
                 library_pros['after_flank_avg'] = pandas.Series(numpy.mean(after_loc_lengths), index=library_pros.index)
 
                 library_pros['before_gene_name'] = pandas.Series(before_gene, index=library_pros.index)
@@ -2534,7 +2610,18 @@ if __name__ == '__main__':
                 ## check if to add in to library csv
 
                 if genes_mge_num <= gene_insert_num:
-                    library_df = library_integrator(library_df, library_pros, isolate_id)
+                    hit_df, missing_isolate = hit_detector(library_dat, library_pros, isolate_id, hit_df, missing_isolate)
+                else:
+                    missing_current = pandas.DataFrame()
+                    missing_current['id'] = pandas.Series(isolate_id)
+                    missing_current['mge_start'] = pandas.Series(hitters[0], index=missing_current.index)
+                    missing_current['mge_end'] = pandas.Series(hitters[1], index=missing_current.index)
+                    missing_current['ref_name'] = pandas.Series(ref_name, index=missing_current.index)
+                    missing_current['cluster_name'] = pandas.Series(cluster_name, index=missing_current.index)
+                    missing_current['mge_length'] = pandas.Series(current_mge_length, index=missing_current.index)
+                    missing_current['reason'] = pandas.Series(["More mge than insert"], missing_current.index)
+                    missing_isolate = missing_isolate.append(missing_current, sort=False)
+
 
 
             elif mge_ori == "reverse":
@@ -2542,17 +2629,16 @@ if __name__ == '__main__':
                 current_mge_length = hitters[0] - hitters[1]
                 current_insert_locs = [hit_after_loc[1], hit_before_loc[0]]
                 current_insert_length = int(hit_before_loc[0]) - int(hit_after_loc[1])
-                genes_insert = current_gff[(current_gff['start'] >= current_insert_locs[0])\
+                genes_insert = current_gff[(current_gff['start'] >= current_insert_locs[0]) \
                                            & (current_gff['end'] <= current_insert_locs[1])]
                 genes_mge = current_gff[(current_gff['start'] >= hitters[1]) & (current_gff['end'] <= hitters[0])]
-
 
                 genes_mge_num = len(genes_mge.index)
                 gene_insert_num = len(genes_insert.index)
 
                 ## 5000 bp regions.
                 ## Include any genes overlapping region, so just based on end
-                before_loc_gens = current_gff[(current_gff['start'] > (hit_before_loc[0] - 100)) &\
+                before_loc_gens = current_gff[(current_gff['start'] > (hit_before_loc[0] - 100)) & \
                                               (current_gff['start'] <= (hit_before_loc[0] + 5000))]
                 num_genes_before = len(before_loc_gens.index)
                 mean_length_before = [0]
@@ -2563,7 +2649,7 @@ if __name__ == '__main__':
                         before_gene_lengths.append([current_length])
                     mean_length_before = numpy.mean(before_gene_lengths)
 
-                after_loc_gens = current_gff[(current_gff['end'] > (hit_after_loc[1] - 5000)) &\
+                after_loc_gens = current_gff[(current_gff['end'] > (hit_after_loc[1] - 5000)) & \
                                              (current_gff['end'] <= (hit_after_loc[1] + 100))]
                 num_genes_after = len(after_loc_gens.index)
                 mean_length_after = [0]
@@ -2575,7 +2661,6 @@ if __name__ == '__main__':
                     mean_length_after = numpy.mean(after_loc_lengths)
 
                 flanks_genes = num_genes_before + num_genes_after
-
 
                 before_gene = gene_name_finder(before_loc_gens, back_it_up=False)
                 after_gene = gene_name_finder(after_loc_gens, back_it_up=True)
@@ -2599,7 +2684,8 @@ if __name__ == '__main__':
                 library_pros['flanks_length'] = pandas.Series(tot_flanks_length, index=library_pros.index)
                 library_pros['before_flank_gene'] = pandas.Series(num_genes_before, index=library_pros.index)
                 library_pros['after_flank_gene'] = pandas.Series(num_genes_after, index=library_pros.index)
-                library_pros['before_flank_avg'] = pandas.Series(numpy.mean(before_gene_lengths), index=library_pros.index)
+                library_pros['before_flank_avg'] = pandas.Series(numpy.mean(before_gene_lengths),
+                                                                 index=library_pros.index)
                 library_pros['after_flank_avg'] = pandas.Series(numpy.mean(after_loc_lengths), index=library_pros.index)
 
                 library_pros['before_gene_name'] = pandas.Series(before_gene, index=library_pros.index)
@@ -2609,41 +2695,47 @@ if __name__ == '__main__':
 
                 ## check if to add in to library csv
                 if genes_mge_num <= gene_insert_num:
-                    library_df = library_integrator(library_df, library_pros, isolate_id)
-    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-    library_df = library_trim(library_df)
-    library_df.to_csv(path_or_buf=(files_for_input.output + "_library.csv"), index=False)
+                    hit_df, missing_isolate = hit_detector(library_dat, library_pros, isolate_id, hit_df, missing_isolate)
+                else:
+                    missing_current = pandas.DataFrame()
+                    missing_current['id'] = pandas.Series(isolate_id)
+                    missing_current['mge_start'] = pandas.Series(hitters[0], index=missing_current.index)
+                    missing_current['mge_end'] = pandas.Series(hitters[1], index=missing_current.index)
+                    missing_current['ref_name'] = pandas.Series(ref_name, index=missing_current.index)
+                    missing_current['cluster_name'] = pandas.Series(cluster_name, index=missing_current.index)
+                    missing_current['mge_length'] = pandas.Series(current_mge_length, index=missing_current.index)
+                    missing_current['reason'] = pandas.Series(["More mge than insert"], missing_current.index)
+                    missing_isolate = missing_isolate.append(missing_current, sort=False)
+        else:
+            missing_current = pandas.DataFrame()
+            missing_current['id'] = pandas.Series(isolate_id)
+            missing_current['mge_start'] = pandas.Series(hitters[0], index=missing_current.index)
+            missing_current['mge_end'] = pandas.Series(hitters[1], index=missing_current.index)
+            missing_current['ref_name'] = pandas.Series(ref_name, index=missing_current.index)
+            missing_current['cluster_name'] = pandas.Series(cluster_name, index=missing_current.index)
+            missing_current['mge_length'] = pandas.Series(current_mge_length, index=missing_current.index)
+            missing_current['reason'] = pandas.Series(["No good hits before and after"],missing_current.index)
+            missing_isolate = missing_isolate.append(missing_current, sort = False)
+        end_len = len(missing_isolate.index) + len(hit_df.index)
+        if end_len <= start_len:
+            print("<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>")
+            print(isolate_id)
+            print("<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>")
+
+
+    hit_out_name = files_for_input.output + "_hits_df.csv"
+    hit_df = hit_df.append(library_dat)
+
+    missing_out_name = files_for_input.output + "_missing_df.csv"
+    hit_df.to_csv(path_or_buf=hit_out_name, index=False)
+    missing_isolate.to_csv(path_or_buf=missing_out_name, index = False)
     toc1 = time.perf_counter()
     toc = time.perf_counter()
-
-    print("Took this long for library_search: %s" % (toc1 - tic_1))
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+    print("This many hits allocated: %s of %s" % (len(hit_df.index), len(narrowed_prop.index) + len(library_dat.index)))
+    print("This many missing hits: %s (%s %s)" % (len(missing_isolate.index), round((len(missing_isolate.index) / len(narrowed_prop.index)) * 100), "%"))
+    print("Took this long for hit allocation: %s" % (toc1 - tic_1))
     print("Took this long overall: %s" % (toc - tic))
-    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Library creator finsihed ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Hit allocator finished ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
 

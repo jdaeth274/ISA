@@ -54,19 +54,18 @@ then
     fi
     if [ -d ./tmp_dna_dir ]
     then
-      rm -r ./tmp_dna_dir
-      mkdir ./tmp_dna_dir
+      echo "Using already made tmp_dna_dir"
+      cd ./tmp_dna_dir
+      cat *.dna > output.mfa
     else
       mkdir ./tmp_dna_dir
-    fi
-
-
-    cd ./tmp_dna_dir
-    less "../${fasta_list}" | while read line; do \
+      cd ./tmp_dna_dir
+      less "../${fasta_list}" | while read line; do \
         perl "${perldir}converting_velvet_contigs_to_dna.pl" $line;
 
         done
-    cat *.dna > output.mfa
+      cat *.dna > output.mfa
+    fi
 
 
 
@@ -131,7 +130,13 @@ then
   ## Now we run the library creation step
   python "${pythondir}library_creator.py" \
   --hit_csv "$4/$5_merged_blast_file" --reference_csv $ref_isolate_gff --align_cutoff $3 \
-  --act_loc ./act_compos/referoo.fasta. --contig_loc ./contig_bounds/ --output "$4/$5_library.csv" \
+  --act_loc ./act_compos/referoo.fasta. --contig_loc ./contig_bounds/ --output "$4/$5" \
   --fasta_csv $ref_isolate_fasta
+
+  ## Now for the hit allocation step
+  python "${pythondir}hit_allocator.py" \
+  --blast_csv "$4/$5_proper_hits.csv" --lib_csv "$4/$5_library.csv" --reference_csv $ref_isolate_gff \
+  --fasta_csv $ref_isolate_fasta --act_loc ./act_compos/referoo.fasta. --contig_loc ./contig_bounds/ \
+  --output "$4/$5"
 
 fi

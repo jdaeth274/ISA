@@ -1,7 +1,5 @@
 #!/usr/bin/perl
 
-use File::Basename;
-
 my $usage = "\n Takes input from velvet and creates a single long dna file, shamelessy copied from Nick's compare genome script";
 
 if (@ARGV <= 0){
