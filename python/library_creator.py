@@ -371,6 +371,9 @@ def row_merger(narrowed_rows):
 
 
 def merged_contig_checker(merged_csv, contig_file_abs_path, act_path):
+    ## Function to get rid of any multiple hits that aren't already merged, we don't want these in our
+    ## Hits for the library.
+
     multi_rows = []
 
 
@@ -379,76 +382,85 @@ def merged_contig_checker(merged_csv, contig_file_abs_path, act_path):
         current_id = merged_csv.iloc[k, 0]#.values.to_string()
         underscore_count = current_id.count("_")
         if underscore_count > 1:
-            multi_rows.append(k)
+            current_loc = merged_csv['file_loc'].iloc[k]
+            loccies = merged_csv[merged_csv['file_loc'] == current_loc]
+            if len(loccies.index) > 1:
+                multi_rows.append(k)
 
+    unmerged = merged_csv.drop(multi_rows)
+    unmerged = unme.reset_index(drop= True)
+    #
+    #
+    # multi_row_db = merged_csv.iloc[multi_rows].copy()
+    # #print(multi_row_db['file_loc'])
+    # file_locs = set(multi_row_db.iloc[:,8].copy().to_list())
+    # file_locs = list(file_locs)
+    #
+    # merged_rows_to_drop = []
+    # merged_rows_to_add = pandas.DataFrame(columns=merged_csv.columns)
+    # merged_locs = []
+    #
+    #
+    # for k in range(len(file_locs)):
+    #     isolate_id = file_locs[k]
+    #     isolate_rows = multi_row_db[multi_row_db['file_loc'] == isolate_id].copy()
+    #     if len(isolate_rows.index) == 1:
+    #         multi_hits = "No"
+    #     else:
+    #         multi_hits = "Yes"
+    #
+    #     isolate_rows.columns = isolate_rows.columns.str.strip()
+    #     isolate_rows['merged_index'] = isolate_rows.index
+    #     isolate_rows = isolate_rows.reset_index(drop=True)
+    #     isolate_rows = isolate_rows.sort_values(by = 'qstart', ascending=True)
+    #     contig_suffix = "#contig_bounds.csv"
+    #     contig_isolate = re.sub("#", "_", isolate_id)
+    #     if ".contigs_velvet.fa" in contig_isolate:
+    #         contig_isolate = re.sub(".contigs_velvet.fa","",contig_isolate)
+    #     contig_file_path = contig_file_abs_path + contig_isolate + contig_suffix
+    #
+    #     contig_tab = pandas.read_csv(contig_file_path)
+    #
+    #     positions = []
+    #
+    #     for l in range(len(isolate_rows.index)):
+    #         current_hitters = isolate_rows.iloc[l, [5,6]]
+    #         position = contig_end_checker(current_hitters, contig_tab, act_path, contig_isolate)
+    #         positions.append(position)
+    #
+    #     orig_positions = positions
+    #
+    #     isolate_rows['contig_pos'] = pandas.Series(positions, index=isolate_rows.index)
+    #
+    #
+    #
+    #     isolate_rows_narrow = isolate_rows[isolate_rows['contig_pos'] != "None_None"].copy()
+    #
+    #
+    #
+    #     ## If there's more than 10 rows we'll just ignore this one and move on.
+    #     if len(isolate_rows_narrow.index) < 10 and len(isolate_rows_narrow.index) > 1:
+    #         isolate_rows_narrow = isolate_rows_narrow.sort_values(by = 'qstart', ascending=True)
+    #         isolate_rows_narrow = isolate_rows_narrow.reset_index(drop=True)
+    #         merged_row, merged_row_to_drop, merged_loc = row_merger(isolate_rows_narrow)
+    #         if len(merged_row_to_drop) > 0:
+    #             merged_rows_to_add = merged_rows_to_add.append(merged_row, sort=False, ignore_index=True)
+    #             merged_rows_to_drop.extend(merged_row_to_drop)
+    #             merged_locs.append(merged_loc)
+    #
+    #
+    #     iter_val = "{0:0=5d}".format((k + 1))
+    #     print("Completed %s of %s rows. Just finished: %s" % (iter_val, len(file_locs), isolate_id),
+    #           end="\r",flush=True)
+    #
+    # ## Now we'll remove the merged rows from the df
+    # merged_csv = merged_csv.drop(merged_rows_to_drop)
+    # merged_csv['merged_index'] = numpy.NAN
+    # ## Now lets add in the rows
+    # merged_rows_to_add['merged_index'] = range(len(merged_rows_to_add.index))
+    # merged_csv = merged_csv.append(merged_rows_to_add, sort=False, ignore_index=True)
 
-    multi_row_db = merged_csv.iloc[multi_rows].copy()
-    #print(multi_row_db['file_loc'])
-    file_locs = set(multi_row_db.iloc[:,8].copy().to_list())
-    file_locs = list(file_locs)
-
-    print(len(file_locs))
-
-    merged_rows_to_drop = []
-    merged_rows_to_add = pandas.DataFrame(columns=merged_csv.columns)
-    merged_locs = []
-
-
-    for k in range(len(file_locs)):
-        isolate_id = file_locs[k]
-        isolate_rows = multi_row_db[multi_row_db['file_loc'] == isolate_id].copy()
-        isolate_rows.columns = isolate_rows.columns.str.strip()
-        isolate_rows['merged_index'] = isolate_rows.index
-        isolate_rows = isolate_rows.reset_index(drop=True)
-        isolate_rows = isolate_rows.sort_values(by = 'qstart', ascending=True)
-        contig_suffix = "#contig_bounds.csv"
-        contig_isolate = re.sub("#", "_", isolate_id)
-        if ".contigs_velvet.fa" in contig_isolate:
-            contig_isolate = re.sub(".contigs_velvet.fa","",contig_isolate)
-        contig_file_path = contig_file_abs_path + contig_isolate + contig_suffix
-
-        contig_tab = pandas.read_csv(contig_file_path)
-
-        positions = []
-
-        for l in range(len(isolate_rows.index)):
-            current_hitters = isolate_rows.iloc[l, [5,6]]
-            position = contig_end_checker(current_hitters, contig_tab, act_path, contig_isolate)
-            positions.append(position)
-
-        orig_positions = positions
-
-        isolate_rows['contig_pos'] = pandas.Series(positions, index=isolate_rows.index)
-
-
-
-        isolate_rows_narrow = isolate_rows[isolate_rows['contig_pos'] != "None_None"].copy()
-
-
-
-        ## If there's more than 10 rows we'll just ignore this one and move on.
-        if len(isolate_rows_narrow.index) < 10 and len(isolate_rows_narrow.index) > 1:
-            isolate_rows_narrow = isolate_rows_narrow.sort_values(by = 'qstart', ascending=True)
-            isolate_rows_narrow = isolate_rows_narrow.reset_index(drop=True)
-            merged_row, merged_row_to_drop, merged_loc = row_merger(isolate_rows_narrow)
-            if len(merged_row_to_drop) > 0:
-                merged_rows_to_add = merged_rows_to_add.append(merged_row, sort=False, ignore_index=True)
-                merged_rows_to_drop.extend(merged_row_to_drop)
-                merged_locs.append(merged_loc)
-
-
-        iter_val = "{0:0=5d}".format((k + 1))
-        print("Completed %s of %s rows. Just finished: %s" % (iter_val, len(file_locs), isolate_id),
-              end="\r",flush=True)
-
-    ## Now we'll remove the merged rows from the df
-    merged_csv = merged_csv.drop(merged_rows_to_drop)
-    merged_csv['merged_index'] = numpy.NAN
-    ## Now lets add in the rows
-    merged_rows_to_add['merged_index'] = range(len(merged_rows_to_add.index))
-    merged_csv = merged_csv.append(merged_rows_to_add, sort=False, ignore_index=True)
-
-    return merged_csv, merged_locs
+    return unmerged
 
 def ref_contains_hit(compo_table, hitters, mge_bounds, isolate_id):
     ## This function checks if there are any hits within the mge position
@@ -2203,7 +2215,7 @@ if __name__ == '__main__':
     fasta_pandas.columns = ['isolate', 'reference']
 
 
-    merged_csv , merged_locs = merged_contig_checker(hit_csv, contig_file_abs_path, absolute_act_path)
+    merged_csv = merged_contig_checker(hit_csv, contig_file_abs_path, absolute_act_path)
     is_2k = merged_csv['align'] >= int(files_for_input.align_cutoff)
 
     proper_hits = merged_csv[is_2k]

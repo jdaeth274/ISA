@@ -34,6 +34,7 @@ def get_options():
     parser.add_argument('--fasta_csv', required=True, help= "isolates fasta and reference fasta csv", type = str)
     parser.add_argument('--act_loc', required=True, help='Directory where act comparisons stored (required)', type=str)
     parser.add_argument('--contig_loc', required=True, help='Directory where contig_numbers stored  (required)', type=str)
+    parser.add_argument('--align', required=True, help='Int value to cutoff align for blast hits (required)', type=int)
     parser.add_argument('--output', required=True, help='Out Library csv name (required)', type=str)
 
     args = parser.parse_args()
@@ -247,13 +248,17 @@ def contig_end_checker(hitters, contig_tab, act_path, isolate_id):
 def row_merger(narrowed_rows):
     ## This function takes in the narrowed rows from merged_contig_checker and then
     ## works out how best to merge them
+
+    ## First we work out which hits have both starts and ends
     narrowed_rows['end_loc'] = narrowed_rows['contig_pos'].str.find("end")
     narrowed_rows['start_loc'] = narrowed_rows['contig_pos'].str.find("start")
 
+    ## End rows
     end_rows = narrowed_rows[narrowed_rows['end_loc'] != -1]
 
 
     if len(end_rows.index) == 0:
+        ## If no end rows just take the returned row as the end
         # print(first_row.iloc[0])
         returned_row = narrowed_rows.drop(['merged_index', 'contig_pos', 'end_loc', 'start_loc'], axis=1)
         merged_indexers = []
@@ -265,6 +270,7 @@ def row_merger(narrowed_rows):
         first_row = end_rows.iloc[0, :].copy()
         ## while loop to incorporate rest of hits
         if len(start_rows.index) == 0:
+            ## If no start rows just take the returned row as the end
             #print(first_row.iloc[0])
             returned_row = narrowed_rows.drop(['merged_index', 'contig_pos', 'end_loc', 'start_loc'], axis = 1 )
             merged_indexers = []
@@ -272,7 +278,9 @@ def row_merger(narrowed_rows):
             return returned_row, merged_indexers, merged_locs
         else:
 
-
+            ## Now we'll loop through the hits that have a start at the begininning of a contig and then
+            ## altered the merged row with this new data. The overlap test will then check if the
+            ## new start row to be potentially merged is within the current merged hit.
 
             first_start = start_rows.iloc[0,:]
             first_start_index = start_rows.index[0]
@@ -283,6 +291,7 @@ def row_merger(narrowed_rows):
             counter = 0
             merged_row = first_row
             merged_locs = [[first_row['sstart'], first_row['ssend']]]
+            merged_row['align'] = abs(merged_locs[0][1] - merged_locs[0][0])
             merged_indexers = [merged_row.loc['merged_index']]
             added_start_indexes = []
 
@@ -293,6 +302,8 @@ def row_merger(narrowed_rows):
                     print(narrowed_rows.iloc[0,0])
                     print(narrowed_rows)
                     sys.exit(1)
+
+
 
                 current_range = merged_row.iloc[[3,4]]
                 current_align = merged_row.iloc[2]
@@ -313,7 +324,7 @@ def row_merger(narrowed_rows):
                         ## check for other start_nones in the narrowed_df
                         start_nones = start_rows[start_rows['contig_pos'] == "start_None"]
                         if len(start_nones.index) == 1:
-                                new_align = merged_row['align'] + start_nones.iloc[0,2]
+                                new_align = merged_row['align'] + abs(start_nones.iloc[0,6] - start_nones.iloc[0,5])
                                 new_qend = start_nones.iloc[0, 4]
                                 new_send = start_nones.iloc[0, 6]
                                 merged_row.loc['align'] = new_align
@@ -335,7 +346,7 @@ def row_merger(narrowed_rows):
                                 #closest_pid_index = poss_pids.index(closest_pid_val)
                                 lowest_sstart_index = poss_sstart.index(min(poss_sstart))
 
-                                new_align = merged_row['align'] + start_nones.iloc[lowest_sstart_index, 2]
+                                new_align = merged_row['align'] + abs(start_nones.iloc[lowest_sstart_index,6] - start_nones.iloc[lowest_sstart_index,5])
                                 new_qend = start_nones.iloc[lowest_sstart_index, 4]
                                 new_send = start_nones.iloc[lowest_sstart_index, 6]
                                 merged_row.loc['align'] = new_align
@@ -350,7 +361,7 @@ def row_merger(narrowed_rows):
 
                                 counter += len(start_nones.index)
                     else:
-                            new_align = merged_row['align'] + first_start.iloc[2]
+                            new_align = merged_row['align'] + abs(first_start.iloc[6] - first_start.iloc[5])
                             new_qend = first_start.iloc[4]
                             new_send = first_start.iloc[6]
                             merged_row.loc['align'] = new_align
@@ -366,6 +377,7 @@ def row_merger(narrowed_rows):
 
 
             returned_row = merged_row.drop(['merged_index','contig_pos','end_loc','start_loc'])
+            returned_row['merged'] = "Yes"
 
             return returned_row, merged_indexers, merged_locs
 
@@ -373,13 +385,15 @@ def row_merger(narrowed_rows):
 def merged_contig_checker(merged_csv, contig_file_abs_path, act_path):
     multi_rows = []
 
-
-
     for k in range(len(merged_csv.index)):
-        current_id = merged_csv.iloc[k, 0]#.values.to_string()
+        current_id = merged_csv.iloc[k, 0]  # .values.to_string()
         underscore_count = current_id.count("_")
         if underscore_count > 1:
-            multi_rows.append(k)
+            current_loc = merged_csv['file_loc'].iloc[k]
+            loccies = merged_csv[merged_csv['file_loc'] == current_loc]
+            if len(loccies.index) > 1:
+                multi_rows.append(k)
+
 
 
     multi_row_db = merged_csv.iloc[multi_rows].copy()
@@ -444,6 +458,7 @@ def merged_contig_checker(merged_csv, contig_file_abs_path, act_path):
     ## Now we'll remove the merged rows from the df
     merged_csv = merged_csv.drop(merged_rows_to_drop)
     merged_csv['merged_index'] = numpy.NAN
+    merged_csv['merged'] = pandas.Series(list(numpy.repeat("No", len(merged_csv.index))), index=merged_csv.index)
     ## Now lets add in the rows
     merged_rows_to_add['merged_index'] = range(len(merged_rows_to_add.index))
     merged_csv = merged_csv.append(merged_rows_to_add, sort=False, ignore_index=True)
@@ -988,7 +1003,7 @@ def gff_to_dna(gff_csv, contig_csv, isolate_id, input_k):
 
     return out_gff_csv
 
-def gene_name_tryer(prospective_csv, library_csv, out_hit, missing_isolate):
+def gene_name_tryer(prospective_csv, library_csv, out_hit, missing_isolate, mergio):
     ## Function to take in hits they have missed the first few cutoffs in the hit_integrator function
     ## And try to merge them instead using the flank gene names and then the mge charecteristics
     ## Input: prospective_csv: The single line isolate from the hit_integrator function
@@ -1006,11 +1021,15 @@ def gene_name_tryer(prospective_csv, library_csv, out_hit, missing_isolate):
 
         current_hit_length = bef_and_aft[(bef_and_aft['mge_length'] >= (prospective_csv['mge_length'][0] - 100)) & \
                                          (bef_and_aft['mge_length'] <= (prospective_csv['mge_length'][0] + 100))]
-        current_hit_gene = bef_and_aft[(bef_and_aft['mge_genes'] >= (prospective_csv['mge_genes'][0] - 1)) & \
+
+        if mergio:
+            tot_hit = current_hit_length
+        else:
+            current_hit_gene = bef_and_aft[(bef_and_aft['mge_genes'] >= (prospective_csv['mge_genes'][0] - 1)) & \
                                        (bef_and_aft['mge_genes'] <= (prospective_csv['mge_genes'][0] + 1))]
 
-        tot_hit = pandas.concat([current_hit_length, current_hit_gene], sort=False, ignore_index=True)
-        tot_hit = tot_hit.drop_duplicates()
+            tot_hit = pandas.concat([current_hit_length, current_hit_gene], sort=False, ignore_index=True)
+            tot_hit = tot_hit.drop_duplicates()
 
 
         if len(tot_hit.index) == 1:
@@ -1047,12 +1066,14 @@ def gene_name_tryer(prospective_csv, library_csv, out_hit, missing_isolate):
 
     return out_hit_copy, missing_copy
 
-def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isolates):
+def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isolates, mergio):
     ## Function to allocate hit location
     ## Input: library_csv: The current library csv to search for matches against
     ##        prospective_csv: The prospective set of results to be sorted
     ##        isolate_id: The current isolate id (mainly for debugging)
     ##        hit_csv: The total hit csv the isolate to be integrated into
+    ##        missing_isolates: The df of isolates not assigned to a hit value
+    ##        mergio: Whether or not the isolate was merged together.
     ## This will first work on the basis of hits sharing almost identical blast matches
     ## Then we'll look into flank region composition and finally the total insert composition
     ## to see if this is a novel hit or not.
@@ -1072,125 +1093,131 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
 
     ## So there is a hit with the same number of mge genes, let now check the element length +- 2 bp
     ## Needs to be a hit with no length +- 2bp and no genes +- 1
-    mge_hits = lib_new[(lib_new['mge_genes'] >= (prospective_csv['mge_genes'][0] - 1)) &\
-                       (lib_new['mge_genes'] <= (prospective_csv['mge_genes'][0] + 1))]
-    mge_length_hits = mge_hits[(mge_hits['mge_length'] >= (prospective_csv['mge_length'][0] - 2))\
-                                 & (mge_hits['mge_length'] <= (prospective_csv['mge_length'][0] + 2))]
 
-
-    if not mge_length_hits.empty:
-
-            ## Lets check if the before or after hits match quite closely with the number of genes +- 1
-            ## Before
-            before_gene_num = prospective_csv['before_flank_gene'][0]
-            after_gene_num = prospective_csv['after_flank_gene'][0]
-
-            before_gene_hits = mge_length_hits[(mge_length_hits['before_flank_gene'] >= (before_gene_num - 1)) & \
-                                               (mge_length_hits['before_flank_gene'] <= (before_gene_num + 1))]
-
-            after_gene_hits = mge_length_hits[(mge_length_hits['after_flank_gene'] >= (after_gene_num - 1)) & \
-                                              (mge_length_hits['after_flank_gene'] <= (after_gene_num + 1))]
-
-            before_empty = before_gene_hits.empty
-            after_empty = after_gene_hits.empty
-
-            if not before_empty or not after_empty:
-                ## So either the before or the after hit or both match to ones already in the database
-                ## check matches +- 25 bp
-                before_flank_empty = True
-                after_flank_empty = True
-
-
-
-                if not before_empty and after_empty:
-                    before_mean_flank = prospective_csv['before_flank_avg'][0]
-
-                    before_flank_means = before_gene_hits[(before_gene_hits['before_flank_avg'] >= (before_mean_flank - 25)) &\
-                                                          (before_gene_hits['before_flank_avg'] <= (before_mean_flank + 25))]
-
-                    before_flank_empty = before_flank_means.empty
-
-                elif before_empty and not after_empty:
-                    after_mean_flank = prospective_csv['after_flank_avg'][0]
-
-                    after_flank_means = after_gene_hits[(after_gene_hits['before_flank_avg'] >= (after_mean_flank - 25)) & \
-                                                         (after_gene_hits['before_flank_avg'] <= (after_mean_flank + 25))]
-
-                    after_flank_empty = after_flank_means.empty
-                elif not before_empty and not after_empty:
-                    before_mean_flank = prospective_csv['before_flank_avg'][0]
-
-                    before_flank_means = before_gene_hits[
-                        (before_gene_hits['before_flank_avg'] >= (before_mean_flank - 25)) & \
-                        (before_gene_hits['before_flank_avg'] <= (before_mean_flank + 25))]
-
-                    before_flank_empty = before_flank_means.empty
-
-                    after_mean_flank = prospective_csv['after_flank_avg'][0]
-
-                    after_flank_means = after_gene_hits[
-                        (after_gene_hits['after_flank_avg'] >= (after_mean_flank - 25)) & \
-                        (after_gene_hits['after_flank_avg'] <= (after_mean_flank + 25))]
-
-                    after_flank_empty = after_flank_means.empty
-
-                if not before_flank_empty or not after_flank_empty:
-
-                    ## So the before or after (or both) flanks seem to match in composition
-                    ## Now lets check if the insert length is similar, if not likely a novel insertion in the
-                    ## same insert site as before.
-
-
-                    insert_genes = prospective_csv['insert_genes'][0]
-                    insert_length = prospective_csv['insert_length'][0]
-
-
-
-                    if "before_flank_means" in locals() and "after_flank_means" in locals():
-
-                        remaining_hits = pandas.concat([before_flank_means, after_flank_means], ignore_index=True, sort=False)
-                        remaining_hits = remaining_hits.drop_duplicates()
-                    elif "before_flank_means" in locals() and "after_flank_means" not in locals():
-                        remaining_hits = before_flank_means
-                    else:
-                        remaining_hits = after_flank_means
-
-                    gene_hits = remaining_hits[(remaining_hits['insert_genes'] >= (insert_genes - 2)) & \
-                                               (remaining_hits['insert_genes'] <= (insert_genes + 2))]
-
-                    length_hits = remaining_hits[(remaining_hits['insert_length'] >= (insert_length - 500)) & \
-                                                 (remaining_hits['insert_length'] <= (insert_length + 500))]
-
-
-
-                    if gene_hits.empty and length_hits.empty:
-                        out_hit, missing_df = gene_name_tryer(prospective_csv, library_csv, out_hit, missing_df)
-                    else:
-                        remain_48 = pandas.concat([gene_hits, length_hits], ignore_index=True, sort = False)
-                        remain_48 = remain_48.drop_duplicates()
-
-
-                        if len(remain_48.index) == 1:
-                            prospective_csv['insert_name'] = pandas.Series(remain_48['insert_name'], index=prospective_csv.index)
-                            out_hit = out_hit.append(prospective_csv, sort = False)
-                        elif len(remain_48.index) > 1:
-                            ## If there are two hits with similar tendencies base on insert length
-                            remain_48 = remain_48.reset_index(drop=True)
-                            target_insert = prospective_csv['insert_length'][0]
-                            lengers = abs(remain_48['insert_length'] - target_insert)
-                            closest_index = lengers.idxmin()
-                            prospective_csv['insert_name'] = pandas.Series(remain_48['insert_name'].iloc[closest_index], index = remain_48.index)
-                            out_hit = out_hit.append(prospective_csv, sort = False)
-                        else:
-                            print("Odd behaviour here")
-
-                else:
-                    out_hit, missing_df = gene_name_tryer(prospective_csv, library_csv, out_hit, missing_df)
-            else:
-                out_hit, missing_df = gene_name_tryer(prospective_csv, library_csv, out_hit, missing_df)
-    else:
-        ## Try to see if there is a hit with the same start and end gene names and mge_length +- 50 bp or gene +- 1
+    if mergio:
         out_hit, missing_df = gene_name_tryer(prospective_csv, library_csv, out_hit, missing_df)
+    else:
+
+
+        mge_hits = lib_new[(lib_new['mge_genes'] >= (prospective_csv['mge_genes'][0] - 1)) &\
+                           (lib_new['mge_genes'] <= (prospective_csv['mge_genes'][0] + 1))]
+        mge_length_hits = mge_hits[(mge_hits['mge_length'] >= (prospective_csv['mge_length'][0] - 2))\
+                                     & (mge_hits['mge_length'] <= (prospective_csv['mge_length'][0] + 2))]
+
+
+        if not mge_length_hits.empty:
+
+                ## Lets check if the before or after hits match quite closely with the number of genes +- 1
+                ## Before
+                before_gene_num = prospective_csv['before_flank_gene'][0]
+                after_gene_num = prospective_csv['after_flank_gene'][0]
+
+                before_gene_hits = mge_length_hits[(mge_length_hits['before_flank_gene'] >= (before_gene_num - 1)) & \
+                                                   (mge_length_hits['before_flank_gene'] <= (before_gene_num + 1))]
+
+                after_gene_hits = mge_length_hits[(mge_length_hits['after_flank_gene'] >= (after_gene_num - 1)) & \
+                                                  (mge_length_hits['after_flank_gene'] <= (after_gene_num + 1))]
+
+                before_empty = before_gene_hits.empty
+                after_empty = after_gene_hits.empty
+
+                if not before_empty or not after_empty:
+                    ## So either the before or the after hit or both match to ones already in the database
+                    ## check matches +- 25 bp
+                    before_flank_empty = True
+                    after_flank_empty = True
+
+
+
+                    if not before_empty and after_empty:
+                        before_mean_flank = prospective_csv['before_flank_avg'][0]
+
+                        before_flank_means = before_gene_hits[(before_gene_hits['before_flank_avg'] >= (before_mean_flank - 25)) &\
+                                                              (before_gene_hits['before_flank_avg'] <= (before_mean_flank + 25))]
+
+                        before_flank_empty = before_flank_means.empty
+
+                    elif before_empty and not after_empty:
+                        after_mean_flank = prospective_csv['after_flank_avg'][0]
+
+                        after_flank_means = after_gene_hits[(after_gene_hits['before_flank_avg'] >= (after_mean_flank - 25)) & \
+                                                             (after_gene_hits['before_flank_avg'] <= (after_mean_flank + 25))]
+
+                        after_flank_empty = after_flank_means.empty
+                    elif not before_empty and not after_empty:
+                        before_mean_flank = prospective_csv['before_flank_avg'][0]
+
+                        before_flank_means = before_gene_hits[
+                            (before_gene_hits['before_flank_avg'] >= (before_mean_flank - 25)) & \
+                            (before_gene_hits['before_flank_avg'] <= (before_mean_flank + 25))]
+
+                        before_flank_empty = before_flank_means.empty
+
+                        after_mean_flank = prospective_csv['after_flank_avg'][0]
+
+                        after_flank_means = after_gene_hits[
+                            (after_gene_hits['after_flank_avg'] >= (after_mean_flank - 25)) & \
+                            (after_gene_hits['after_flank_avg'] <= (after_mean_flank + 25))]
+
+                        after_flank_empty = after_flank_means.empty
+
+                    if not before_flank_empty or not after_flank_empty:
+
+                        ## So the before or after (or both) flanks seem to match in composition
+                        ## Now lets check if the insert length is similar, if not likely a novel insertion in the
+                        ## same insert site as before.
+
+
+                        insert_genes = prospective_csv['insert_genes'][0]
+                        insert_length = prospective_csv['insert_length'][0]
+
+
+
+                        if "before_flank_means" in locals() and "after_flank_means" in locals():
+
+                            remaining_hits = pandas.concat([before_flank_means, after_flank_means], ignore_index=True, sort=False)
+                            remaining_hits = remaining_hits.drop_duplicates()
+                        elif "before_flank_means" in locals() and "after_flank_means" not in locals():
+                            remaining_hits = before_flank_means
+                        else:
+                            remaining_hits = after_flank_means
+
+                        gene_hits = remaining_hits[(remaining_hits['insert_genes'] >= (insert_genes - 2)) & \
+                                                   (remaining_hits['insert_genes'] <= (insert_genes + 2))]
+
+                        length_hits = remaining_hits[(remaining_hits['insert_length'] >= (insert_length - 500)) & \
+                                                     (remaining_hits['insert_length'] <= (insert_length + 500))]
+
+
+
+                        if gene_hits.empty and length_hits.empty:
+                            out_hit, missing_df = gene_name_tryer(prospective_csv, library_csv, out_hit, missing_df, mergio)
+                        else:
+                            remain_48 = pandas.concat([gene_hits, length_hits], ignore_index=True, sort = False)
+                            remain_48 = remain_48.drop_duplicates()
+
+
+                            if len(remain_48.index) == 1:
+                                prospective_csv['insert_name'] = pandas.Series(remain_48['insert_name'], index=prospective_csv.index)
+                                out_hit = out_hit.append(prospective_csv, sort = False)
+                            elif len(remain_48.index) > 1:
+                                ## If there are two hits with similar tendencies base on insert length
+                                remain_48 = remain_48.reset_index(drop=True)
+                                target_insert = prospective_csv['insert_length'][0]
+                                lengers = abs(remain_48['insert_length'] - target_insert)
+                                closest_index = lengers.idxmin()
+                                prospective_csv['insert_name'] = pandas.Series(remain_48['insert_name'].iloc[closest_index], index = remain_48.index)
+                                out_hit = out_hit.append(prospective_csv, sort = False)
+                            else:
+                                print("Odd behaviour here")
+
+                    else:
+                        out_hit, missing_df = gene_name_tryer(prospective_csv, library_csv, out_hit, missing_df, mergio)
+                else:
+                    out_hit, missing_df = gene_name_tryer(prospective_csv, library_csv, out_hit, missing_df, mergio)
+        else:
+            ## Try to see if there is a hit with the same start and end gene names and mge_length +- 50 bp or gene +- 1
+            out_hit, missing_df = gene_name_tryer(prospective_csv, library_csv, out_hit, missing_df, mergio)
 
 
 
@@ -2267,8 +2294,15 @@ if __name__ == '__main__':
     fasta_pandas = pandas.read_csv(fasta_csv)
     fasta_pandas.columns = ['isolate', 'reference']
 
-    proper_hits = pandas.read_csv(files_for_input.blast_csv)
 
+
+
+    proper_hits = pandas.read_csv(files_for_input.blast_csv)
+    merged_csv, merged_locs = merged_contig_checker(proper_hits, contig_file_abs_path, absolute_act_path)
+    is_2k = merged_csv['align'] >= int(files_for_input.align)
+
+    proper_hits = merged_csv[is_2k]
+    proper_hits = proper_hits.reset_index(drop=True)
 
     nice_ids = nice_proper_hits_ids(proper_hits.iloc[:, 0].tolist())
     proper_hits['nicest_ids'] = pandas.Series(nice_ids, index=proper_hits.index)
@@ -2538,8 +2572,16 @@ if __name__ == '__main__':
                 ## The insertion length
                 ## Number of genes in the inserton
                 ## number genes & average length 500bp either side.
+                if current_row['merged'].values == "Yes":
+                    current_mge_length = current_row['align']
+                    mergio = True
+                else:
+                    current_mge_length = hitters[1] - hitters[0]
+                    mergio = False
 
-                current_mge_length = hitters[1] - hitters[0]
+                if current_mge_length < 0:
+                    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+                    print(isolate_id)
                 current_insert_locs = [hit_before_loc[1], hit_after_loc[0]]
                 current_insert_length = int(hit_after_loc[0]) - int(hit_before_loc[1])
                 genes_insert = current_gff[
@@ -2610,7 +2652,7 @@ if __name__ == '__main__':
                 ## check if to add in to library csv
 
                 if genes_mge_num <= gene_insert_num:
-                    hit_df, missing_isolate = hit_detector(library_dat, library_pros, isolate_id, hit_df, missing_isolate)
+                    hit_df, missing_isolate = hit_detector(library_dat, library_pros, isolate_id, hit_df, missing_isolate, mergio)
                 else:
                     missing_current = pandas.DataFrame()
                     missing_current['id'] = pandas.Series(isolate_id)
@@ -2626,7 +2668,16 @@ if __name__ == '__main__':
 
             elif mge_ori == "reverse":
 
-                current_mge_length = hitters[0] - hitters[1]
+                if current_row['merged'].values == "Yes":
+                    current_mge_length = current_row['align']
+                    mergio = True
+                else:
+                    current_mge_length = hitters[0] - hitters[1]
+                    mergio = False
+
+                if current_mge_length < 0:
+                    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+                    print(isolate_id)
                 current_insert_locs = [hit_after_loc[1], hit_before_loc[0]]
                 current_insert_length = int(hit_before_loc[0]) - int(hit_after_loc[1])
                 genes_insert = current_gff[(current_gff['start'] >= current_insert_locs[0]) \
@@ -2695,7 +2746,7 @@ if __name__ == '__main__':
 
                 ## check if to add in to library csv
                 if genes_mge_num <= gene_insert_num:
-                    hit_df, missing_isolate = hit_detector(library_dat, library_pros, isolate_id, hit_df, missing_isolate)
+                    hit_df, missing_isolate = hit_detector(library_dat, library_pros, isolate_id, hit_df, missing_isolate, mergio)
                 else:
                     missing_current = pandas.DataFrame()
                     missing_current['id'] = pandas.Series(isolate_id)
@@ -2713,8 +2764,13 @@ if __name__ == '__main__':
             missing_current['mge_end'] = pandas.Series(hitters[1], index=missing_current.index)
             missing_current['ref_name'] = pandas.Series(ref_name, index=missing_current.index)
             missing_current['cluster_name'] = pandas.Series(cluster_name, index=missing_current.index)
-            missing_current['mge_length'] = pandas.Series(current_mge_length, index=missing_current.index)
-            missing_current['reason'] = pandas.Series(["No good hits before and after"],missing_current.index)
+            if current_row['merged'].values[0] == "Yes":
+                missing_current['mge_length'] = pandas.Series(current_row['align'], index=missing_current.index)
+                missing_current['reason'] = pandas.Series(["MERGED No good hits before and after"],missing_current.index)
+            else:
+                missing_current['mge_length'] = pandas.Series(current_mge_length, index=missing_current.index)
+                missing_current['reason'] = pandas.Series(["No good hits before and after"],
+                                                          missing_current.index)
             missing_isolate = missing_isolate.append(missing_current, sort = False)
         end_len = len(missing_isolate.index) + len(hit_df.index)
         if end_len <= start_len:
