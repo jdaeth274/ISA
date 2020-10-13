@@ -140,6 +140,6 @@ then
   --output "$4/$5" --align $3
 
   ## Now for the edge list
-  python "${pythondir}edge_list.py" --hit_csv "$4/$5_hits_df.csv" --output "$4/$5_edge_list.tsv"
+    python "${pythondir}edge_list.py" --hit_csv "$4/$5_hits_df.csv" --out_name "$4/$5_edge_list.tsv"
 
 fi

@@ -1,6 +1,7 @@
 import pandas
 import numpy
 import argparse
+import time
 
 def get_options():
     purpose = '''This script intakes the hit allocator csv of hit locations for an MGE and then returns an edge list 
@@ -36,6 +37,7 @@ def col_creator(hit_csv):
     return cols_df
 
 if __name__ == '__main__':
+    tic = time.perf_counter()
     input_args = get_options()
 
     results_numpy = numpy.zeros(shape=(1, 2))
@@ -68,3 +70,8 @@ if __name__ == '__main__':
     resultslist = resultslist.iloc[1:]
 
     resultslist.to_csv(input_args.out_name, index=False, sep="\t")
+    toc = time.perf_counter()
+
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+    print("Edge list formation took: %s seconds" % (toc - tic))
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Edge List created ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")

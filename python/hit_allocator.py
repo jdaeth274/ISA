@@ -2789,7 +2789,7 @@ if __name__ == '__main__':
     toc = time.perf_counter()
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
     print("This many hits allocated: %s of %s" % (len(hit_df.index), len(narrowed_prop.index) + len(library_dat.index)))
-    print("This many missing hits: %s (%s %s)" % (len(missing_isolate.index), round((len(missing_isolate.index) / len(narrowed_prop.index)) * 100), "%"))
+    print("This many missing hits: %s (%s %s)" % (len(missing_isolate.index), round((len(missing_isolate.index) / (len(narrowed_prop.index)+ len(library_dat.index))) * 100), "%"))
     print("Took this long for hit allocation: %s" % (toc1 - tic_1))
     print("Took this long overall: %s" % (toc - tic))
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Hit allocator finished ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")

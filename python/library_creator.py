@@ -388,7 +388,7 @@ def merged_contig_checker(merged_csv, contig_file_abs_path, act_path):
                 multi_rows.append(k)
 
     unmerged = merged_csv.drop(multi_rows)
-    unmerged = unme.reset_index(drop= True)
+    unmerged = unmerged.reset_index(drop= True)
     #
     #
     # multi_row_db = merged_csv.iloc[multi_rows].copy()
