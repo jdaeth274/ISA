@@ -39,7 +39,6 @@ colnames(in_csv) <- c("Reference", "subject",	"pident",	"align",
                       "mismatch",	"gapopen",	"qstart",	"qend",
                       "sstart",	"ssend",	"eval",	"bitscore")
 
-print(head(in_csv))
 ###############################################################################
 ## Lets now input the function for mergin our in_csv ##########################
 ###############################################################################
@@ -150,8 +149,8 @@ delete_dups_blast <- function(hit_csv, contig_dir){
       subject_ids[i] <- current_id
     }
   }
-  subject_count <- plyr::count(subject_ids)
-  max_accession_frequency <- max(plyr::count(subject_ids)[,2])
+  subject_count <- dplyr::count(as.data.frame(subject_ids), subject_ids)
+  max_accession_frequency <- max(dplyr::count(as.data.frame(subject_ids), subject_ids)[,2])
   
   dups_df <- hit_csv[,c(2:4,7:10,12)]
   dups_df$subject <- subject_ids
@@ -194,10 +193,10 @@ delete_dups_blast <- function(hit_csv, contig_dir){
   if(length(loss_row) > 0){
     row_nums <- as.numeric(rownames(loss_row))
     data_no_nest <- dups_df[-c(row_nums),]
-    nest_accession <- plyr::count(data_no_nest$subject)
+    nest_accession <- dplyr::count(data_no_nest, subject)
   }else{
     data_no_nest <- dups_df
-    nest_accession <- plyr::count(data_no_nest$subject)
+    nest_accession <- dplyr::count(data_no_nest, subject)
   }
   
   ###############################################################################
@@ -233,7 +232,7 @@ delete_dups_blast <- function(hit_csv, contig_dir){
       
       ident_row=unique(ident_row_many)
       if(length(ident_row) > 0){
-        counters <- plyr::count(ident_row$align)
+        counters <- dplyr::count(ident_row,align)
         if(nrow(counters) > 1){
           repeat_seq <- c(1:counters[1,2])
           segment_num <- nrow(counters)
@@ -258,7 +257,7 @@ delete_dups_blast <- function(hit_csv, contig_dir){
   ## Lets join up the different dfs #############################################
   ###############################################################################
   data_no_nest$clust_num <- rep("ND",nrow(data_no_nest))
-  repped_ids <- as.character(plyr::count(double_hits_df$subject)[,1])
+  repped_ids <- as.character(dplyr::count(double_hits_df,subject)[,1])
   if(length(repped_ids > 0)){
     new_double_df <- NULL
     for(k in 1:length(repped_ids)){
@@ -338,7 +337,7 @@ delete_dups_blast <- function(hit_csv, contig_dir){
         clust_rows <- NULL
         new_row <- NULL
         
-        contig_nums <- plyr::count(data_set$contig)
+        contig_nums <- dplyr::count(data_set, contig)
         for(k in 1:nrow(contig_nums)){
           current_contig <- contig_nums[k, 1]
           data_set_contig <- data_set[data_set$contig == current_contig, ]
@@ -633,7 +632,7 @@ delete_dups_blast <- function(hit_csv, contig_dir){
         # }
         
       }else{
-        contig_nums <- plyr::count(data_set$contig)
+        contig_nums <- dplyr::count(data_set, contig)
         for(k in 1:nrow(contig_nums)){
           current_contig <- contig_nums[k, 1]
           data_set_contig <- data_set[data_set$contig == current_contig, ]

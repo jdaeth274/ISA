@@ -426,7 +426,7 @@ def merged_contig_checker(merged_csv, contig_file_abs_path, act_path):
 
 
 
-
+        ## If there's more than 10 rows we'll just ignore this one and move on.
         if len(isolate_rows_narrow.index) < 10 and len(isolate_rows_narrow.index) > 1:
             isolate_rows_narrow = isolate_rows_narrow.sort_values(by = 'qstart', ascending=True)
             isolate_rows_narrow = isolate_rows_narrow.reset_index(drop=True)
