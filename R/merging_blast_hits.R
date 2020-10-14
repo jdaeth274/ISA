@@ -140,7 +140,8 @@ delete_dups_blast <- function(hit_csv, contig_dir){
   # subject_ids <- sub("\\./","",subject_ids)
   
   subject_ids <- str_split_fixed(subject_ids,"\\.", 3)[,1]
-   
+  print(head(subject_ids))
+  
   for( i in 1:length(subject_ids)){
     current_id <- subject_ids[i]
     if((str_count(current_id, "_")) == 2){
@@ -149,6 +150,7 @@ delete_dups_blast <- function(hit_csv, contig_dir){
       subject_ids[i] <- current_id
     }
   }
+  print(head(subject_ids))
   subject_count <- dplyr::count(as.data.frame(subject_ids), subject_ids)
   max_accession_frequency <- max(dplyr::count(as.data.frame(subject_ids), subject_ids)[,2])
   

@@ -56,7 +56,10 @@ then
     then
       echo "Using already made tmp_dna_dir"
       cd ./tmp_dna_dir
-      cat *.dna > output.mfa
+      if [ ! -f output.mfa ]
+      then
+        cat *.dna > output.mfa
+      fi
     else
       mkdir ./tmp_dna_dir
       cd ./tmp_dna_dir
@@ -64,7 +67,11 @@ then
         perl "${perldir}converting_velvet_contigs_to_dna.pl" $line;
 
         done
-      cat *.dna > output.mfa
+      if [ ! -f output.mfa ]
+      then
+        cat *.dna > output.mfa
+      fi
+
     fi
 
 
@@ -74,7 +81,7 @@ then
     makeblastdb -dbtype nucl -out temp_blast_db -max_file_sz 2GB \
     -in output.mfa
 
-    rm output.mfa
+    #rm output.mfa
 
     blastn -db temp_blast_db -query "../$2" -outfmt 10 -out tmp_blast_csv.csv
 
@@ -120,8 +127,8 @@ then
     fi
 
 
-    Rscript --vanilla "${rdir}merging_blast_hits.R" \
-     ./tmp_dna_dir/tmp_blast_csv.csv ./contig_bounds "$4/$5_merged_blast_file"
+  Rscript --vanilla "${rdir}merging_blast_hits.R" \
+  ./tmp_dna_dir/tmp_blast_csv.csv ./contig_bounds "$4/$5_merged_blast_file"
 
   Fazza=$fasta_list
   Lines=$(cat $fasta_list | wc -l)

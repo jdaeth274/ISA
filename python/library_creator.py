@@ -2230,8 +2230,8 @@ if __name__ == '__main__':
 
     ## Set up the library df
 
-    lib_col_names = ["id", "mge_start", "mge_end", "insert_start", "insert_end", "mge_length",
-                     "insert_length", "insert_genes", "mge_genes", "flank_genes",
+    lib_col_names = ["id", "mge_start", "mge_end", "insert_start", "insert_end","before_sstart","before_send","after_sstart",
+                     "after_send","mge_length", "insert_length", "insert_genes", "mge_genes", "flank_genes",
                      "mean_flank_gene_length",'flanks_length', 'before_flank_gene','after_flank_gene','before_flank_avg',
                      'after_flank_avg','before_gene_name','after_gene_name', 'ref_name','cluster_name']
 
@@ -2501,6 +2501,7 @@ if __name__ == '__main__':
                         before_gene_lengths.append([current_length])
                     mean_length_before = numpy.mean(before_gene_lengths)
 
+
                 after_loc_gens = current_gff[(current_gff['start'] >= (hit_after_loc[0] - 100) ) & (current_gff['start'] < (hit_after_loc[0] + 5000))]
                 num_genes_after = len(after_loc_gens.index)
                 mean_length_after = [0]
@@ -2526,6 +2527,10 @@ if __name__ == '__main__':
                 library_pros['mge_end'] = pandas.Series(hitters[1], index=library_pros.index)
                 library_pros['insert_start'] = pandas.Series(current_insert_locs[0], index=library_pros.index)
                 library_pros['insert_end'] = pandas.Series(current_insert_locs[1], index=library_pros.index)
+                library_pros['before_sstart'] = pandas.Series(hit_before['sstart'], index=library_pros.index)
+                library_pros['before_send'] = pandas.Series(hit_before['send'], index=library_pros.index)
+                library_pros['after_sstart'] = pandas.Series(hit_after['sstart'], index=library_pros.index)
+                library_pros['after_send'] = pandas.Series(hit_after['send'], index=library_pros.index)
                 library_pros['mge_length'] = pandas.Series(current_mge_length, index=library_pros.index)
                 library_pros['insert_length'] = pandas.Series(current_insert_length, index=library_pros.index)
                 library_pros['insert_genes'] = pandas.Series(gene_insert_num, index=library_pros.index)
@@ -2601,6 +2606,10 @@ if __name__ == '__main__':
                 library_pros['mge_end'] = pandas.Series(hitters[1], index=library_pros.index)
                 library_pros['insert_start'] = pandas.Series(current_insert_locs[0], index=library_pros.index)
                 library_pros['insert_end'] = pandas.Series(current_insert_locs[1], index=library_pros.index)
+                library_pros['before_sstart'] = pandas.Series(hit_before['sstart'], index=library_pros.index)
+                library_pros['before_send'] = pandas.Series(hit_before['send'], index=library_pros.index)
+                library_pros['after_sstart'] = pandas.Series(hit_after['sstart'], index=library_pros.index)
+                library_pros['after_send'] = pandas.Series(hit_after['send'], index=library_pros.index)
                 library_pros['mge_length'] = pandas.Series(current_mge_length, index=library_pros.index)
                 library_pros['insert_length'] = pandas.Series(current_insert_length, index=library_pros.index)
                 library_pros['insert_genes'] = pandas.Series(gene_insert_num, index=library_pros.index)
