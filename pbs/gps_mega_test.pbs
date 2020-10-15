@@ -1,0 +1,19 @@
+#PBS -l select=1:ncpus=1:mem=12gb
+#PBS -l walltime=01:30:00
+
+start=$SECONDS
+
+module load anaconda3/personal 
+
+source activate 
+
+conda activate insertion_site_analysis 
+
+cd /rds/general/project/bacterial_evo_genomics/live/gps_annotations_4_2_2020/gps_gubbins_runs
+
+bash ./ISA/bash/isa_pipeline.sh ./gps_run_data/gps ./gps_run_data/tn1207.fasta \
+2000 gps_mega_run2 gps_mega no
+
+duration=$(( SECONDS - start ))
+
+echo $duration > mega_run_time.txt
