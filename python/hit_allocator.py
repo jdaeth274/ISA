@@ -2276,6 +2276,89 @@ def nice_proper_hits_ids(ids_list):
 
     return nicer
 
+def act_mapper(hit_before, hit_after, act_loc, current_insert_locs):
+    ## Function to take in the before and after hits generated from a new reference and convert
+    ## the before and after hits sstart and send back into hits within the gubbins reference.
+    ## Input: hit_before: The calculated hit before in the new reference
+    ##        hit_after: The calculate hit after in the new reference
+    ##        act_loc: The location of the act_comparison between the old reference and the new reference
+    ##        current_insert_locs: The locs in the new reference with the insert in between.
+    ## So I think we'll just calculate the location of the two closest points in both (so representative of either
+    ## side of the insertion) then take the hit the other two as +- 5000 bp.
+
+    ## Load up the act compo
+    compo_names = ['query', 'subject', 'pid', 'align', 'gap', 'mismatch', 'qstart',
+                   'qend', 'sstart', 'send', 'eval', 'bitscore']
+    compo_table = pandas.read_csv(act_loc, sep='\t', names=compo_names)
+
+    nuevo_before = hit_before.copy()
+    nuevo_after = hit_after.copy()
+    ## first test if both are within a single hit likely from an insertion away form where mge is within reference
+
+    single_hit = compo_table[(compo_table['qstart'] <= current_insert_locs[0]) & (compo_table['qend'] >= current_insert_locs[1])]
+
+    if single_hit.empty:
+        ## Maybe this represent the insertion of the mge in the element too so lets look for hits either side
+        hit_1 = compo_table[(compo_table['qend'] >= (current_insert_locs[0] - 50)) & (compo_table['qstart'] <= (current_insert_locs[1] + 50))]
+        hit_2 = compo_table[(compo_table['qstart'] >= (current_insert_locs[0] - 50)) & (compo_table['qend'] <= (current_insert_locs[1] + 50))]
+        hit_1 = hit_1.sort_values(by='align', ascending=False)
+        hit_2 = hit_2.sort_values(by='align', ascending=False)
+
+        if hit_1.empty or hit_2.empty:
+            return  hit_before, hit_after, False
+        else:
+            if isinstance(hit_1, pandas.Series):
+                hit_1 = hit_1.to_frame.transpose()
+            if isinstance(hit_2, pandas.Series):
+                hit_2 = hit_2.to_frame.transpose()
+            send_gap = hit_1['qend'].iloc[0] - current_insert_locs[0]
+            sstart_gap = current_insert_locs[1] - hit_2['qstart'].iloc[0]
+
+            if hit_1['sstart'].iloc[0] < hit_1['send'].iloc[0]:
+                new_sstart = hit_1['send'].iloc[0] - send_gap
+                bef_adder = -5000
+            else:
+                new_sstart = hit_1['send'].iloc[0] + send_gap
+                bef_adder = 5000
+            if hit_2['sstart'].iloc[0] < hit_2['send'].iloc[0]:
+                new_send = hit_2['sstart'].iloc[0] + sstart_gap
+                aft_adder = 5000
+            else:
+                new_send = hit_2['sstart'].iloc[0] - sstart_gap
+                aft_adder = -5000
+
+            nuevo_before['send'] = new_sstart
+            nuevo_before['sstart'] = new_sstart + bef_adder
+            nuevo_after['sstart'] = new_send
+            nuevo_after['send'] = new_send + aft_adder
+
+            mapped = True
+    else:
+        single_hit = single_hit.sort_values(by='align', ascending=False)
+        if isinstance(single_hit, pandas.Series):
+            single_hit = single_hit.to_frame().transpose()
+
+        send_gap = single_hit['qend'].iloc[0] - current_insert_locs[1]
+        sstart_gap = current_insert_locs[0] - single_hit['qstart'].iloc[0]
+
+        if single_hit['sstart'].iloc[0] < single_hit['send'].iloc[0]:
+            new_sstart = single_hit['sstart'].iloc[0] + sstart_gap
+            new_send = single_hit['send'].iloc[0] - send_gap
+            bef_adder = -5000
+            aft_adder = 5000
+        else:
+            new_sstart = single_hit['sstart'].iloc[0] - sstart_gap
+            new_send = single_hit['send'].iloc[0] + send_gap
+            bef_adder = 5000
+            aft_adder = -5000
+
+        nuevo_before['send'] = new_sstart
+        nuevo_before['sstart'] = new_sstart + bef_adder
+        nuevo_after['sstart'] = new_send
+        nuevo_after['send'] = new_send + aft_adder
+        mapped = True
+
+    return  nuevo_before, nuevo_after, mapped
 
 
 if __name__ == '__main__':
@@ -2324,7 +2407,7 @@ if __name__ == '__main__':
 
     refs_to_alter = []
     clusters_to_skip = []
-
+    new_refs = []
     ## Set up the csv for isolates that were missed due to incomplete hits
     missing_colnames = ["id","mge_start","mge_end","mge_length","ref_name","cluster_name","reason"]
     missing_isolate = pandas.DataFrame(columns=missing_colnames)
@@ -2385,6 +2468,7 @@ if __name__ == '__main__':
         ref_name = re.sub("\..*[a-zA-Z]*$", "", ref_name)
         cluster_name = cluster_name.iloc[0]
 
+        act_map = False
         if cluster_name in clusters_to_skip:
             missing_current = pandas.DataFrame()
             missing_current['id'] = pandas.Series(isolate_id)
@@ -2459,7 +2543,10 @@ if __name__ == '__main__':
                     subprocess.call(act_command, shell=True)  # , stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
                     refs_to_alter.append(ref_name)
-
+                    new_refs.append(new_ref_name)
+                    act_map = True
+        else:
+            act_map = True
         compo_file = absolute_act_path + isolate_id + ".crunch.gz"
         compo_names = ['query', 'subject', 'pid', 'align', 'gap', 'mismatch', 'qstart',
                        'qend', 'sstart', 'send', 'eval', 'bitscore']
@@ -2580,11 +2667,10 @@ if __name__ == '__main__':
                     current_mge_length = hitters[1] - hitters[0]
                     mergio = False
 
-                if current_mge_length < 0:
-                    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-                    print(isolate_id)
+
                 current_insert_locs = [hit_before_loc[1], hit_after_loc[0]]
                 current_insert_length = int(hit_after_loc[0]) - int(hit_before_loc[1])
+                current_insert_s_locs = [hit_before.iloc[9], hit_after.iloc[8]]
                 genes_insert = current_gff[
                     (current_gff['start'] >= current_insert_locs[0]) & (current_gff['end'] <= current_insert_locs[1])]
                 genes_mge = current_gff[(current_gff['start'] >= hitters[0]) & (current_gff['end'] <= hitters[1])]
@@ -2624,6 +2710,16 @@ if __name__ == '__main__':
                 library_flank_gene_length = numpy.mean(before_gene_lengths + after_loc_lengths)
                 # library_flank_gene_length = numpy.mean([mean_length_before, mean_length_after])
                 tot_flanks_length = hit_before_length + hit_after_length
+
+                if act_map:
+                    ## Get the altered ref to use, then check if we can actually map this back to the reference in
+                    ## the act_mapper function, if not skip hit
+                    altered_index = [i for i, x in enumerate(refs_to_alter) if x == ref_name]
+                    current_new = new_refs[altered_index[0]]
+                    new_act_loc = absolute_act_path + current_new + ".crunch.gz"
+                    hit_before, hit_after, mapped = act_mapper(hit_before, hit_after, new_act_loc, current_insert_s_locs)
+                    if not mapped:
+                        continue
 
                 library_pros = pandas.DataFrame()
                 library_pros['id'] = pandas.Series(isolate_id)
@@ -2680,11 +2776,10 @@ if __name__ == '__main__':
                     current_mge_length = hitters[0] - hitters[1]
                     mergio = False
 
-                if current_mge_length < 0:
-                    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-                    print(isolate_id)
+
                 current_insert_locs = [hit_after_loc[1], hit_before_loc[0]]
                 current_insert_length = int(hit_before_loc[0]) - int(hit_after_loc[1])
+                current_insert_s_locs = [hit_after.iloc[9], hit_before.iloc[8]]
                 genes_insert = current_gff[(current_gff['start'] >= current_insert_locs[0]) \
                                            & (current_gff['end'] <= current_insert_locs[1])]
                 genes_mge = current_gff[(current_gff['start'] >= hitters[1]) & (current_gff['end'] <= hitters[0])]
@@ -2723,6 +2818,16 @@ if __name__ == '__main__':
 
                 library_flank_gene_length = numpy.mean([mean_length_before, mean_length_after])
                 tot_flanks_length = hit_before_length + hit_after_length
+
+                if act_map:
+                    ## Get the altered ref to use, then check if we can actually map this back to the reference in
+                    ## the act_mapper function, if not skip hit
+                    altered_index = [i for i, x in enumerate(refs_to_alter) if x == ref_name]
+                    current_new = new_refs[altered_index[0]]
+                    new_act_loc = absolute_act_path + current_new + ".crunch.gz"
+                    hit_before, hit_after, mapped = act_mapper(hit_before, hit_after, new_act_loc, current_insert_s_locs)
+                    if not mapped:
+                        continue
 
                 library_pros = pandas.DataFrame()
                 library_pros['id'] = pandas.Series(isolate_id)

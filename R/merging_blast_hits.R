@@ -23,9 +23,9 @@ if(length(in_files) != 3){
 }
 
 in_csv_file <- commandArgs(trailingOnly = TRUE)[1]
-#in_csv_file <- "~/Documents/phd_downloads/gps_downloads/cluster_100_list_gffs/tmp_dna_dir/tmp_blast_csv.csv"
+#in_csv_file <- "~/Dropbox/phd/insertion_site_analysis/data/tmp_dna_dir/tmp_blast_csv.csv"
 contig_dir <- commandArgs(trailingOnly = TRUE)[2]
-#contig_dir <- "~/Documents/phd_downloads/gps_downloads/cluster_100_list_gffs/contig_bounds/"
+#contig_dir <- "~/Dropbox/phd/insertion_site_analysis/data/contig_bounds/"
 
 
 
@@ -259,7 +259,11 @@ delete_dups_blast <- function(hit_csv, contig_dir){
   ## Lets join up the different dfs #############################################
   ###############################################################################
   data_no_nest$clust_num <- rep("ND",nrow(data_no_nest))
-  repped_ids <- as.character(dplyr::count(double_hits_df,subject)[,1])
+  if(!(is.null(double_hits_df))){
+    repped_ids <- as.character(dplyr::count(double_hits_df,subject)[,1])
+  }else{
+    repped_ids <- NULL
+  }
   if(length(repped_ids > 0)){
     new_double_df <- NULL
     for(k in 1:length(repped_ids)){
