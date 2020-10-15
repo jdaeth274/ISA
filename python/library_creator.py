@@ -1768,12 +1768,15 @@ def hit_mover(hit_before, hit_after, compo_csv, isolate_id, mge_bounds, mge_ori)
 
                     new_align = hit_new_aft.iloc[7] - current_hit['qstart'].iloc[0]
                     if new_align >= 5000:
+
+
                         hit_new_aft = pandas.DataFrame(hit_new_aft).transpose()
                         current_hit = pandas.DataFrame(current_hit.iloc[0]).transpose()
                         hit_new_aft = pandas.concat([hit_new_aft, current_hit], sort=False, ignore_index=False)
                         hit_new_aft = hit_new_aft.reset_index(drop=True)
-                        hit_new_aft = pandas.concat([hit_new_aft, current_hit.iloc[0]], sort=False, ignore_index=True)
+
                     else:
+
                         hit_new_aft = pandas.DataFrame(hit_new_aft).transpose()
                         current_hit = pandas.DataFrame(current_hit.iloc[0]).transpose()
                         hit_new_aft = pandas.concat([hit_new_aft, current_hit], sort=False, ignore_index=False)
@@ -1844,6 +1847,8 @@ def hit_mover(hit_before, hit_after, compo_csv, isolate_id, mge_bounds, mge_ori)
                                      'send': hit_new_aft.iloc[max_row, 9],
                                      'eval': hit_after['eval'],
                                      'bitscore': hit_after['bitscore']})
+
+
         after_pass = length_aft >= 5000
     else:
         hit_aft_out = hit_after.copy()
@@ -2284,6 +2289,8 @@ if __name__ == '__main__':
         ref_name = re.sub("\..*[a-zA-Z]*$", "", ref_name)
         cluster_name = cluster_name.iloc[0]
 
+        act_map = False
+
         if cluster_name in clusters_to_skip:
             continue
 
@@ -2342,7 +2349,9 @@ if __name__ == '__main__':
                     subprocess.call(act_command, shell=True)#, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
                     refs_to_alter.append(ref_name)
-
+                    act_map = True
+        else:
+            act_map = True
 
 
 
@@ -2423,6 +2432,7 @@ if __name__ == '__main__':
 
 
             if not hit_after_check.empty:
+
                 hit_after = multi_hit_merger(hit_after_check)
                 hit_after_loc = hit_after.iloc[[6,7]]
                 hit_after_length = abs(hit_after_loc[1] - hit_after_loc[0])
@@ -2432,7 +2442,9 @@ if __name__ == '__main__':
 
 
         if all_one_tig and not all_one_tig_5k:
+
             hit_before, hit_after, all_one_tig_5k = hit_mover(hit_before, hit_after, compo_table, isolate_id, mge_bounds, mge_ori)
+
             hit_before_loc = hit_before.iloc[[6, 7]]
             hit_after_loc = hit_after.iloc[[6, 7]]
 
@@ -2555,6 +2567,9 @@ if __name__ == '__main__':
 
 
             elif mge_ori == "reverse":
+
+                if isolate_id == "7622_5#75":
+                    print(hit_after)
 
                 current_mge_length = hitters[0] - hitters[1]
                 current_insert_locs = [hit_after_loc[1], hit_before_loc[0]]

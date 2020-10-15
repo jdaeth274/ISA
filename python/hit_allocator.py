@@ -1855,7 +1855,7 @@ def hit_mover(hit_before, hit_after, compo_csv, isolate_id, mge_bounds, mge_ori)
                         current_hit = pandas.DataFrame(current_hit.iloc[0]).transpose()
                         hit_new_aft = pandas.concat([hit_new_aft, current_hit], sort=False, ignore_index=False)
                         hit_new_aft = hit_new_aft.reset_index(drop=True)
-                        hit_new_aft = pandas.concat([hit_new_aft, current_hit.iloc[0]], sort=False, ignore_index=True)
+
                     else:
                         hit_new_aft = pandas.DataFrame(hit_new_aft).transpose()
                         current_hit = pandas.DataFrame(current_hit.iloc[0]).transpose()

@@ -77,10 +77,11 @@ then
 
 
 
-
+    if [ ! -f tmp_blast_db.nin ] || [ ! -f tmp_blast_db.nal ]
+    then
     makeblastdb -dbtype nucl -out temp_blast_db -max_file_sz 2GB \
     -in output.mfa
-
+    fi
     #rm output.mfa
 
     blastn -db temp_blast_db -query "../$2" -outfmt 10 -out tmp_blast_csv.csv
