@@ -2253,7 +2253,7 @@ def all_presence_checker(id_list, series_ids):
     skip = False
     num_in = 0
     for k in range(len(id_list)):
-        if any(series_ids.isin([id_list[k]])):
+        if id_list[k] in series_ids:
             num_in += 1
 
     if num_in == len(id_list):
@@ -2380,14 +2380,15 @@ if __name__ == '__main__':
 
 
     proper_hits = pandas.read_csv(files_for_input.blast_csv)
+    nice_ids = nice_proper_hits_ids(proper_hits.iloc[:, 0].tolist())
     merged_csv, merged_locs = merged_contig_checker(proper_hits, contig_file_abs_path, absolute_act_path)
     is_2k = merged_csv['align'] >= int(files_for_input.align)
 
     proper_hits = merged_csv[is_2k]
     proper_hits = proper_hits.reset_index(drop=True)
 
-    nice_ids = nice_proper_hits_ids(proper_hits.iloc[:, 0].tolist())
-    proper_hits['nicest_ids'] = pandas.Series(nice_ids, index=proper_hits.index)
+    nice_ids2 = nice_proper_hits_ids(proper_hits.iloc[:, 0].tolist())
+    proper_hits['nicest_ids'] = pandas.Series(nice_ids2, index=proper_hits.index)
     ## Now lets load up the csv with the isolate names and their reference location
 
     isolate_ref_gff = pandas.read_csv(files_for_input.reference_csv)
@@ -2403,10 +2404,12 @@ if __name__ == '__main__':
 
 
     library_dat['insert_name'] = pandas.Series(range(1,(len(library_dat.index) + 1)))
+    with open("./realtered_act_refs.txt") as file:
+        refs_to_alter = file.readlines()
 
-    refs_to_alter = []
     clusters_to_skip = []
-    new_refs = []
+    with open("./new_act_refs.txt") as file:
+        new_refs = file.readlines()
     ## Set up the csv for isolates that were missed due to incomplete hits
     missing_colnames = ["id","mge_start","mge_end","mge_length","ref_name","cluster_name","reason"]
     missing_isolate = pandas.DataFrame(columns=missing_colnames)
@@ -2489,7 +2492,7 @@ if __name__ == '__main__':
                 current_cluster_vals = isolate_ref_gff[isolate_ref_gff['reference'] == ref_loc.iloc[0]]
 
                 current_ids = isolate_name_producer(current_cluster_vals['isolate'])
-                skip = all_presence_checker(current_ids, narrowed_prop.iloc[:, 0])
+                skip = all_presence_checker(current_ids, nice_ids)
                 if skip:
                     missing_current = pandas.DataFrame()
                     missing_current['id'] = pandas.Series(isolate_id)
@@ -2500,7 +2503,7 @@ if __name__ == '__main__':
                     missing_current['mge_length'] = pandas.Series(current_mge_length,  index=missing_current.index)
                     missing_current['reason'] = pandas.Series(["In clusters to skip"],  index=missing_current.index)
                     missing_isolate = missing_isolate.append(missing_current)
-                    clusters_to_skip.append(cluster_name, sort = False)
+                    clusters_to_skip.append(cluster_name)
                     continue
                 else:
                     ## Find n50 of those not in the blast file  re-run act compos
@@ -2720,12 +2723,17 @@ if __name__ == '__main__':
                         hit_before, hit_after, mapped = act_mapper(hit_before, hit_after, new_act_loc,
                                                                    current_insert_s_locs)
                         if not mapped:
-                            print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-                            print("Can't map")
-                            print(isolate_id)
-                            print(hit_before_loc)
-                            print(hit_after_loc)
-                            print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+                            missing_current = pandas.DataFrame()
+                            missing_current['id'] = pandas.Series(isolate_id)
+                            missing_current['mge_start'] = pandas.Series(hitters[0], index=missing_current.index)
+                            missing_current['mge_end'] = pandas.Series(hitters[1], index=missing_current.index)
+                            missing_current['ref_name'] = pandas.Series(ref_name, index=missing_current.index)
+                            missing_current['cluster_name'] = pandas.Series(cluster_name, index=missing_current.index)
+                            missing_current['mge_length'] = pandas.Series(current_mge_length,
+                                                                          index=missing_current.index)
+                            missing_current['reason'] = pandas.Series(["No map back to gub ref"], missing_current.index)
+                            missing_isolate = missing_isolate.append(missing_current, sort=False)
+
                             continue
                     else:
                         hit_before['sstart'] = hit_before['qstart']
@@ -2840,11 +2848,16 @@ if __name__ == '__main__':
                         hit_before, hit_after, mapped = act_mapper(hit_before, hit_after, new_act_loc,
                                                                    current_insert_s_locs)
                         if not mapped:
-                            print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-                            print("Can't map")
-                            print(isolate_id)
-                            print(current_insert_s_locs)
-                            print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+                            missing_current = pandas.DataFrame()
+                            missing_current['id'] = pandas.Series(isolate_id)
+                            missing_current['mge_start'] = pandas.Series(hitters[0], index=missing_current.index)
+                            missing_current['mge_end'] = pandas.Series(hitters[1], index=missing_current.index)
+                            missing_current['ref_name'] = pandas.Series(ref_name, index=missing_current.index)
+                            missing_current['cluster_name'] = pandas.Series(cluster_name, index=missing_current.index)
+                            missing_current['mge_length'] = pandas.Series(current_mge_length,
+                                                                          index=missing_current.index)
+                            missing_current['reason'] = pandas.Series(["No map back to gub ref"], missing_current.index)
+                            missing_isolate = missing_isolate.append(missing_current, sort=False)
                             continue
                     else:
                         hit_before['sstart'] = hit_before['qstart']
@@ -2909,10 +2922,11 @@ if __name__ == '__main__':
                                                           missing_current.index)
             missing_isolate = missing_isolate.append(missing_current, sort = False)
         end_len = len(missing_isolate.index) + len(hit_df.index)
-        if end_len <= start_len:
-            print("<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>")
+        if end_len != start_len + 1:
+            print("missing")
             print(isolate_id)
-            print("<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>")
+
+
 
 
     hit_out_name = files_for_input.output + "_hits_df.csv"

@@ -60,6 +60,7 @@ def n50_calc(fasta_list, reference_id):
             ids.append(current_isolate)
 
 
+
     max_n50 = n50s.index(max(n50s))
 
     new_act_iso = ids[max_n50]
@@ -2176,11 +2177,12 @@ def all_presence_checker(id_list, series_ids):
     skip = False
     num_in = 0
     for k in range(len(id_list)):
-        if any(series_ids.isin([id_list[k]])):
+        if id_list[k] in series_ids:
             num_in += 1
 
     if num_in == len(id_list):
         skip = True
+
 
     return skip
 
@@ -2312,10 +2314,6 @@ if __name__ == '__main__':
 
     merged_csv = merged_contig_checker(hit_csv, contig_file_abs_path, absolute_act_path)
     is_2k = merged_csv['align'] >= int(files_for_input.align_cutoff)
-    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-    print(len(merged_csv))
-    print(len(hit_csv))
-    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
     proper_hits = merged_csv[is_2k]
     proper_hits = proper_hits.reset_index(drop=True)
     proper_hits.to_csv(path_or_buf= (files_for_input.output + "_proper_hits.csv"), index=False)
@@ -2398,7 +2396,7 @@ if __name__ == '__main__':
                 current_cluster_vals = isolate_ref_gff[isolate_ref_gff['reference'] == ref_loc.iloc[0]]
 
                 current_ids = isolate_name_producer(current_cluster_vals['isolate'])
-                skip = all_presence_checker(current_ids, proper_hits.iloc[:,0])
+                skip = all_presence_checker(current_ids, nice_ids)
                 if skip:
                     clusters_to_skip.append(cluster_name)
                     continue
@@ -2554,9 +2552,7 @@ if __name__ == '__main__':
             ## If the before and after hits to the isolate all line up on one contig we can assume this is
             ## a good enough hit to be used in library creation. Also needs to have at least 5k bp either side
             ## in this hit
-            print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-            print("~ IN HERE ~")
-            print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+
             current_gff = pandas.read_csv(current_gff_loc.iloc[0], sep='\t',
                                        names=['seqid', 'source', 'type', 'start', 'end', 'score', 'strand', 'phase',
                                              'attributes'],
@@ -2632,11 +2628,7 @@ if __name__ == '__main__':
                         hit_before, hit_after, mapped = act_mapper(hit_before, hit_after, new_act_loc,
                                                                    current_insert_s_locs)
                         if not mapped:
-                            print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-                            print("Can't map")
-                            print(isolate_id)
-                            print(current_insert_s_locs)
-                            print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+
                             continue
                     else:
                         hit_before['sstart'] = hit_before['qstart']
@@ -2679,8 +2671,7 @@ if __name__ == '__main__':
 
             elif mge_ori == "reverse":
 
-                if isolate_id == "7622_5#75":
-                    print(hit_after)
+
 
                 current_mge_length = hitters[0] - hitters[1]
                 current_insert_locs = [hit_after_loc[1], hit_before_loc[0]]
@@ -2786,6 +2777,12 @@ if __name__ == '__main__':
     library_df.to_csv(path_or_buf=(files_for_input.output + "_library.csv"), index=False)
     toc1 = time.perf_counter()
     toc = time.perf_counter()
+
+    with open("./realtered_act_refs.txt", mode='wt', encoding='utf-8') as myfile:
+        myfile.write('\n'.join(refs_to_alter))
+    with open("./new_act_refs.txt", mode='wt', encoding='utf-8') as myfile:
+        myfile.write('\n'.join(new_refs))
+
 
     print("Took this long for library_search: %s" % (toc1 - tic_1))
     print("Took this long overall: %s" % (toc - tic))
