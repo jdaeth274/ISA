@@ -10,7 +10,6 @@ from statistics import stdev
 from statistics import mean
 import os
 import string
-from Bio.Alphabet import generic_dna
 from Bio import SeqIO
 from Bio.Seq import Seq
 import math
