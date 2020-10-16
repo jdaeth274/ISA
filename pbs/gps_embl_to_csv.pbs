@@ -1,0 +1,26 @@
+#PBS -l select=1:ncpus=1:mem=2gb
+#PBS -l walltime=06:00:00
+#PBS -J 1-146
+
+module load anaconda3/personal
+
+source activate
+
+conda activate insertion_site_analysis
+
+cd /rds/general/project/bacterial_evo_genomics/live/gps_annotations_4_2_2020/gps_gubbins_runs
+
+current_dir=$(head -n $PBS_ARRAY_INDEX dir_list.txt | tail -n 1)
+
+cd $current_dir
+
+out_file="gpsc.${PBS_ARRAY_INDEX}.branch_base.csv"
+
+python ../ISA/python/embl_base_csv.py --embl_file *.branch_base_reconstruction.embl \
+--out_name $out_file
+
+cd ../
+
+echo $PBS_ARRAY_INDEX >> embl_csv_finished.txt
+
+
