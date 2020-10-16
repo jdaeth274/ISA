@@ -2716,10 +2716,22 @@ if __name__ == '__main__':
                     altered_index = [i for i, x in enumerate(refs_to_alter) if x == ref_name]
                     current_new = new_refs[altered_index[0]]
                     new_act_loc = absolute_act_path + current_new + ".crunch.gz"
-                    hit_before, hit_after, mapped = act_mapper(hit_before, hit_after, new_act_loc, current_insert_s_locs)
-                    if not mapped:
-                        continue
-
+                    if isolate_id != ref_name:
+                        hit_before, hit_after, mapped = act_mapper(hit_before, hit_after, new_act_loc,
+                                                                   current_insert_s_locs)
+                        if not mapped:
+                            print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+                            print("Can't map")
+                            print(isolate_id)
+                            print(hit_before_loc)
+                            print(hit_after_loc)
+                            print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+                            continue
+                    else:
+                        hit_before['sstart'] = hit_before['qstart']
+                        hit_before['send'] = hit_before['qend']
+                        hit_after['sstart'] = hit_after['qstart']
+                        hit_after['send'] = hit_after['qend']
                 library_pros = pandas.DataFrame()
                 library_pros['id'] = pandas.Series(isolate_id)
                 library_pros['mge_start'] = pandas.Series(hitters[0], index=library_pros.index)
@@ -2824,10 +2836,21 @@ if __name__ == '__main__':
                     altered_index = [i for i, x in enumerate(refs_to_alter) if x == ref_name]
                     current_new = new_refs[altered_index[0]]
                     new_act_loc = absolute_act_path + current_new + ".crunch.gz"
-                    hit_before, hit_after, mapped = act_mapper(hit_before, hit_after, new_act_loc, current_insert_s_locs)
-                    if not mapped:
-                        continue
-
+                    if isolate_id != ref_name:
+                        hit_before, hit_after, mapped = act_mapper(hit_before, hit_after, new_act_loc,
+                                                                   current_insert_s_locs)
+                        if not mapped:
+                            print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+                            print("Can't map")
+                            print(isolate_id)
+                            print(current_insert_s_locs)
+                            print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+                            continue
+                    else:
+                        hit_before['sstart'] = hit_before['qstart']
+                        hit_before['send'] = hit_before['qend']
+                        hit_after['sstart'] = hit_after['qstart']
+                        hit_after['send'] = hit_after['qend']
                 library_pros = pandas.DataFrame()
                 library_pros['id'] = pandas.Series(isolate_id)
                 library_pros['mge_start'] = pandas.Series(hitters[0], index=library_pros.index)

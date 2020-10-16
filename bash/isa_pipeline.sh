@@ -77,7 +77,7 @@ then
 
 
 
-    if [ ! -f tmp_blast_db.nin ] || [ ! -f tmp_blast_db.nal ]
+    if [ ! -f temp_blast_db.nin ] || [ ! -f temp_blast_db.nal ]
     then
     makeblastdb -dbtype nucl -out temp_blast_db -max_file_sz 2GB \
     -in output.mfa
