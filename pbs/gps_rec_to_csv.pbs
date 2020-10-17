@@ -1,5 +1,5 @@
 #PBS -l select=1:ncpus=1:mem=2gb
-#PBS -l walltime=06:00:00
+#PBS -l walltime=00:30:00
 #PBS -J 1-146
 
 module load anaconda3/personal
@@ -16,13 +16,13 @@ cd $current_dir
 
 out_prefix=$(echo $current_dir | grep -o -a gpsc\.[0-9]*_)
 
-out_file="${out_prefix}branch_base.csv"
+out_file="${out_prefix}recombinations.csv"
 
-python ../ISA/python/embl_base_csv.py --embl_file *.branch_base_reconstruction.embl \
+python ../ISA/python/embl_recombinations.py --embl_file *.recombination_predictions.embl \
 --out_name $out_file
 
 cd ../
 
-echo $PBS_ARRAY_INDEX >> embl_csv_finished.txt
+echo $PBS_ARRAY_INDEX >> embl_recombinations_csv_finished.txt
 
 
