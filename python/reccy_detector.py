@@ -956,8 +956,8 @@ if __name__ == '__main__':
 
 
 
-    reccy_name = input_args.out_name + "_reccy_hits"
-    non_reccy_name = input_args.out_name + "_non_reccy_hits"
+    reccy_name = input_args.out_name + "_reccy_hits.csv"
+    non_reccy_name = input_args.out_name + "_non_reccy_hits.csv"
 
     tot_reccy_csv.to_csv(path_or_buf=reccy_name, index=False)
     tot_non_reccy.to_csv(path_or_buf=non_reccy_name, index=False)

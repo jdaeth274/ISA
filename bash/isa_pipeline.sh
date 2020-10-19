@@ -17,7 +17,10 @@ echo "This is the alignment length cutoff: $3"
 #echo "This is the node labelled tree to use: $6"
 echo "This is the outfolder name: $4"
 echo "This is the prefix: $5"
-echo "Go through Act compos (yes/no): $6"
+echo "This is where the gubbins_res are stored $6"
+echo "Flank length to extract: $7"
+echo "Go through Act compos (yes/no): $8"
+
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 parentdir="$(dirname "$DIR")"
 pythondir="${parentdir}/python/"
@@ -37,7 +40,7 @@ then
     Lines=$(cat $fasta_list | wc -l)
 
     counter=0
-    if [ $6 == "yes" ]
+    if [ $8 == "yes" ]
     then
 
       if [ -d ./act_compos ]
@@ -149,5 +152,17 @@ then
 
   ## Now for the edge list
     python "${pythondir}edge_list.py" --hit_csv "$4/$5_hits_df.csv" --out_name "$4/$5_edge_list.tsv"
+
+  ## Now lets find the reccy hits for the isolates
+    python "${pythondir}reccy_detector.py" --gubbins_res $7 --hit_locs_csv "$4/$5_hits_df.csv" \
+    --out_name "$4/$5"
+
+
+
+    ## Now to find out the blast locations
+    python "${pythondir}blast_hits.py" --gubbins_res $6 --reccy_hits "$4/$5_reccy_hits.csv" \
+    --hit_csv "$4/$5_hits_df.csv" --act_compos "./act_compos/" --flank_length $7 --dna_dir "./tmp_dna_dir/" \
+    --out_dir "$4/$5_flanks" --out_name "$4/$5_flanks_extracted.csv"
+    
 
 fi
