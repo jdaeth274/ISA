@@ -23,6 +23,6 @@ python ../ISA/python/embl_recombinations.py --embl_file *.recombination_predicti
 
 cd ../
 
-echo $PBS_ARRAY_INDEX >> embl_recombinations_csv_finished.txt
+echo $out_prefix >> embl_recombinations_csv_finished.txt
 
 
