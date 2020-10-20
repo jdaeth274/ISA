@@ -932,6 +932,7 @@ if __name__ == '__main__':
         tic_cluster = time.perf_counter()
         current_dat = hit_csv[hit_csv['cluster_name'] == cluster]
         current_dir = base_loc + cluster
+        print(current_dir)
         cluster_files = os.listdir(current_dir)
         tree_indexio = [k for k, s in enumerate(cluster_files) if "node_labelled.final_tree.tre" in s]
         reccy_index =  [k for k, s in enumerate(cluster_files) if "recombination_predictions.gff" in s]

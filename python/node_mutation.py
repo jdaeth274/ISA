@@ -134,6 +134,14 @@ def node_reconstruct(tree_loc, hit_csv):
     return tree
 
 def branch_mutations(tree, hit_csv, embl_csv, embl_reccy):
+    ## Function to work out all the mutations and their positions along a branch.
+    ## The embl csv gives you total mutations, both in and outside recombinations, so we first
+    ## calculate the total, then to get just the base substitutions we check if any recombinations
+    ## along the branches and remove those snps inside these events from the total to get the clonal or (outside)
+    ## mutations.
+
+
+
     total_isolates = []
 
     for taxon in tree.leaf_node_iter():

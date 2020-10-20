@@ -5,7 +5,7 @@ pmen9_gff <- readLines("~/Dropbox/phd/gubbins_project/data/pmen9/pmen9_run_data/
 pmen9_gff <- sub(".dna_prokka",".fa_prokka", pmen9_gff)
 
 pmen3_ref <- "~/Dropbox/phd/gubbins_project/data/pmen3/pmen3_run_data/pmen3_reference.gff"
-pmen9_ref <- "~/Dropbox/phd/gubbins_project/data/pmen9/pmen9_run_data/pmen9_reference.gff"
+pmen9_ref <- "~/Dropbox/phd/gubbins_project/data/pmen9/pmen9_run_data/INV200.gff"
 
 pmens <- c(pmen3_gff, pmen9_gff)
 
@@ -13,8 +13,9 @@ pmens_ref <- c(rep(pmen3_ref, length(pmen3_gff)), rep(pmen9_ref, length(pmen9_gf
 
 pmen_ref_gff <- cbind.data.frame(pmens, pmens_ref)
 colnames(pmen_ref_gff) <- c("isolate","reference")
+pmen_ref_gff$cluster_name <- c(rep("pmen3", length(pmen3_gff)), rep("pmen9", length(pmen9_gff)))
 
-write.csv(pmen_ref_gff, file = "~/Dropbox/phd/insertion_site_analysis/data/reference_isolate_gff.csv", row.names = FALSE)
+write.csv(pmen_ref_gff, file = "~/Dropbox/phd/insertion_site_analysis/data/pmen_run/pmen_reference_isolate_gff.csv", row.names = FALSE)
 
 shortened_csv <- pmen_ref_gff[c(625:650, 725:750),]
 write.csv(shortened_csv, file = "~/Dropbox/phd/insertion_site_analysis/data/short_reference_isolate_gff.csv", row.names = FALSE)
@@ -26,7 +27,7 @@ write.csv(pmen9_only, file = "~/Dropbox/phd/insertion_site_analysis/data/pmen9_r
 pmen3_fasta <- readLines("~/Dropbox/phd/gubbins_project/data/pmen3/pmen3_run_data/pmen3_fastas_list")
 pmen9_fasta <- readLines("~/Dropbox/phd/gubbins_project/data/pmen9/pmen9_run_data/pmen9_fastas_list")
 
-pmen3_ref <- "~/Dropbox/phd/gubbins_project/data/pmen3/pmen3_run_data/pmen3_reference.gff"
+pmen3_ref <- "~/Documents/phd_downloads/PMEN3/PMEN3_assemblies/6999_6#21.contigs_velvet.fa"
 pmen9_ref <- "~/Dropbox/phd/gubbins_project/data/pmen9/pmen9_run_data/pmen9_reference.gff"
 
 pmens <- c(pmen3_fasta, pmen9_fasta)

@@ -39,7 +39,7 @@ def progress_bar():
     print("Narrowing down the isolates for blast searching", end="", flush=True)
 
 
-progress_bar()
+
 
 
 def leaf_tips(tree, example_id, current_node):
@@ -189,14 +189,14 @@ def compo_transformer(comps_tab):
 
 def act_bounds(python_row):
     before_regions = python_row[['before_sstart','before_send']]
-    after_regions = python_row[['after_sstart','after_end']]
+    after_regions = python_row[['after_sstart','after_send']]
 
     midpoint_bef = (before_regions.iloc[0,1] + before_regions.iloc[0,0]) / 2
     midpoint_aft = (after_regions.iloc[0,1] + after_regions.iloc[0,0]) / 2
     if midpoint_bef < midpoint_aft:
-        closest_vals = [before_regions.min(axis=1).item(), before_regions.max(axis = 1).item()]
+        closest_vals = [before_regions.min(axis=1).values[0], after_regions.max(axis=1).values[0]]
     elif midpoint_bef > midpoint_aft:
-        closest_vals = [after_regions.min(axis=1).item(), before_regions.max(axis = 1).item()]
+        closest_vals = [after_regions.min(axis=1).values[0], before_regions.max(axis=1).values[0]]
 
 
     return closest_vals
@@ -668,7 +668,7 @@ def compo_enlarger(start_act, ori, pos, act_compo, target_length, debug_id):
 
     return gap_list
 
-def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, reference_id):
+def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, reference_id, flanking_length):
     ## Function to take in the reccy hits csv for a paticular cluster. Then work through the
     ## reccy hits and find the isolate with the fewest snps around the insertion site. This will
     ## then be output in the out_df along with the end and start points for the flanks to be taken
@@ -692,6 +692,8 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
     control_id = []
     control_start = []
     control_end = []
+    insert_start = []
+    insert_end = []
 
     reccy_starts_bef_control = []
     reccy_ends_bef_control = []
@@ -703,7 +705,7 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
 
     out_df = pandas.DataFrame()
 
-    print(".", end="", flush=True)
+
 
     for k in range(len(reccy_hits.index)):
         current_row = reccy_hits.iloc[k]
@@ -864,9 +866,7 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
 
                 rec_end_bef = rec_start_bef + flanking_length
 
-                print("\n", cont_start, "\n")
 
-                print(rec_end_aft, flanking_length)
 
                 rec_start_aft = rec_end_aft - flanking_length
 
@@ -883,6 +883,9 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
         after_start_region.append(mge_deets.iloc[0, 7])
         after_end_region.append(mge_deets.iloc[0, 8])
         snp_count.append(snp_count_indiv)
+        insert_start.append(mge_deets.iloc[0, 3])
+        insert_end.append(mge_deets.iloc[0, 4])
+
 
     out_df['isolate_id'] = pandas.Series(data=isolate_id)
     out_df['mge_start'] = pandas.Series(data=mge_bef, index=out_df.index)
@@ -892,6 +895,8 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
     out_df['after_start'] = pandas.Series(data=after_start_region, index=out_df.index)
     out_df['after_end'] = pandas.Series(data=after_end_region, index=out_df.index)
     out_df['snp_count'] = pandas.Series(data=snp_count, index=out_df.index)
+    out_df['insert_start'] = pandas.Series(insert_start, index=out_df.index)
+    out_df['insert_end'] = pandas.Series(insert_end, index=out_df.index)
 
     reccy_starts_bef = []
     reccy_ends_bef = []
@@ -905,6 +910,7 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
         mge_hits = out_df.iloc[o, [1,2]]
         bef_hits = out_df.iloc[o, [3,4]]
         aft_hits = out_df.iloc[o, [5,6]]
+        insert_hits = out_df.iloc[o, [8,9]]
         act_file = act_compos + current_isolate + ".crunch.gz"
         compo_names = ['query', 'subject', 'pid', 'align', 'gap', 'mismatch', 'qstart',
                        'qend', 'sstart', 'send', 'eval', 'bitscore']
@@ -925,6 +931,21 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
             elif mge_hits[0] > mge_hits[1]:
                 before_subset = compo_table[(compo_table['sstart'] == aft_hits[0]) & (compo_table['send'] == bef_hits[1])]
                 after_subset = compo_table[(compo_table['sstart'] == aft_hits[0]) & (compo_table['send'] == bef_hits[1])]
+        ## It might be the hit info for this isolate comes from combined act hits, so we need to find the closest hits
+        ## in together then take the ACT compos from these closest hits in.
+        if before_subset.empty or after_subset.empty:
+
+            if mge_hits[0] < mge_hits[1]:
+                before_subset = compo_table[compo_table['qend'] == insert_hits[0]]
+                after_subset = compo_table[compo_table['qstart'] == insert_hits[1]]
+                before_subset = before_subset.sort_values(by='align', ascending=False)
+                after_subset = after_subset.sort_values(by='align', ascending=False)
+            elif mge_hits[0] > mge_hits[1]:
+                before_subset = compo_table[compo_table['qstart'] == insert_hits[1]]
+                after_subset = compo_table[compo_table['qend'] == insert_hits[0]]
+                before_subset = before_subset.sort_values(by='align', ascending=False)
+                after_subset = after_subset.sort_values(by='align', ascending=False)
+
 
         out_df.at[o, 'before_start'] = before_subset.iloc[0, 6]
         out_df.at[o, 'before_end'] = before_subset.iloc[0, 7]
@@ -945,6 +966,8 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
             rec_start_aft = after_subset.iloc[0,6]
             rec_end_aft = after_subset.iloc[0,7]
             aft_length = rec_end_aft - rec_start_aft
+
+
 
 
             if bef_length < flanking_length:
@@ -978,6 +1001,7 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
             rec_end_aft = after_subset.iloc[0, 7]
             aft_length = rec_end_aft - rec_start_aft
 
+
             if bef_length < flanking_length:
 
                 bef_regions = compo_enlarger(before_subset, "reverse", "bef", compo_table,
@@ -1007,7 +1031,7 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
         regions_aft.append(aft_regions)
 
 
-    print(".",end="",flush=True)
+
 
 
 
@@ -1025,13 +1049,15 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
 
 
 
-    return out_df
+    return out_df, regions_bef, regions_aft
 
-def extracting_flanks(out_df, out_dir, ref_name, fasta_directory):
+def extracting_flanks(out_df, out_dir, ref_name, fasta_directory, regions_bef, regions_aft):
 
 
     if os.path.isdir(out_dir) == False:
         os.mkdir(out_dir)
+
+
 
 
     for posdnuos in range(len(out_df.index)):
@@ -1053,12 +1079,16 @@ def extracting_flanks(out_df, out_dir, ref_name, fasta_directory):
         current_end_aft_cont = int(current_row['aft_rec_end_cont'])
 
 
-        if "ref" in current_control_id:
-            fasta_file_control = fasta_directory + re.sub("#","_", ref_name) + ".dna"
+        if "ref!" in current_control_id:
+            fasta_file_control = fasta_directory + re.sub("#", "_", ref_name) + ".dna"
             act_control_id = current_control_id
+
+
+
         else:
-            act_control_id = re.split("!",current_control_id)[0]
+            act_control_id = re.split("!", current_control_id)[0]
             fasta_file_control = fasta_directory + act_control_id + ".dna"
+
 
         fasta_file = fasta_directory + current_id + ".dna"
 
@@ -1100,7 +1130,7 @@ def extracting_flanks(out_df, out_dir, ref_name, fasta_directory):
         new_blast_bef_control = out_dir + "/" + current_control_id + "_control_before_flank.fasta_control"
         new_blast_aft_control = out_dir + "/" + current_control_id + "_control_after_flank.fasta_control"
 
-        print(".", end="", flush=True)
+
 
         with open(new_blast_file, "w") as blasty:
             for seq_record in SeqIO.parse(fasta_file, "fasta"):
@@ -1130,9 +1160,9 @@ def extracting_flanks(out_df, out_dir, ref_name, fasta_directory):
 
                 new_seqqys = new_seqqys_bef + new_seqqys_aft
                 seqqy_id = str(seq_record.id)
-                output_sequence = SeqIO.SeqRecord(Seq(new_seqqys, generic_dna), id=seqqy_id)
-                output_before = SeqIO.SeqRecord(Seq(new_seqqys_bef, generic_dna), id=seqqy_id)
-                output_after = SeqIO.SeqRecord(Seq(new_seqqys_aft, generic_dna), id=seqqy_id)
+                output_sequence = SeqIO.SeqRecord(Seq(new_seqqys), id=seqqy_id)
+                output_before = SeqIO.SeqRecord(Seq(new_seqqys_bef), id=seqqy_id)
+                output_after = SeqIO.SeqRecord(Seq(new_seqqys_aft), id=seqqy_id)
 
                 SeqIO.write(output_sequence, new_blast_file, "fasta")
                 SeqIO.write(output_before, new_blast_bef, "fasta")
@@ -1151,9 +1181,9 @@ def extracting_flanks(out_df, out_dir, ref_name, fasta_directory):
                 new_seqqys_aft = str(seq_record.seq[current_start_aft_cont:current_end_aft_cont])
                 new_seqqys = new_seqqys_bef + new_seqqys_aft
                 seqqy_id = str(seq_record.id)
-                output_sequence = SeqIO.SeqRecord(Seq(new_seqqys, generic_dna), id=seqqy_id)
-                output_before = SeqIO.SeqRecord(Seq(new_seqqys_bef, generic_dna), id=seqqy_id)
-                output_after = SeqIO.SeqRecord(Seq(new_seqqys_aft, generic_dna), id=seqqy_id)
+                output_sequence = SeqIO.SeqRecord(Seq(new_seqqys), id=seqqy_id)
+                output_before = SeqIO.SeqRecord(Seq(new_seqqys_bef), id=seqqy_id)
+                output_after = SeqIO.SeqRecord(Seq(new_seqqys_aft), id=seqqy_id)
 
                 SeqIO.write(output_sequence, new_blast_file_control, "fasta")
                 SeqIO.write(output_before, new_blast_bef_control, "fasta")
@@ -1169,6 +1199,7 @@ def extracting_flanks(out_df, out_dir, ref_name, fasta_directory):
 ###############################################################################
 
 if __name__ == '__main__':
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Flanks Extractor ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
     overall_start = time.perf_counter()
 
@@ -1204,18 +1235,20 @@ if __name__ == '__main__':
         embl_reccy = [k for k, s in enumerate(cluster_files) if "_recombinations.csv" in s]
 
         tree_loc = current_dir + "/" + cluster_files[tree_indexio[0]]
-        embl_branch_loc = current_dir + "/" + cluster_files[embl_branch[0]]
+        embl_branch_loc = current_dir + "/" + cluster_files[branch_mutations[0]]
         embl_rec_loc = current_dir + "/" + cluster_files[embl_reccy[0]]
 
         tree = dendropy.Tree.get(path=tree_loc, schema="newick", preserve_underscores=True)
-        branch_mutations = pandas.read_csv(branch_mutations)
+        branch_mutations = pandas.read_csv(embl_branch_loc)
         embl_reccy_csv = pandas.read_csv(embl_rec_loc)
 
-        flanks_csv = isolate_narrow(current_dat, current_pyt, tree, embl_reccy_csv, branch_mutations, current_ref_name)
+        flanks_csv, regions_bef, regions_aft = isolate_narrow(current_dat, current_pyt, tree, embl_reccy_csv, branch_mutations, current_ref_name, flanking_length)
 
-        extract_flanks = extracting_flanks(flanks_csv, out_dir,current_ref_name, fasta_directory)
+        extract_flanks = extracting_flanks(flanks_csv, out_dir,current_ref_name, fasta_directory, regions_bef, regions_aft)
 
         tot_flanks_csv = tot_flanks_csv.append(flanks_csv, ignore_index=True, sort=False)
+        seq_clus += 1
+        print("Extracted %s for cluster: %s" % (len(flanks_csv.index), cluster))
 
     toc_tot = time.perf_counter()
     tot_flanks_csv.to_csv(path_or_buf=out_name, index=False)

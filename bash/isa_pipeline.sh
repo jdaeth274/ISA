@@ -20,6 +20,7 @@ echo "This is the prefix: $5"
 echo "This is where the gubbins_res are stored $6"
 echo "Flank length to extract: $7"
 echo "Go through Act compos (yes/no): $8"
+echo "Just blast res (yes/no): $9"
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 parentdir="$(dirname "$DIR")"
@@ -37,6 +38,8 @@ then
     echo "exiting script now"
     echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
   else
+    if [ $9 == "no" ]
+    then
     Lines=$(cat $fasta_list | wc -l)
 
     counter=0
@@ -154,15 +157,126 @@ then
     python "${pythondir}edge_list.py" --hit_csv "$4/$5_hits_df.csv" --out_name "$4/$5_edge_list.tsv"
 
   ## Now lets find the reccy hits for the isolates
-    python "${pythondir}reccy_detector.py" --gubbins_res $7 --hit_locs_csv "$4/$5_hits_df.csv" \
+    python "${pythondir}reccy_detector.py" --gubbins_res $6 --hit_locs_csv "$4/$5_hits_df.csv" \
     --out_name "$4/$5"
 
-
+  fi
 
     ## Now to find out the blast locations
     python "${pythondir}blast_hits.py" --gubbins_res $6 --reccy_hits "$4/$5_reccy_hits.csv" \
-    --hit_csv "$4/$5_hits_df.csv" --act_compos "./act_compos/" --flank_length $7 --dna_dir "./tmp_dna_dir/" \
+    --hit_csv "$4/$5_hits_df.csv" --act_compos ./act_compos/referoo.fasta. --flank_length $7 --dna_dir "./tmp_dna_dir/" \
     --out_dir "$4/$5_flanks" --out_name "$4/$5_flanks_extracted.csv"
-    
+
+
+
+    ls -d "$PWD/$4/$5_flanks/"*_whole_blast_seq.fasta* > "$4/$5_isolate_blast_list"
+    ls -d "$PWD/$4/$5_flanks/"*_before_flank.fasta* > "$4/$5_before_flanks_list"
+    ls -d "$PWD/$4/$5_flanks/"*_after_flank.fasta* > "$4/$5_after_flanks_list"
+
+
+  blast_length=$(ls -l "$4/$5_flanks/"*_whole_blast_seq.fasta | wc -l)
+
+  el_nuevo_fazza="$4/$5_isolate_blast_list"
+  before_flanks_fazza="$4/$5_before_flanks_list"
+  after_flanks_fazza="$4/$5_after_flanks_list"
+
+  if [ ! -d "$4/blast_results" ]
+    then
+        mkdir "$4/blast_results"
+    fi
+
+  if [ ! -d "$4/before_flank_blast_res" ]
+    then
+        mkdir "$4/before_flank_blast_res"
+    fi
+
+  if [ ! -d "$4/after_flank_blast_res" ]
+    then
+        mkdir "$4/after_flank_blast_res"
+    fi
+
+
+  counter_2=0
+
+  echo "This many isolates to BLAST: $blast_length"
+
+
+
+    DB_FILE=~/Dropbox/phd/strep_reference_collection/dna_fasta_files/strep_ref_database.nin
+    db_loc=~/Dropbox/phd/strep_reference_collection/dna_fasta_files/strep_ref_database
+    if [ ! -f $DB_FILE ]
+    then
+      makeblastdb -dbtype nucl -out strep_ref_dna_db -max_file_sz 2GB \
+      -in ~/Dropbox/phd/strep_reference_collection/dna_fasta_files/strep_ref_dna_db
+    fi
+    while read coffee
+    do
+      namo=$(basename $coffee)
+      echo "Starting BLAST on this isolate: $namo"
+      blastn -db $db_loc -query $coffee -out "$4/blast_results/$namo".csv \
+      -outfmt "10 qesqid sseqid qstart qend sstart send pident length evalue bitscore"
+
+      python "${pythondir}blast_local_results_interpreter.py" \
+      --results_csv "$4/blast_results/$namo".csv --out_dir "$4/blast_results/"
+
+
+    done < $el_nuevo_fazza
+
+    ## Just doing the before flanks now
+
+    while read coffee
+    do
+      namo=$(basename $coffee)
+      echo "Starting before BLAST on this isolate: $namo"
+      blastn -db $db_loc -query $coffee -out "$4/before_flank_blast_res/$namo".csv \
+      -outfmt "10 qesqid sseqid qstart qend sstart send pident length evalue bitscore"
+
+      python "${pythondir}blast_local_results_interpreter.py" \
+      --results_csv "$4/before_flank_blast_res/$namo".csv --out_dir "$4/before_flank_blast_res/"
+
+
+    done < $before_flanks_fazza
+
+
+    ## Now for the after flanks
+
+    while read coffee
+    do
+      namo=$(basename $coffee)
+      echo "Starting after BLAST on this isolate: $namo"
+      blastn -db $db_loc -query $coffee -out "$4/after_flank_blast_res/$namo".csv \
+      -outfmt "10 qesqid sseqid qstart qend sstart send pident length evalue bitscore"
+
+      python "${pythondir}blast_local_results_interpreter.py" \
+      --results_csv "$4/after_flank_blast_res/$namo".csv --out_dir "$4/after_flank_blast_res/"
+
+
+
+    done < $after_flanks_fazza
+
+
+
+  echo "Starting species list formation"
+
+  ls -d "$PWD/$4/blast_results/"*_species_list.csv > "$4/blast_results/$5_species_list_list"
+  ls -d "$PWD/$4/before_flank_blast_res/"*_species_list.csv > "$4/before_flank_blast_res/$5_species_list_before"
+  ls -d "$PWD/$4/after_flank_blast_res/"*_species_list.csv > "$4/after_flank_blast_res/$5_species_list_after"
+
+  python "${pythondir}blast_to_info.py" \
+  --list_file "$4/blast_results/$5_species_list_list" --hit_locs "$4/$5_hits_df.csv" \
+   --out_name "$4/blast_results/$5_species_compo.csv"
+
+  python "${pythondir}blast_to_info.py" \
+  --list_file "$4/before_flank_blast_res/$5_species_list_before" --hit_locs "$4/$5_hits_df.csv" \
+   --out_name "$4/before_flank_blast_res/$5_species_compo_before.csv"
+
+  python "${pythondir}blast_to_info.py" \
+  --list_file "$4/after_flank_blast_res/$5_species_list_after" --hit_locs "$4/$5_hits_df.csv" \
+  --out_name "$4/after_flank_blast_res/$5_species_compo_after.csv"
+
+
+
+  echo "Done"
+
 
 fi
