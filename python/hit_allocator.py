@@ -2374,7 +2374,7 @@ if __name__ == '__main__':
     absolute_act_path = files_for_input.act_loc
     fasta_csv = files_for_input.fasta_csv
     fasta_pandas = pandas.read_csv(fasta_csv)
-    fasta_pandas.columns = ['isolate', 'reference']
+    fasta_pandas.columns = ['isolate', 'reference', 'cluster_name']
 
 
 
