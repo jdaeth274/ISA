@@ -1,0 +1,31 @@
+#PBS -l select=1:ncpus=1:mem=2gb
+#PBS -l walltime=06:00:00
+#PBS -J 1-146
+
+module load anaconda3/personal
+
+source activate
+
+conda activate tree_checker
+
+cd /rds/general/project/bacterial_evo_genomics/live/gps_annotations_4_2_2020/gps_gubbins_runs
+
+current_dir=$(head -n $PBS_ARRAY_INDEX dir_list.txt | tail -n 1)
+
+cd $current_dir
+
+out_prefix=$(echo $current_dir | grep -o -a gpsc\.[0-9]*_)
+
+out_file="${out_prefix}missing_isolates.tsv"
+
+Rscript --vanilla ../ISA/R/missing_isolate_checker.R $out_file
+
+if [ -f $out_file ]
+then 
+
+cd ../
+cat $out_file >> tot_missing_isolates.tsv
+
+fi 
+
+
