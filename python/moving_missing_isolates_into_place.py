@@ -1,11 +1,6 @@
 import pandas
 import re
 
-with open("/rds/general/project/bacterial_evo_genomics/live/gps_annotations_4_2_2020/missing_refs/missing_fasta_list.txt") as myfile:
-	fasta_files = myfile.read.splitlines()
-
-with open("../missing_refs/missing_gff_list.txt") as file:
-	gff_files = file.read.splitlines()
 
 reference_loc = pandas.read_csv("/rds/general/project/bacterial_evo_genomics/live/gps_annotations_4_2_2020/gps_gubbins_runs/tot_missing_isolates.tsv", sep= "\t")
 references_tot = pandas.read_csv("./gps_run_data/gps_reference_isolate_fasta.csv")
