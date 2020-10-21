@@ -13,8 +13,8 @@ for k in range(len(reference_loc.index)):
 	current_isolate = reference_loc.iloc[k,0]
 	current_cluster = reference_loc.iloc[k,1]
 	current_pos_fa = "../missing_refs/" + current_isolate + ".contigs_velvet.fa"
-	new_pos_fa = current_isolate + "contigs_velvet.fasta"
-	new_pos_gff = current_isolate + "velvet.gff"
+	new_pos_fa = current_isolate + ".contigs_velvet.fasta"
+	new_pos_gff = current_isolate + ".velvet.gff"
 	current_pos_gff = "../missing_refs/" + current_isolate + ".velvet.gff"
 	cluster_num = re.sub("gpsc\.","",current_cluster)
 	mv_fa = "mv " + current_pos_fa + " ../cluster_" + cluster_num + "_list_gffs/" + new_pos_fa
