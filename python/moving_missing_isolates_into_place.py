@@ -1,5 +1,6 @@
 import pandas
 import re
+import subprocess
 
 
 reference_loc = pandas.read_csv("/rds/general/project/bacterial_evo_genomics/live/gps_annotations_4_2_2020/gps_gubbins_runs/tot_missing_isolates.tsv", sep= "\t")
@@ -17,8 +18,10 @@ for k in range(len(reference_loc.index)):
 	new_pos_gff = current_isolate + ".velvet.gff"
 	current_pos_gff = "../missing_refs/" + current_isolate + ".velvet.gff"
 	cluster_num = re.sub("gpsc\.","",current_cluster)
-	mv_fa = "mv " + current_pos_fa + " ../cluster_" + cluster_num + "_list_gffs/" + new_pos_fa
-	mv_gff = "mv " + current_pos_fa + " ../cluster_" + cluster_num + "_list_gffs/" + new_pos_gff
+	mv_fa = "cp " + current_pos_fa + " ../cluster_" + cluster_num + "_list_gffs/" + new_pos_fa
+	mv_gff = "cp " + current_pos_fa + " ../cluster_" + cluster_num + "_list_gffs/" + new_pos_gff
+	subprocess.run(mv_fa, shell=True)
+	subprocess.run(mv_gff, shell=True)
 	ref_fasta = references_tot[references_tot['cluster_name'] == current_cluster].iloc[0,1]
 	new_fasta_line = pandas.DataFrame()
 	new_fasta_loc = "/rds/general/project/bacterial_evo_genomics/live/gps_annotations_4_2_2020/cluster_" + cluster_num + "_list_gffs/" + new_pos_fa
