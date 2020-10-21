@@ -478,7 +478,11 @@ if __name__ == '__main__':
         tic_cluster = time.perf_counter()
         current_dat = cluster_csv[cluster_csv['cluster_name'] == cluster]
         current_dir = base_loc + cluster
-        cluster_files = os.listdir(current_dir)
+        try:
+            cluster_files = os.listdir(current_dir)
+        except:
+            current_dir = current_dir + "_run_data"
+            cluster_files = os.listdir(current_dir)
         tree_indexio = [k for k, s in enumerate(cluster_files) if "node_labelled.final_tree.tre" in s]
         embl_branch = [k for k, s in enumerate(cluster_files) if "_branch_base.csv" in s]
         embl_reccy = [k for k, s in enumerate(cluster_files) if "_recombinations.csv" in s]

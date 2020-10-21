@@ -1229,7 +1229,11 @@ if __name__ == '__main__':
         current_pyt = pyt_csv[pyt_csv['cluster_name'] == cluster]
         current_ref_name = current_pyt['ref_name'].iloc[0]
         current_dir = base_loc + cluster
-        cluster_files = os.listdir(current_dir)
+        try:
+            cluster_files = os.listdir(current_dir)
+        except:
+            current_dir = current_dir + "_run_data"
+            cluster_files = os.listdir(current_dir)
         tree_indexio = [k for k, s in enumerate(cluster_files) if "node_labelled.final_tree.tre" in s]
         branch_mutations = [k for k, s in enumerate(cluster_files) if "_per_branch_mutations.csv" in s]
         embl_reccy = [k for k, s in enumerate(cluster_files) if "_recombinations.csv" in s]
