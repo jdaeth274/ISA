@@ -1,5 +1,5 @@
 #PBS -l select=1:ncpus=1:mem=2gb
-#PBS -l walltime=06:00:00
+#PBS -l walltime=00:31:00
 #PBS -J 1-146
 
 module load anaconda3/personal
@@ -23,8 +23,8 @@ Rscript --vanilla ../ISA/R/missing_isolate_checker.R $out_file
 if [ -f $out_file ]
 then 
 
-cd ../
-cat $out_file >> tot_missing_isolates.tsv
+
+cat $out_file >> ../tot_missing_isolates.tsv
 
 fi 
 
