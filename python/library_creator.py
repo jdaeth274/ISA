@@ -1601,7 +1601,34 @@ def multi_hit_merger(hit_new_bef):
 
     return hit_bef_out
 
-def hit_mover(hit_before, hit_after, compo_csv, isolate_id, mge_bounds, mge_ori):
+def multi_contig_dropper(hits, ref_contig, ref_contig_bounds):
+    ## Function to take in a df form compo and check each hit if on a certain contig,
+    ## return df of hits only on the contig
+    returned_hits = hits.copy()
+
+    if not hits.empty:
+        drop_indie = []
+        if isinstance(hits, pandas.Series):
+            hits = hits.to_frame().transpose()
+        #returned_hits = returned_hits.reset_index(drop=True)
+        for k in range(len(hits.index)):
+            current_locs = hits.iloc[k,[8,9]].tolist()
+            locs_contig = contig_checker(ref_contig_bounds, current_locs)
+            if locs_contig != ref_contig:
+                drop_indie.append(hits.index[k])
+
+
+
+        returned_hits = hits.drop(drop_indie)
+        #returned_hits = returned_hits.reset_index(drop=True)
+
+    return returned_hits
+
+
+
+
+
+def hit_mover(hit_before, hit_after, compo_csv, isolate_id, mge_bounds, mge_ori, ref_contig_bounds, ref_contigs):
     ## Function to include hits after the current if its less than 2k and the new hit
     ## is very close. Finds closest hits, if they are within 50bp of the next nearest.
 
@@ -1625,7 +1652,8 @@ def hit_mover(hit_before, hit_after, compo_csv, isolate_id, mge_bounds, mge_ori)
             poss_hit_before = poss_hit_before.sort_values(by = 'qend', ascending=False)
             new_align = hit_before_length
             if not poss_hit_before.empty:
-                current_hit = poss_hit_before[poss_hit_before['qend'] >= (hit_new_bef.iloc[6] - 50)]
+                current_hit = poss_hit_before[poss_hit_before['qend'] >= (hit_new_bef.iloc[6] - 1000)]
+                current_hit = multi_contig_dropper(current_hit, ref_contigs[0], ref_contig_bounds)
                 if not current_hit.empty:
                     new_align = hit_new_bef.iloc[7] - current_hit['qstart'].iloc[0]
                     if new_align >= 5000:
@@ -1646,9 +1674,8 @@ def hit_mover(hit_before, hit_after, compo_csv, isolate_id, mge_bounds, mge_ori)
                                 hit_new_bef = pandas.concat([hit_new_bef, current_hit.iloc[[0]]], sort=False,ignore_index=False)
                                 hit_new_bef = hit_new_bef.reset_index(drop=True)
                             end_indy = max(hit_new_bef.index.values) - 1
-                            current_hit = poss_hit_before[(poss_hit_before['qend'] >= (hit_new_bef.iloc[end_indy, 6] - 50))]
-
-
+                            current_hit = poss_hit_before[(poss_hit_before['qend'] >= (hit_new_bef.iloc[end_indy, 6] - 1000))]
+                            current_hit = multi_contig_dropper(current_hit, ref_contigs[0], ref_contig_bounds)
                             if not current_hit.empty:
                                 new_align = abs(hit_new_bef.iloc[0, 7] - current_hit.iloc[0, 6])
                                 poss_hit_before = poss_hit_before.drop(current_hit.index[0])
@@ -1670,9 +1697,11 @@ def hit_mover(hit_before, hit_after, compo_csv, isolate_id, mge_bounds, mge_ori)
             poss_hit_before = compo_csv[(compo_csv['qstart'] >= (hit_before['qend'] - 50)) & \
                                         (compo_csv['qend'] <= (mge_bounds[1] + 10)) ]
             poss_hit_before = poss_hit_before.sort_values(by='qstart', ascending=True)
+
             new_align = hit_before_length
             if not poss_hit_before.empty:
-                current_hit = poss_hit_before[poss_hit_before['qstart'] <= (hit_new_bef.iloc[7] + 50)]
+                current_hit = poss_hit_before[poss_hit_before['qstart'] <= (hit_new_bef.iloc[7] + 1000)]
+                current_hit = multi_contig_dropper(current_hit, ref_contigs[0], ref_contig_bounds)
                 if not current_hit.empty:
                     new_align = abs(hit_new_bef.iloc[6] - current_hit['qend'].iloc[0])
 
@@ -1694,7 +1723,8 @@ def hit_mover(hit_before, hit_after, compo_csv, isolate_id, mge_bounds, mge_ori)
                                 hit_new_bef = pandas.concat([hit_new_bef, current_hit.iloc[[0]]], sort=False, ignore_index=False)
                                 hit_new_bef = hit_new_bef.reset_index(drop=True)
                             end_indy = max(hit_new_bef.index.values) - 1
-                            current_hit = poss_hit_before[poss_hit_before['qstart'] <= (hit_new_bef.iloc[end_indy, 7] + 50)]
+                            current_hit = poss_hit_before[poss_hit_before['qstart'] <= (hit_new_bef.iloc[end_indy, 7] + 1000)]
+                            current_hit = multi_contig_dropper(current_hit, ref_contigs[0], ref_contig_bounds)
                             if not current_hit.empty:
                                 new_align = abs(hit_new_bef.iloc[0, 6] - current_hit.iloc[0, 7])
                                 poss_hit_before = poss_hit_before.drop(current_hit.index[0])
@@ -1721,8 +1751,10 @@ def hit_mover(hit_before, hit_after, compo_csv, isolate_id, mge_bounds, mge_ori)
                                         (compo_csv['qend'] <= (mge_bounds[1] + 10)) ]
             poss_hit_after = poss_hit_after.sort_values(by='qstart', ascending=True)
             new_align = hit_after_length
+
             if not poss_hit_after.empty:
-                current_hit = poss_hit_after[poss_hit_after['qstart'] <= (hit_new_aft.iloc[7] + 50)]
+                current_hit = poss_hit_after[poss_hit_after['qstart'] <= (hit_new_aft.iloc[7] + 1000)]
+                current_hit = multi_contig_dropper(current_hit, ref_contigs[1], ref_contig_bounds)
                 if not current_hit.empty:
                     new_align = abs(hit_new_aft.iloc[6] - current_hit['qend'].iloc[0])
                     if new_align >= 5000:
@@ -1743,7 +1775,8 @@ def hit_mover(hit_before, hit_after, compo_csv, isolate_id, mge_bounds, mge_ori)
                                 hit_new_aft = pandas.concat([hit_new_aft, current_hit.iloc[[0]]], sort=False, ignore_index=False)
                                 hit_new_aft = hit_new_aft.reset_index(drop=True)
                             end_indy = max(hit_new_aft.index.values) - 1
-                            current_hit = poss_hit_after[poss_hit_after['qstart'] <= (hit_new_aft.iloc[end_indy, 7] + 50)]
+                            current_hit = poss_hit_after[poss_hit_after['qstart'] <= (hit_new_aft.iloc[end_indy, 7] + 1000)]
+                            current_hit = multi_contig_dropper(current_hit, ref_contigs[1], ref_contig_bounds)
                             if not current_hit.empty:
                                 new_align = abs(hit_new_aft.iloc[0, 6] - current_hit.iloc[0, 7])
                                 poss_hit_after = poss_hit_after.drop(current_hit.index[0])
@@ -1764,7 +1797,8 @@ def hit_mover(hit_before, hit_after, compo_csv, isolate_id, mge_bounds, mge_ori)
             poss_hit_after = poss_hit_after.sort_values(by='qend', ascending=False)
             new_align = hit_after_length
             if not poss_hit_after.empty:
-                current_hit = poss_hit_after[poss_hit_after['qend'] >= (hit_new_aft.iloc[ 6] - 50)]
+                current_hit = poss_hit_after[poss_hit_after['qend'] >= (hit_new_aft.iloc[ 6] - 1000)]
+                current_hit = multi_contig_dropper(current_hit, ref_contigs[1], ref_contig_bounds)
                 if not current_hit.empty:
 
                     new_align = hit_new_aft.iloc[7] - current_hit['qstart'].iloc[0]
@@ -1789,7 +1823,8 @@ def hit_mover(hit_before, hit_after, compo_csv, isolate_id, mge_bounds, mge_ori)
                                 hit_new_aft = pandas.concat([hit_new_aft, current_hit.iloc[[0]]], sort=False, ignore_index=False)
                                 hit_new_aft = hit_new_aft.reset_index(drop=True)
                             end_indy = max(hit_new_aft.index.values) - 1
-                            current_hit = poss_hit_after[poss_hit_after['qend'] >= (hit_new_aft.iloc[end_indy, 6] - 50)]
+                            current_hit = poss_hit_after[poss_hit_after['qend'] >= (hit_new_aft.iloc[end_indy, 6] - 1000)]
+                            current_hit = multi_contig_dropper(current_hit, ref_contigs[1], ref_contig_bounds)
                             if not current_hit.empty:
                                 new_align = hit_new_aft.iloc[0, 7] - current_hit.iloc[0, 6]
                                 poss_hit_after = poss_hit_after.drop(current_hit.index[0])
@@ -2224,7 +2259,9 @@ def act_mapper(hit_before, hit_after, act_loc, current_insert_locs):
     if single_hit.empty:
         ## Maybe this represent the insertion of the mge in the element too so lets look for hits either side
         hit_1 = compo_table[(compo_table['qend'] >= (current_insert_locs[0] - 50)) & (compo_table['qstart'] <= (current_insert_locs[1] + 50))]
-        hit_2 = compo_table[(compo_table['qstart'] >= (current_insert_locs[0] - 50)) & (compo_table['qend'] <= (current_insert_locs[1] + 50))]
+        hit_2 = compo_table[(compo_table['qstart'] <= (current_insert_locs[1] + 50)) & (compo_table['qend'] >= (current_insert_locs[1] + 50))]
+
+
         hit_1 = hit_1.sort_values(by='align', ascending=False)
         hit_2 = hit_2.sort_values(by='align', ascending=False)
 
@@ -2382,6 +2419,8 @@ if __name__ == '__main__':
         cluster_name = cluster_name.iloc[0]
 
         act_map = False
+        compo_ref = ref_name
+        #print(cluster_name)
 
         if cluster_name in clusters_to_skip:
             continue
@@ -2422,11 +2461,13 @@ if __name__ == '__main__':
 
                     new_ref = n50_calc(fastas_to_run, ref_name)
                     new_ref_name = os.path.basename(re.sub("\..*[a-z,A-Z].*$","",new_ref))
+                    compo_ref = new_ref_name
                     ## Now create the new fastas df to input to the act compo script
                     new_act_df = pandas.DataFrame()
                     new_act_df['isolate'] = pandas.Series(fastas_to_act)
                     new_act_df['reference'] = pandas.Series(numpy.repeat(new_ref, len(fastas_to_act)).tolist(), \
                                                             index=new_act_df.index)
+                    new_act_df['cluster_name'] = cluster_name
 
                     df_loc = "./" + cluster_name + "_altered_fasta_for_ACT.csv"
                     new_act_df.to_csv(path_or_buf= df_loc, index=False)
@@ -2438,13 +2479,15 @@ if __name__ == '__main__':
                                   " --csv " + df_loc + " --perl_dir " + perl_dir + "/"  + " --act_dir ./act_compos/"
 
 
-                    subprocess.call(act_command, shell=True)#, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    #subprocess.call(act_command, shell=True)#, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
                     refs_to_alter.append(ref_name)
                     new_refs.append(new_ref_name)
                     act_map = True
         else:
             act_map = True
+            altered_index = [i for i, x in enumerate(refs_to_alter) if x == ref_name]
+            compo_ref = new_refs[altered_index[0]]
 
 
 
@@ -2463,7 +2506,7 @@ if __name__ == '__main__':
         contig_suffix = "#contig_bounds.csv"
         contig_isolate = re.sub("#", "_", isolate_id)
         contig_file_path = contig_file_abs_path + contig_isolate + contig_suffix
-        ref_contig = re.sub("#","_", ref_name)
+        ref_contig = re.sub("#","_", compo_ref)
         ref_contig_file = contig_file_abs_path + ref_contig + contig_suffix
         contig_tab = pandas.read_csv(contig_file_path)
         ref_contig_tab = pandas.read_csv(ref_contig_file)
@@ -2532,11 +2575,12 @@ if __name__ == '__main__':
 
         all_one_tig_5k = hit_before_length >= 5000 and hit_after_length >= 5000 and all_one_tig
 
+        ref_contigs = [contig_bef_ref, contig_aft_ref]
 
 
         if all_one_tig and not all_one_tig_5k:
 
-            hit_before, hit_after, all_one_tig_5k = hit_mover(hit_before, hit_after, compo_table, isolate_id, mge_bounds, mge_ori)
+            hit_before, hit_after, all_one_tig_5k = hit_mover(hit_before, hit_after, compo_table, isolate_id, mge_bounds, mge_ori, ref_contig_tab, ref_contigs)
 
             hit_before_loc = hit_before.iloc[[6, 7]]
             hit_after_loc = hit_after.iloc[[6, 7]]
@@ -2546,12 +2590,15 @@ if __name__ == '__main__':
             #   hit_before_loc = hit_before.iloc[[6, 7]]
             #   hit_after_loc = hit_after.iloc[[6, 7]]
 
-
         if all_one_tig_5k:
+
 
             ## If the before and after hits to the isolate all line up on one contig we can assume this is
             ## a good enough hit to be used in library creation. Also needs to have at least 5k bp either side
             ## in this hit
+
+
+
 
             current_gff = pandas.read_csv(current_gff_loc.iloc[0], sep='\t',
                                        names=['seqid', 'source', 'type', 'start', 'end', 'score', 'strand', 'phase',
@@ -2628,6 +2675,13 @@ if __name__ == '__main__':
                         hit_before, hit_after, mapped = act_mapper(hit_before, hit_after, new_act_loc,
                                                                    current_insert_s_locs)
                         if not mapped:
+                            print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+                            print("Can't map for")
+                            print(isolate_id)
+                            print(current_insert_s_locs)
+                            print(hit_before_loc)
+                            print(hit_after_loc)
+                            print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
                             continue
                     else:
@@ -2787,7 +2841,7 @@ if __name__ == '__main__':
     print("Took this long for library_search: %s" % (toc1 - tic_1))
     print("Took this long overall: %s" % (toc - tic))
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Library creator finsihed ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-
+    #sys.exit(1)
 
 
 
