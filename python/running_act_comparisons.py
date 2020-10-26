@@ -24,7 +24,7 @@ def get_options():
 if __name__ == '__main__':
 
     input_args = get_options()
-    input_names = ['isolate','reference']
+    input_names = ['isolate','reference', 'cluster_name']
     input_csv = pandas.read_csv(input_args.csv)
     input_csv.columns = input_names
     perl_dir = input_args.perl_dir

@@ -2779,9 +2779,9 @@ if __name__ == '__main__':
     toc = time.perf_counter()
 
     with open("./realtered_act_refs.txt", mode='wt', encoding='utf-8') as myfile:
-        myfile.write('\n'.join(refs_to_alter))
+        myfile.write('\n'.join(refs_to_alter) + '\n')
     with open("./new_act_refs.txt", mode='wt', encoding='utf-8') as myfile:
-        myfile.write('\n'.join(new_refs))
+        myfile.write('\n'.join(new_refs) + '\n')
 
 
     print("Took this long for library_search: %s" % (toc1 - tic_1))

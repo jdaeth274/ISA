@@ -236,6 +236,11 @@ def node_reconstruct(tree_loc, hit_csv):
                 if newer_parent == None:
                     parent_state = 30000
                     newer_parent = old_parent
+                    children = len(old_parent.leaf_nodes())
+                    tot_children = children
+                    non_children = tot_children - children
+                    node_home.append(old_parent.label)
+                    reccy_on_node.append("Yes")
                 else:
                     parent_state = newer_parent.state_sets
                     if parent_state != taxon_state:

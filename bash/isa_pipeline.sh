@@ -28,6 +28,13 @@ pythondir="${parentdir}/python/"
 perldir="${parentdir}/perl/"
 rdir="${parentdir}/R/"
 
+
+echo "This is number 9:$9"
+if [ $9 == "no" ]
+then
+  echo "This is working here"
+  echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+fi
 #read -p "Are you sure? " -n 1 -r
 #echo    # (optional) move to a new line
 #if [[ $REPLY =~ ^[Nn]$ ]]
@@ -38,127 +45,127 @@ then
     echo "exiting script now"
     echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
   else
-    if [ $9 == "no" ]
+    if [ $9 == "no" ] || [ $9 == "NO" ] || [ $9 == "No" ]
     then
-    Lines=$(cat $fasta_list | wc -l)
+      Lines=$(cat $fasta_list | wc -l)
 
-    counter=0
-    if [ $8 == "yes" ]
-    then
-
-      if [ -d ./act_compos ]
+      counter=0
+      if [ $8 == "yes" ]
       then
-        rm -r ./act_compos
-        mkdir ./act_compos
+
+        if [ -d ./act_compos ]
+        then
+          rm -r ./act_compos
+          mkdir ./act_compos
+        else
+          mkdir ./act_compos
+        fi
+
+          python "${pythondir}running_act_comparisons.py" \
+          --csv $ref_isolate_fasta --perl_dir $perldir --act_dir ./act_compos/
+
+      fi
+      if [ -d ./tmp_dna_dir ]
+      then
+        echo "Using already made tmp_dna_dir"
+        cd ./tmp_dna_dir
+        if [ ! -f output.mfa ]
+        then
+          cat *.dna > output.mfa
+        fi
       else
-        mkdir ./act_compos
+        mkdir ./tmp_dna_dir
+        cd ./tmp_dna_dir
+        less "../${fasta_list}" | while read line; do \
+          perl "${perldir}converting_velvet_contigs_to_dna.pl" $line;
+
+          done
+        if [ ! -f output.mfa ]
+        then
+          cat *.dna > output.mfa
+        fi
+
       fi
 
-        python "${pythondir}running_act_comparisons.py" \
-        --csv $ref_isolate_fasta --perl_dir $perldir --act_dir ./act_compos/
 
-    fi
-    if [ -d ./tmp_dna_dir ]
-    then
-      echo "Using already made tmp_dna_dir"
-      cd ./tmp_dna_dir
-      if [ ! -f output.mfa ]
+
+
+      if [ ! -f temp_blast_db.nin ] && [ ! -f temp_blast_db.nal ]
       then
-        cat *.dna > output.mfa
+      makeblastdb -dbtype nucl -out temp_blast_db -max_file_sz 2GB \
+      -in output.mfa
       fi
-    else
-      mkdir ./tmp_dna_dir
-      cd ./tmp_dna_dir
-      less "../${fasta_list}" | while read line; do \
-        perl "${perldir}converting_velvet_contigs_to_dna.pl" $line;
+      #rm output.mfa
 
-        done
-      if [ ! -f output.mfa ]
+      blastn -db temp_blast_db -query "../$2" -outfmt 10 -out tmp_blast_csv.csv
+
+      cd ../
+
+
+
+
+      if [ ! -d $4 ]
       then
-        cat *.dna > output.mfa
+          mkdir $4
       fi
 
-    fi
+      if [ ! -d ./contig_bounds ]
+      then
+      exec 3<&0
+      exec 0<$fasta_list
+      while read line
+       do
+        grep -n ">" $line > "grep_output_temp"
+
+        python "${pythondir}contig_bound_check.py" \
+        --grep_file ./grep_output_temp --fasta_file $line
+
+         counter=$(expr $counter + 1)
+
+         if [ $counter != $Lines ]
+         then
+         lines_left=$(expr $Lines - $counter)
+         echo -ne "This many files left for contigs check: $lines_left "\\r
+         fi
+
+       done
+      echo "Done contig bounds checker"
+
+      if [ ! -d "./contig_bounds" ]
+      then
+           mkdir ./contig_bounds
+      fi
 
 
+      mv *contig_bounds.csv ./contig_bounds
+      fi
 
 
-    if [ ! -f temp_blast_db.nin ] && [ ! -f temp_blast_db.nal ]
-    then
-    makeblastdb -dbtype nucl -out temp_blast_db -max_file_sz 2GB \
-    -in output.mfa
-    fi
-    #rm output.mfa
+    Rscript --vanilla "${rdir}merging_blast_hits.R" \
+    ./tmp_dna_dir/tmp_blast_csv.csv ./contig_bounds "$4/$5_merged_blast_file"
 
-    blastn -db temp_blast_db -query "../$2" -outfmt 10 -out tmp_blast_csv.csv
+    Fazza=$fasta_list
+    Lines=$(cat $fasta_list | wc -l)
+    counter=0
 
-    cd ../
+    ## Now we run the library creation step
+    python "${pythondir}library_creator.py" \
+    --hit_csv "$4/$5_merged_blast_file" --reference_csv $ref_isolate_gff --align_cutoff $3 \
+    --act_loc ./act_compos/referoo.fasta. --contig_loc ./contig_bounds/ --output "$4/$5" \
+    --fasta_csv $ref_isolate_fasta
 
+    ## Now for the hit allocation step
+    python "${pythondir}hit_allocator.py" \
+    --blast_csv "$4/$5_merged_blast_file" --lib_csv "$4/$5_library.csv" --reference_csv $ref_isolate_gff \
+    --fasta_csv $ref_isolate_fasta --act_loc ./act_compos/referoo.fasta. --contig_loc ./contig_bounds/ \
+    --output "$4/$5" --align $3
 
+    ## Now for the edge list
+      python "${pythondir}edge_list.py" --hit_csv "$4/$5_hits_df.csv" --out_name "$4/$5_edge_list.tsv"
 
-
-    if [ ! -d $4 ]
-    then
-        mkdir $4
-    fi
-
-    if [ ! -d ./contig_bounds ]
-    then
-    exec 3<&0
-    exec 0<$fasta_list
-    while read line
-     do
-      grep -n ">" $line > "grep_output_temp"
-
-      python "${pythondir}contig_bound_check.py" \
-      --grep_file ./grep_output_temp --fasta_file $line
-
-       counter=$(expr $counter + 1)
-
-       if [ $counter != $Lines ]
-       then
-       lines_left=$(expr $Lines - $counter)
-       echo -ne "This many files left for contigs check: $lines_left "\\r
-       fi
-
-     done
-    echo "Done contig bounds checker"
-
-    if [ ! -d "./contig_bounds" ]
-    then
-         mkdir ./contig_bounds
-    fi
-
-
-    mv *contig_bounds.csv ./contig_bounds
-    fi
-
-
-  Rscript --vanilla "${rdir}merging_blast_hits.R" \
-  ./tmp_dna_dir/tmp_blast_csv.csv ./contig_bounds "$4/$5_merged_blast_file"
-
-  Fazza=$fasta_list
-  Lines=$(cat $fasta_list | wc -l)
-  counter=0
-
-  ## Now we run the library creation step
-  python "${pythondir}library_creator.py" \
-  --hit_csv "$4/$5_merged_blast_file" --reference_csv $ref_isolate_gff --align_cutoff $3 \
-  --act_loc ./act_compos/referoo.fasta. --contig_loc ./contig_bounds/ --output "$4/$5" \
-  --fasta_csv $ref_isolate_fasta
-
-  ## Now for the hit allocation step
-  python "${pythondir}hit_allocator.py" \
-  --blast_csv "$4/$5_merged_blast_file" --lib_csv "$4/$5_library.csv" --reference_csv $ref_isolate_gff \
-  --fasta_csv $ref_isolate_fasta --act_loc ./act_compos/referoo.fasta. --contig_loc ./contig_bounds/ \
-  --output "$4/$5" --align $3
-
-  ## Now for the edge list
-    python "${pythondir}edge_list.py" --hit_csv "$4/$5_hits_df.csv" --out_name "$4/$5_edge_list.tsv"
-
-  ## Now lets find the reccy hits for the isolates
-    python "${pythondir}reccy_detector.py" --gubbins_res $6 --hit_locs_csv "$4/$5_hits_df.csv" \
-    --out_name "$4/$5"
+    ## Now lets find the reccy hits for the isolates
+      python "${pythondir}reccy_detector.py" --gubbins_res $6 --hit_locs_csv "$4/$5_hits_df.csv" \
+      --out_name "$4/$5"
 
   fi
 
