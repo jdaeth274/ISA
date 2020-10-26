@@ -1,0 +1,21 @@
+#PBS -l select=1:ncpus=1:mem=2gb
+#PBS -l walltime=1:00:00
+
+start=$SECONDS
+
+module load anaconda3/personal
+
+source activate
+
+conda activate insertion_site_analysis
+
+cd /rds/general/project/bacterial_evo_genomics/live/gps_annotations_4_2_2020/gps_gubbins_runs
+
+echo $PWD
+
+python ./ISA/python/running_act_comparisons.py --csv missing_act_csv.csv \
+--perl_dir ./ISA/perl/ --act_dir ./act_compos/ 
+
+duration=$(( SECONDS - start ))
+
+echo $duration > act_comparison_time_missing.txt
