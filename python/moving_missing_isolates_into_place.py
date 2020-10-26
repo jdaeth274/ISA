@@ -3,9 +3,10 @@ import re
 import subprocess
 
 
-reference_loc = pandas.read_csv("/rds/general/project/bacterial_evo_genomics/live/gps_annotations_4_2_2020/gps_gubbins_runs/tot_missing_isolates.tsv", sep= "\t")
+reference_loc = pandas.read_csv("/rds/general/project/bacterial_evo_genomics/live/gps_annotations_4_2_2020/gps_gubbins_runs/tot_missing_isolates.tsv", sep= "\t", names=['reference','cluster'])
 references_tot = pandas.read_csv("./gps_run_data/gps_reference_isolate_fasta.csv")
 
+print(len(reference_loc.index))
 
 act_fasta_list = pandas.DataFrame()
 dna_list = []
@@ -29,11 +30,14 @@ for k in range(len(reference_loc.index)):
 	new_fasta_line['refernce'] = pandas.Series(ref_fasta, index=new_fasta_line.index)
 	dna_list.append(new_fasta_loc)
 	act_fasta_list = act_fasta_list.append(new_fasta_line, ignore_index=True, sort=False)
+	print(k, end="\r",flush=True)
 
 act_fasta_list.to_csv(path_or_buf="./missing_act_csv.csv", index=False)
-with open("./missing_fasta_list.txt", mode='wt', encoding='utf-8') as myfile:
-	myfile.write('\n'.join(dna_list))
+with open("./missing_fasta_list.txt", mode='w') as myfile:
+	myfile.write('\n'.join(dna_list) +'\n')
 
+print("")
+print(len(dna_list))
 print("Finished")
 
 
