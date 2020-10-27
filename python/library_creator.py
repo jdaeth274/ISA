@@ -2479,7 +2479,7 @@ if __name__ == '__main__':
                                   " --csv " + df_loc + " --perl_dir " + perl_dir + "/"  + " --act_dir ./act_compos/"
 
 
-                    #subprocess.call(act_command, shell=True)#, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    subprocess.call(act_command, shell=True)#, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
                     refs_to_alter.append(ref_name)
                     new_refs.append(new_ref_name)
