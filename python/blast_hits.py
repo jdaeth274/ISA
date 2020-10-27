@@ -946,6 +946,38 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
                 before_subset = before_subset.sort_values(by='align', ascending=False)
                 after_subset = after_subset.sort_values(by='align', ascending=False)
 
+        ## Need to check if overlap within hit but not throughout hit.
+
+        if before_subset.empty:
+             if mge_hits[0] < mge_hits[1]:
+                 before_subset = compo_table[compo_table['qend'] <= insert_hits[1]]
+                 before_subset = before_subset.sort_values(by='qend', ascending=False)
+                 if before_subset.iloc[0,7] > mge_hits[0]:
+                     before_subset.iloc[0,7] = mge_hits[0]
+             elif mge_hits[0] > mge_hits[1]:
+                 before_subset = compo_table[compo_table['qstart'] >= insert_hits[0]]
+                 before_subset = before_subset.sort_values(by='qstart', ascending=True)
+                 if before_subset.iloc[0, 6] < mge_hits[0]:
+                     before_subset.iloc[0,6] = mge_hits[0]
+
+        if after_subset.empty:
+             if mge_hits[0] < mge_hits[1]:
+                 after_subset = compo_table[compo_table['qstart'] >= insert_hits[0]]
+                 after_subset = after_subset.sort_values(by='qstart', ascending=True)
+                 if after_subset.iloc[0,6] < mge_hits[1]:
+                     after_subset.iloc[0,6] = mge_hits[1]
+             elif mge_hits[0] > mge_hits[1]:
+                after_subset = compo_table[compo_table['qend'] <= insert_hits[1]]
+                after_subset = after_subset.sort_values(by='qend', ascending=False)
+                if after_subset.iloc[0,7] > mge_hits[1]:
+                    after_subset.iloc[0,7] = mge_hits[1]
+
+        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+        print(before_subset)
+        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+        print(after_subset)
+        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+        print(insert_hits)
 
         out_df.at[o, 'before_start'] = before_subset.iloc[0, 6]
         out_df.at[o, 'before_end'] = before_subset.iloc[0, 7]
