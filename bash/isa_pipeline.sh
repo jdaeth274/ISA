@@ -21,6 +21,7 @@ echo "This is where the gubbins_res are stored $6"
 echo "Flank length to extract: $7"
 echo "Go through Act compos (yes/no): $8"
 echo "Just blast res (yes/no): $9"
+echo "Reference db loc : ${10}"
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 parentdir="$(dirname "$DIR")"
@@ -212,8 +213,8 @@ then
 
 
 
-    DB_FILE=~/Dropbox/phd/strep_reference_collection/dna_fasta_files/strep_ref_database.nin
-    db_loc=~/Dropbox/phd/strep_reference_collection/dna_fasta_files/strep_ref_database
+    DB_FILE=${10}.nin
+    db_loc=${10}
     if [ ! -f $DB_FILE ]
     then
       makeblastdb -dbtype nucl -out strep_ref_dna_db -max_file_sz 2GB \

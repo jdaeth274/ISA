@@ -168,8 +168,8 @@ def node_reconstruct(tree_loc, hit_csv):
     tree = dendropy.Tree.get_from_path(tree_loc,
                                        schema="newick", preserve_underscores=True, taxon_namespace=taxa)
 
-    os.remove("./fasta_data.tsv")
-    os.remove("./fasta_data.fasta")
+    #os.remove("./fasta_data.tsv")
+    #os.remove("./fasta_data.fasta")
 
     score = fitch_down_pass(postorder_nodes=tree.postorder_node_iter(),
                             taxon_state_sets_map=taxon_state_sets_map)
@@ -203,6 +203,9 @@ def node_reconstruct(tree_loc, hit_csv):
 
         tree_id = current_id
 
+
+
+
         tree_node = tree.find_node_with_taxon_label(label=tree_id)
         if tree_node == None:
             print("Tree labels don't match isolate ids from fastas")
@@ -213,6 +216,9 @@ def node_reconstruct(tree_loc, hit_csv):
         parent_node = tree_node.parent_node
         init_run = 0
         parent_state = parent_node.state_sets
+
+        # if current_id == "22841_3#12":
+        #     print(parent_state)
 
         if parent_state != taxon_state:
             children = 1
@@ -374,7 +380,8 @@ def reccy_finder(ref_gff, closest_vals, node_label, example_id, node_rec, tree):
                                 new_end_node_subset['end'] >= (closest_vals[1] - 100))]
 
                 if new_end_node_subset_loccy.empty:
-                    print("Definitely no reccy here 1")
+                    #print("Definitely no reccy here 1")
+                    I_am_lorde = "lalalaaa"
                 else:
                     if len(new_end_node_subset_loccy.index) > 1:
                         single_row = length_checker(new_end_node_subset_loccy)
@@ -450,7 +457,8 @@ def reccy_finder(ref_gff, closest_vals, node_label, example_id, node_rec, tree):
                                         new_end_node_subset['end'] >= (closest_vals[1] - 100))]
 
                         if new_end_node_subset_loccy.empty:
-                            print("Definitely no reccy here 2", new_node, node_label)
+                            #print("Definitely no reccy here 2", new_node, node_label)
+                            feeling_good = "on a wednesday"
                         else:
                             if len(new_end_node_subset_loccy.index) > 1:
                                 single_row = length_checker(new_end_node_subset_loccy)
@@ -518,7 +526,8 @@ def reccy_finder(ref_gff, closest_vals, node_label, example_id, node_rec, tree):
                                     new_end_node_subset['end'] >= (closest_vals[1] - 100))]
 
                     if new_end_node_subset_loccy.empty:
-                        print("No defo no reccy here")
+                        #print("No defo no reccy here")
+                        lorde = "lorde lorde"
                     else:
                         if len(new_end_node_subset_loccy.index) > 1:
                             single_row = length_checker(new_end_node_subset_loccy)
@@ -586,7 +595,8 @@ def reccy_finder(ref_gff, closest_vals, node_label, example_id, node_rec, tree):
                                             new_end_node_subset['end'] >= (closest_vals[1] - 100))]
 
                             if new_end_node_subset_loccy.empty:
-                                print("No defo no reccy here", node_label)
+                                #print("No defo no reccy here", node_label)
+                                yeah_yeah = "yeaah I am Lorde"
                             else:
                                 if len(new_end_node_subset_loccy.index) > 1:
                                     single_row = length_checker(new_end_node_subset_loccy)
@@ -705,6 +715,8 @@ def reccy_main(tree_loc, ref_gff_tsv, hit_csv):
     python_hits_csv = hit_csv.copy()
 
     node_count = python_hits_csv['insertion_node'].value_counts()
+    print(node_count)
+    print(len(node_count))
 
     # print(len(node_count))
 
@@ -891,29 +903,38 @@ def reccy_main(tree_loc, ref_gff_tsv, hit_csv):
                         non_inny_insert_name.append(noders.iloc[0, noders.columns.get_loc('insert_name')])
     gubb_lengths = [x + 1 for x in gubb_lengths]
 
-    reccy_df['start_insert'] = pandas.Series(data=start_inserts)
-    reccy_df['end_insert'] = pandas.Series(data=end_inserts, index=reccy_df.index)
-    reccy_df['start_nodes'] = pandas.Series(data=start_nodes, index=reccy_df.index)
-    reccy_df['end_nodes'] = pandas.Series(data=end_nodes, index=reccy_df.index)
-    reccy_df['start_gubb'] = pandas.Series(data=start_gubbs, index=reccy_df.index)
-    reccy_df['end_gubb'] = pandas.Series(data=end_gubbs, index=reccy_df.index)
-    reccy_df['gub_length'] = pandas.Series(data=gubb_lengths, index=reccy_df.index)
-    reccy_df['isolate_example'] = pandas.Series(data=isolate_idzs, index=reccy_df.index)
-    reccy_df['snp_count'] = pandas.Series(data=snippy_counts, index=reccy_df.index)
-    reccy_df['insertion_node'] = pandas.Series(data=insertion_nodes, index=reccy_df.index)
-    reccy_df['insertion_node_tip_nums'] = pandas.Series(data=inny_node_tips, index=reccy_df.index)
-    reccy_df['end_node_tip_nums'] = pandas.Series(data=end_node_tips, index=reccy_df.index)
-    reccy_df['insert_name'] = pandas.Series(data=insert_name, index=reccy_df.index)
+    if len(start_inserts) > 0:
 
-    reccy_df = reccy_df.drop_duplicates(subset=['start_nodes', 'end_nodes'], keep='first')
+        reccy_df['start_insert'] = pandas.Series(data=start_inserts)
+        reccy_df['end_insert'] = pandas.Series(data=end_inserts, index=reccy_df.index)
+        reccy_df['start_nodes'] = pandas.Series(data=start_nodes, index=reccy_df.index)
+        reccy_df['end_nodes'] = pandas.Series(data=end_nodes, index=reccy_df.index)
+        reccy_df['start_gubb'] = pandas.Series(data=start_gubbs, index=reccy_df.index)
+        reccy_df['end_gubb'] = pandas.Series(data=end_gubbs, index=reccy_df.index)
+        reccy_df['gub_length'] = pandas.Series(data=gubb_lengths, index=reccy_df.index)
+        reccy_df['isolate_example'] = pandas.Series(data=isolate_idzs, index=reccy_df.index)
+        reccy_df['snp_count'] = pandas.Series(data=snippy_counts, index=reccy_df.index)
+        reccy_df['insertion_node'] = pandas.Series(data=insertion_nodes, index=reccy_df.index)
+        reccy_df['insertion_node_tip_nums'] = pandas.Series(data=inny_node_tips, index=reccy_df.index)
+        reccy_df['end_node_tip_nums'] = pandas.Series(data=end_node_tips, index=reccy_df.index)
+        reccy_df['insert_name'] = pandas.Series(data=insert_name, index=reccy_df.index)
 
+        reccy_df = reccy_df.drop_duplicates(subset=['start_nodes', 'end_nodes'], keep='first')
+    else:
+        reccy_df.columns = ['start_insert','end_insert','start_nodes','end_nodes','start_gubb',
+                            'end_gubb','gub_length','isolate_example','snp_count','insertion_node',
+                            'insertion_node_tip_nums','end_node_tip_nums','insert_name']
 
-    non_reccy_df['start_insert'] = pandas.Series(data=non_start_insert)
-    non_reccy_df['end_insert'] = pandas.Series(data=non_end_insert, index=non_reccy_df.index)
-    non_reccy_df['isolate_id'] = pandas.Series(data=non_example_isolate, index=non_reccy_df.index)
-    non_reccy_df['insertion_node'] = pandas.Series(data=non_insertion_node, index=non_reccy_df.index)
-    non_reccy_df['insertion_node_tip_nums'] = pandas.Series(data=non_inny_node_tips, index=non_reccy_df.index)
-    non_reccy_df['insert_name'] = pandas.Series(data=non_inny_insert_name, index=non_reccy_df.index)
+    if len(non_start_insert) > 0:
+        non_reccy_df['start_insert'] = pandas.Series(data=non_start_insert)
+        non_reccy_df['end_insert'] = pandas.Series(data=non_end_insert, index=non_reccy_df.index)
+        non_reccy_df['isolate_id'] = pandas.Series(data=non_example_isolate, index=non_reccy_df.index)
+        non_reccy_df['insertion_node'] = pandas.Series(data=non_insertion_node, index=non_reccy_df.index)
+        non_reccy_df['insertion_node_tip_nums'] = pandas.Series(data=non_inny_node_tips, index=non_reccy_df.index)
+        non_reccy_df['insert_name'] = pandas.Series(data=non_inny_insert_name, index=non_reccy_df.index)
+    else:
+        non_reccy_df.columns = ['start_insert','end_insert','isolate_id','insertion_node','insertion_node_tip_nums',
+                                'insert_name']
 
     return reccy_df, non_reccy_df
 
@@ -930,6 +951,7 @@ if __name__ == '__main__':
 
     tot_reccy_csv = pandas.DataFrame()
     tot_non_reccy = pandas.DataFrame()
+    hit_df_new = pandas.DataFrame()
 
     seq_clus = 1
     for cluster in unique_clusters:
@@ -951,6 +973,8 @@ if __name__ == '__main__':
 
         current_dat = node_reconstruct(tree_loc, current_dat)
 
+        insertion_nodes = len(current_dat['insertion_node'].unique())
+
         ref_gff = reference_gff_clean(gff_loc)
 
         current_reccy_hits, current_reccy_misses = reccy_main(tree_loc, ref_gff, current_dat)
@@ -960,18 +984,22 @@ if __name__ == '__main__':
 
         tot_reccy_csv = tot_reccy_csv.append(current_reccy_hits, sort= False, ignore_index=True)
         tot_non_reccy = tot_non_reccy.append(current_reccy_misses, sort = False, ignore_index=True)
+        hit_df_new = hit_df_new.append(current_dat, sort= False, ignore_index=True)
         toc_cluster = time.perf_counter()
         seq_clus += 1
+        print("Found %s insertions in recombinations, %s outside recombination, total insertions %s" % (len(current_reccy_hits.index), len(current_reccy_hits.index),insertion_nodes))
         print("Took this long for %s, %s (seconds)" % (cluster, (toc_cluster - tic_cluster)))
+        #sys.exit(1)
 
 
 
     reccy_name = input_args.out_name + "_reccy_hits.csv"
     non_reccy_name = input_args.out_name + "_non_reccy_hits.csv"
+    hits_df_name = input_args.out_name + "_hits_df.csv"
 
     tot_reccy_csv.to_csv(path_or_buf=reccy_name, index=False)
     tot_non_reccy.to_csv(path_or_buf=non_reccy_name, index=False)
-
+    hit_df_new.to_csv(path_or_buf=hits_df_name, index=False)
     toc_tot = time.perf_counter()
 
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")

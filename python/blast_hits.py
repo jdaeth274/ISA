@@ -28,6 +28,7 @@ def get_options():
     parser.add_argument('--act_compos', required=True, help='Location of act comparisons, with .referoo.fasta. prefix', type=str)
     parser.add_argument('--flank_length', required=True, help='Length to extract from flanks', type=int)
     parser.add_argument('--dna_dir', required=True, help='location of dna files', type=str)
+    parser.add_argument('')
     parser.add_argument('--out_dir', required=True, help='directory to save extracted flanks', type=str)
     parser.add_argument('--out_name', required=True, help='Prefix to append to out out_files', type=str)
 
@@ -972,12 +973,6 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
                 if after_subset.iloc[0,7] > mge_hits[1]:
                     after_subset.iloc[0,7] = mge_hits[1]
 
-        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-        print(before_subset)
-        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-        print(after_subset)
-        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-        print(insert_hits)
 
         out_df.at[o, 'before_start'] = before_subset.iloc[0, 6]
         out_df.at[o, 'before_end'] = before_subset.iloc[0, 7]

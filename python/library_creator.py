@@ -2840,7 +2840,7 @@ if __name__ == '__main__':
 
     print("Took this long for library_search: %s" % (toc1 - tic_1))
     print("Took this long overall: %s" % (toc - tic))
-    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Library creator finsihed ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Library creator finished ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
     #sys.exit(1)
 
 

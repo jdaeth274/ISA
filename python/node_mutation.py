@@ -486,6 +486,11 @@ if __name__ == '__main__':
         tree_indexio = [k for k, s in enumerate(cluster_files) if "node_labelled.final_tree.tre" in s]
         embl_branch = [k for k, s in enumerate(cluster_files) if "_branch_base.csv" in s]
         embl_reccy = [k for k, s in enumerate(cluster_files) if "_recombinations.csv" in s]
+        per_branch_file = [k for k, s in enumerate(cluster_files) if "_per_branch_mutations.csv" in s]
+
+        if len(per_branch_file) > 0:
+            print("Using already formed per_branch_mutations.csv")
+            continue
 
         tree_loc = current_dir + "/" + cluster_files[tree_indexio[0]]
         embl_branch_loc = current_dir + "/" + cluster_files[embl_branch[0]]
