@@ -721,8 +721,12 @@ def reccy_main(tree_loc, ref_gff_tsv, hit_csv):
     # print(len(node_count))
 
     # sorted(product(arr1, arr2), key=lambda t: abs(t[0]-t[1]))[0]
+    reccy_df_columns = ['start_insert', 'end_insert', 'start_nodes', 'end_nodes', 'start_gubb',
+                        'end_gubb', 'gub_length', 'isolate_example', 'snp_count', 'insertion_node',
+                        'insertion_node_tip_nums', 'end_node_tip_nums', 'insert_name']
 
-    reccy_df = pandas.DataFrame()
+    reccy_df = pandas.DataFrame(columns=reccy_df_columns)
+
 
     start_inserts = []
     end_inserts = []
@@ -738,7 +742,9 @@ def reccy_main(tree_loc, ref_gff_tsv, hit_csv):
     end_node_tips = []
     insert_name = []
 
-    non_reccy_df = pandas.DataFrame()
+    non_reccy_df_columns = ['start_insert', 'end_insert', 'isolate_id', 'insertion_node', 'insertion_node_tip_nums',
+                            'insert_name']
+    non_reccy_df = pandas.DataFrame(columns=non_reccy_df_columns)
 
     non_start_insert = []
     non_end_insert = []
@@ -920,10 +926,6 @@ def reccy_main(tree_loc, ref_gff_tsv, hit_csv):
         reccy_df['insert_name'] = pandas.Series(data=insert_name, index=reccy_df.index)
 
         reccy_df = reccy_df.drop_duplicates(subset=['start_nodes', 'end_nodes'], keep='first')
-    else:
-        reccy_df.columns = ['start_insert','end_insert','start_nodes','end_nodes','start_gubb',
-                            'end_gubb','gub_length','isolate_example','snp_count','insertion_node',
-                            'insertion_node_tip_nums','end_node_tip_nums','insert_name']
 
     if len(non_start_insert) > 0:
         non_reccy_df['start_insert'] = pandas.Series(data=non_start_insert)
@@ -932,9 +934,8 @@ def reccy_main(tree_loc, ref_gff_tsv, hit_csv):
         non_reccy_df['insertion_node'] = pandas.Series(data=non_insertion_node, index=non_reccy_df.index)
         non_reccy_df['insertion_node_tip_nums'] = pandas.Series(data=non_inny_node_tips, index=non_reccy_df.index)
         non_reccy_df['insert_name'] = pandas.Series(data=non_inny_insert_name, index=non_reccy_df.index)
-    else:
-        non_reccy_df.columns = ['start_insert','end_insert','isolate_id','insertion_node','insertion_node_tip_nums',
-                                'insert_name']
+
+
 
     return reccy_df, non_reccy_df
 
