@@ -98,7 +98,7 @@ then
       fi
       #rm output.mfa
 
-      blastn -db temp_blast_db -query "../$2" -outfmt 10 -num_alignments 1000000 -out tmp_blast_csv.csv
+      blastn -db temp_blast_db -query "../$2" -outfmt 10 -num_alignments 1000000 -evalue 0.05 -out tmp_blast_csv.csv
 
       cd ../
 
