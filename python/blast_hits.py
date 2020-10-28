@@ -28,7 +28,6 @@ def get_options():
     parser.add_argument('--act_compos', required=True, help='Location of act comparisons, with .referoo.fasta. prefix', type=str)
     parser.add_argument('--flank_length', required=True, help='Length to extract from flanks', type=int)
     parser.add_argument('--dna_dir', required=True, help='location of dna files', type=str)
-    parser.add_argument('')
     parser.add_argument('--out_dir', required=True, help='directory to save extracted flanks', type=str)
     parser.add_argument('--out_name', required=True, help='Prefix to append to out out_files', type=str)
 
