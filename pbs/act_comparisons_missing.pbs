@@ -14,7 +14,7 @@ cd /rds/general/project/bacterial_evo_genomics/live/gps_annotations_4_2_2020/gps
 echo $PWD
 
 python ./ISA/python/running_act_comparisons.py --csv missing_act_csv.csv \
---perl_dir ./ISA/perl/ --act_dir ./act_compos/ 
+--perl_dir ./ISA/perl/ --act_dir ./act_compos_all_refs/ 
 
 duration=$(( SECONDS - start ))
 
