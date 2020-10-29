@@ -17,6 +17,7 @@ from Bio import SeqIO
 from Bio.Seq import Seq
 import math
 import time
+from pastml.acr import pastml_pipeline
 
 ###############################################################################
 ## Load up the files ##########################################################
@@ -106,6 +107,10 @@ def length_checker(rows):
 
     return df_to_keep
 
+def state_finder(node_id, character_file):
+    tree_states_node = character_file[character_file['node'] == node_id]
+    return tree_states_node['mega'].values[0]
+
 def node_reconstruct(tree_loc, hit_csv):
     ## Function to reconstruct the insertion node of the individual cluster for a specific gps cluster
 
@@ -151,29 +156,47 @@ def node_reconstruct(tree_loc, hit_csv):
 
     with open("./fasta_data.tsv", 'w') as outfile:
         csv_writer = csv.writer(outfile, delimiter='\t', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-
+        csv_writer.writerow(["id"] + ["mega"])
         for k, v in mega_characters.items():
             csv_writer.writerow([k] + [v])
 
-    SeqIO.convert("./fasta_data.tsv",
-                  "tab", "./fasta_data.fasta",
-                  "fasta")
 
+    data_file = "./fasta_data.tsv"
+    columns = ['mega']
+
+    tic_ml = time.perf_counter()
+    pastml_pipeline(data=data_file, columns=columns, name_column='mega',
+                    tree=tree_loc, verbose=False,
+                    out_data="./states_res.txt",
+                    work_dir="./")
+    toc_ml = time.perf_counter()
+
+    print("ML recon took this long: %s (seconds)" % (round(toc_ml - tic_ml)))
+
+    tree_states = pandas.read_csv("./states_res.txt", sep="\t")
+
+    # SeqIO.convert("./fasta_data.tsv",
+    #               "tab", "./fasta_data.fasta",
+    #               "fasta")
+    #
     taxa = dendropy.TaxonNamespace()
-
-    data_mega = dendropy.StandardCharacterMatrix.get_from_path("./fasta_data.fasta",
-                                                               "fasta", taxon_namespace=taxa)
-    taxon_state_sets_map = data_mega.taxon_state_sets_map(gaps_as_missing=True)
-
-    tree = dendropy.Tree.get_from_path(tree_loc,
-                                       schema="newick", preserve_underscores=True, taxon_namespace=taxa)
+    tree = dendropy.Tree.get(path=tree_loc,
+                             schema="newick", preserve_underscores=True,
+                             taxon_namespace = taxa)
+    #
+    # data_mega = dendropy.StandardCharacterMatrix.get_from_path("./fasta_data.fasta",
+    #                                                            "fasta", taxon_namespace=taxa)
+    # taxon_state_sets_map = data_mega.taxon_state_sets_map(gaps_as_missing=True)
+    #
+    # tree = dendropy.Tree.get_from_path(tree_loc,
+    #                                    schema="newick", preserve_underscores=True, taxon_namespace=taxa)
 
     #os.remove("./fasta_data.tsv")
     #os.remove("./fasta_data.fasta")
 
-    score = fitch_down_pass(postorder_nodes=tree.postorder_node_iter(),
-                            taxon_state_sets_map=taxon_state_sets_map)
-    fitch_up_pass(tree.postorder_node_iter())
+    # score = fitch_down_pass(postorder_nodes=tree.postorder_node_iter(),
+    #                         taxon_state_sets_map=taxon_state_sets_map)
+    # fitch_up_pass(tree.postorder_node_iter())
 
     ###########################################################################
     ## Ok so now the tree has been reconstructed with the fitch up pass down ##
@@ -212,10 +235,12 @@ def node_reconstruct(tree_loc, hit_csv):
             print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
             exit()
 
-        taxon_state = tree_node.state_sets
+        taxon_state = state_finder(tree_id, tree_states)
+
         parent_node = tree_node.parent_node
         init_run = 0
-        parent_state = parent_node.state_sets
+        parent_state = state_finder(parent_node.label, tree_states)
+
 
         # if current_id == "22841_3#12":
         #     print(parent_state)
@@ -248,7 +273,7 @@ def node_reconstruct(tree_loc, hit_csv):
                     node_home.append(old_parent.label)
                     reccy_on_node.append("Yes")
                 else:
-                    parent_state = newer_parent.state_sets
+                    parent_state = state_finder(newer_parent.label, tree_states)
                     if parent_state != taxon_state:
                         children = len(old_parent.leaf_nodes())
                         tot_children = len(newer_parent.leaf_nodes())
@@ -364,6 +389,16 @@ def reccy_finder(ref_gff, closest_vals, node_label, example_id, node_rec, tree):
 
             example_isolate = example_id
 
+            if "ROOT" in node_label:
+                out_df = pandas.DataFrame()
+                out_df['start_insert'] = pandas.Series(data=closest_vals[0])
+                out_df['end_insert'] = pandas.Series(data=closest_vals[1], index=out_df.index)
+                out_df['isolate_id'] = pandas.Series(data=example_id, index=out_df.index)
+                out_df['insertion_node'] = pandas.Series(data=node_label, index=out_df.index)
+
+                return out_df, False
+
+
             new_node = previous_node_finder(tree, example_isolate, node_label)
 
             new_end_node_subset = ref_gff[ref_gff['end_node'] == new_node]
@@ -438,6 +473,16 @@ def reccy_finder(ref_gff, closest_vals, node_label, example_id, node_rec, tree):
 
                     ## Now we'll look at one node furtherup as sometimes we see these recombination events
                     example_isolate = example_id
+
+                    if "ROOT" in node_label:
+                        out_df = pandas.DataFrame()
+                        out_df['start_insert'] = pandas.Series(data=closest_vals[0])
+                        out_df['end_insert'] = pandas.Series(data=closest_vals[1], index=out_df.index)
+                        out_df['isolate_id'] = pandas.Series(data=example_id, index=out_df.index)
+                        out_df['insertion_node'] = pandas.Series(data=node_label, index=out_df.index)
+
+                        return out_df, False
+
                     new_node = previous_node_finder(tree, example_isolate, node_label)
 
                     new_end_node_subset = ref_gff[ref_gff['end_node'] == new_node]
@@ -715,8 +760,7 @@ def reccy_main(tree_loc, ref_gff_tsv, hit_csv):
     python_hits_csv = hit_csv.copy()
 
     node_count = python_hits_csv['insertion_node'].value_counts()
-    print(node_count)
-    print(len(node_count))
+
 
     # print(len(node_count))
 
@@ -760,6 +804,7 @@ def reccy_main(tree_loc, ref_gff_tsv, hit_csv):
 
 
         check_if_same_insertion_loci = noders['cluster_name'].value_counts()
+
 
         if len(check_if_same_insertion_loci) == 1:
             noders_row = noders.iloc[0]
@@ -909,6 +954,8 @@ def reccy_main(tree_loc, ref_gff_tsv, hit_csv):
                         non_inny_insert_name.append(noders.iloc[0, noders.columns.get_loc('insert_name')])
     gubb_lengths = [x + 1 for x in gubb_lengths]
 
+
+
     if len(start_inserts) > 0:
 
         reccy_df['start_insert'] = pandas.Series(data=start_inserts)
@@ -988,7 +1035,7 @@ if __name__ == '__main__':
         hit_df_new = hit_df_new.append(current_dat, sort= False, ignore_index=True)
         toc_cluster = time.perf_counter()
         seq_clus += 1
-        print("Found %s insertions in recombinations, %s outside recombination, total insertions %s" % (len(current_reccy_hits.index), len(current_reccy_hits.index),insertion_nodes))
+        print("Found %s insertions in recombinations, %s outside recombination, total insertions %s" % (len(current_reccy_hits.index), len(current_reccy_misses.index),insertion_nodes))
         print("Took this long for %s, %s (seconds)" % (cluster, (toc_cluster - tic_cluster)))
         #sys.exit(1)
 

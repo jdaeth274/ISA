@@ -922,6 +922,10 @@ def gff_to_dna(gff_csv, contig_csv, isolate_id, input_k):
     starting_seq = gff_csv['seqid'].str.startswith("##FASTA", na = False)
     starting_seq_indy = starting_seq.where(starting_seq == True)
     starting_seq_indy = starting_seq_indy.index[starting_seq_indy == True].tolist()
+    if len(starting_seq_indy) < 1:
+        print("No FASTA in GFF for this isolate: %s" % isolate_id)
+        return "No hit"
+
     starting_seq_indy = min(starting_seq_indy)
 
     narrowed_gff = gff_csv.drop(range(starting_seq_indy,(len(gff_csv.index) - 1) ))
@@ -2609,6 +2613,8 @@ if __name__ == '__main__':
 
             if len(contig_tab.index) > 1:
                 current_gff = gff_to_dna(current_gff, contig_tab, isolate_id, input_k=k)
+                if isinstance(current_gff, str):
+                    continue
 
             ## If we have changed the act comparison we need to get the equivalent regions from this new
             ## reference into the gubbins reference to enable detection of whether a hit is in a recombination
