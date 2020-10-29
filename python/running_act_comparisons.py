@@ -62,7 +62,7 @@ if __name__ == '__main__':
             perl_command = "perl " + perl_dir + "compare_genomes_orig.pl referoo.fasta " + current_isolate
             move_command = "mv *.crunch.gz " + act_dir
             subprocess.call(perl_command, shell=True, stdout=subprocess.DEVNULL)
-            subprocess.call(move_command, shell=True)
+            subprocess.call(move_command, shell=True, stdout=subprocess.DEVNULL)
 
 
 

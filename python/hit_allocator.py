@@ -822,7 +822,7 @@ def before_and_after_hits(hit_info, compo_table, contig_bounds, hits_to_search):
             hits_before_1k = hits_before.loc[hits_before['align'] > 2000]
 
             if hits_before_1k.empty:
-                hits_before_1k = hits_befores
+                hits_before_1k = hits_before
 
 
             if hits_before_1k.iloc[0, 7] > (contig_bounds[1] + 10):
