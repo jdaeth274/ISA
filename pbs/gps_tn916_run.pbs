@@ -1,4 +1,4 @@
-#PBS -l select=1:ncpus=1:mem=2gb
+#PBS -l select=1:ncpus=1:mem=12gb
 #PBS -l walltime=6:00:00
 
 start=$SECONDS
@@ -12,8 +12,9 @@ conda activate insertion_site_analysis
 cd /rds/general/project/bacterial_evo_genomics/live/gps_annotations_4_2_2020/gps_gubbins_runs
 
 bash ./ISA/bash/isa_pipeline.sh ./gps_run_data/gps ./gps_run_data/tn916.fasta \
-7000 gps_tn916_run gps_916 no
+7000 gps_tn916_run gps_916 ./ 500 no no \
+/rds/general/project/bacterial_evo_genomics/live/gps_annotations_4_2_2020/strep_reference_fasta/strep_ref_database
 
 duration=$(( SECONDS - start ))
 
-echo $duration > mega_run_time.txt
+echo $duration > tn916_run_time.txt
