@@ -1,0 +1,20 @@
+#PBS -l select=1:ncpus=1:mem=12gb
+#PBS -l walltime=04:00:00
+
+start_time=$SECONDS
+cd /rds/general/project/bacterial_evo_genomics/live/gps_annotations_4_2_2020/gps_gubbins_runs/gps_mega_run2
+
+module load anaconda3/personal
+
+source activate
+
+conda activate insertion_site_analysis
+
+bash ../ISA/bash/flank_search_only.sh ../gps_mega_run2/gps_mega ../tmp_dna_dir ../act_compos_mega/referoo.fasta. \
+ ../gps_mega_run2 gps_mega ../flanks_lengths.txt ../ ../../strep_reference_fasta/strep_ref_database  
+
+
+end_time=$(( SECONDS - start_time ))
+echo "${end_time} seconds" > gps_mega_flanks_extraction_time.txt
+
+
