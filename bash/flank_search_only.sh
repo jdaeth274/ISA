@@ -14,8 +14,8 @@ hit_csv="$1_hits_df.csv"
 reccy_csv="$1_reccy_hits.csv"
 
 
-echo "This is the hit_locs csv: $pyt_csv"
-echo "This is the reccy_hits csv: $pyt_reccys"
+echo "This is the hit_locs csv: $hit_csv"
+echo "This is the reccy_hits csv: $reccy_csv"
 echo "This is the dna directory: $2"
 
 echo "These are the actcompos with prefix: $3"
@@ -134,7 +134,7 @@ else
         python "${pythondir}blast_local_results_interpreter.py" \
         --results_csv "$4/${current_flanks}_after_flank_blast_res/$namo".csv --out_dir "$4/${current_flanks}_after_flank_blast_res/"
 
-        
+
       done < $after_flanks_fazza
 
 
