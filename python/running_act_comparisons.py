@@ -40,6 +40,7 @@ if __name__ == '__main__':
         current_data_set = input_csv[input_csv['reference'] == unique_refs[k]]
         reference_gff = str(current_data_set.iloc[0,1])
         ref_base = os.path.basename(reference_gff)
+
         print("On reference %s" % ref_base)
         print("")
 

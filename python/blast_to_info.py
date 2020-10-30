@@ -57,7 +57,7 @@ if __name__ == '__main__':
             insertion_point.append("reference")
         else:
             matching_python_record = python_hit_locs[python_hit_locs['id'] == top_hit.iloc[0]]
-            clus_name = matching_python_record['insert_name']
+            clus_name = matching_python_record['insert_name'].values[0]
 
 
             #insertion_point.append(str(matching_python_record.iloc[0:1,matching_python_record.columns.get_loc("cluster_names")]))
