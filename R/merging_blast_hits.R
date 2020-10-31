@@ -45,11 +45,22 @@ colnames(in_csv) <- c("Reference", "subject",	"pident",	"align",
 
 contig_checker <- function(isolate_blast_rows, contig_table){
   isolate_blast_rows$contig <- rep(0, nrow(isolate_blast_rows))
+  drop_vals <- NULL
   for(k in 1:nrow(isolate_blast_rows)){
     subject_locs <- as.numeric(as.vector(isolate_blast_rows[k, c(6,7)]))
     subject_locs <- subject_locs[order(subject_locs)]
     current_contig <- which((contig_table[,1] - 15) <= subject_locs[1] & (contig_table[,2] + 15) >= subject_locs[2])
-    isolate_blast_rows$contig[k] <- current_contig 
+    if(length(current_contig) < 1){
+	drop_vals <- append(drop_vals, k)
+    }else{   
+
+    isolate_blast_rows$contig[k] <- current_contig
+    }
+  }
+  
+  if(length(drop_vals) > 0){
+	isolate_blast_rows <- isolate_blast_rows[-drop_vals,]
+	
   }
   return(isolate_blast_rows)
 }
@@ -140,7 +151,7 @@ delete_dups_blast <- function(hit_csv, contig_dir){
   # subject_ids <- sub("\\./","",subject_ids)
   
   subject_ids <- str_split_fixed(subject_ids,"\\.", 3)[,1]
-  print(head(subject_ids))
+ 
   
   for( i in 1:length(subject_ids)){
     current_id <- subject_ids[i]
@@ -150,7 +161,7 @@ delete_dups_blast <- function(hit_csv, contig_dir){
       subject_ids[i] <- current_id
     }
   }
-  print(head(subject_ids))
+ 
   subject_count <- dplyr::count(as.data.frame(subject_ids), subject_ids)
   max_accession_frequency <- max(dplyr::count(as.data.frame(subject_ids), subject_ids)[,2])
   
@@ -320,7 +331,9 @@ delete_dups_blast <- function(hit_csv, contig_dir){
     clust_rows <- NULL
     new_row <- NULL
           
-    
+	#if(i != 5219){
+	# next
+	#}    
     
     if(nest_accession[i,2]==1){
       ## If there's only one hit in the genome we can just use this row as the 
@@ -1082,7 +1095,7 @@ delete_dups_blast <- function(hit_csv, contig_dir){
     }
     
     data_merged <- rbind(data_merged,new_row)
-    cat("Done", i , "-", nrow(nest_accession), "\n")
+    cat("Done", i , "-", nrow(nest_accession), "\r")
     
   }
   

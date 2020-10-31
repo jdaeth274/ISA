@@ -10,8 +10,8 @@ source activate
 
 conda activate insertion_site_analysis
 
-bash ../ISA/bash/flank_search_only.sh ../gps_mega_run2/gps_mega ../tmp_dna_dir ../act_compos_mega/referoo.fasta. \
- ../gps_mega_run2 gps_mega ../flanks_lengths.txt ../ ../../strep_reference_fasta/strep_ref_database  
+bash ../ISA/bash/flank_search_only.sh ../gps_mega_run2/gps_mega ../tmp_dna_dir/ ../act_compos_mega/referoo.fasta. \
+ ../gps_mega_run2 gps_mega ../flank_lengths.txt ../ ../../strep_reference_fasta/strep_ref_database  
 
 
 end_time=$(( SECONDS - start_time ))
