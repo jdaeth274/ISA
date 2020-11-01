@@ -772,20 +772,16 @@ def before_and_after_hits(hit_info, compo_table, contig_bounds, hits_to_search):
             ## Just check if this align > 1500 hit is on the same contig, if not we
             ## use the original hits_before ordered df
 
-
-
             if hits_before_1k.empty:
                 hits_before_1k = hits_before
 
-            if hits_before_1k.iloc[0, 6] < (contig_bounds[0] - 10):
-                hits_before_1k = hits_before
             else:
-                hits_before_1k = hits_before_1k
+                if hits_before_1k.iloc[0, 6] < (contig_bounds[0] - 10):
+                    hits_before_1k = hits_before
 
             ## Check now if this align > 1500 df is empty, if so again we use the
             ## original hits before df
-            if hits_before_1k.empty:
-                hits_before_1k = hits_before
+
             if hits_before_1k.empty:
                 hit_before = pandas.DataFrame(data=numpy.zeros(shape=(1, 12)),
                                               columns=hits_before.columns.values)
@@ -801,13 +797,11 @@ def before_and_after_hits(hit_info, compo_table, contig_bounds, hits_to_search):
             if hits_after_1k.empty:
                 hits_after_1k = hits_after
 
-            if hits_after_1k.iloc[0, 7] > (contig_bounds[1] + 10):
-                hits_after_1k = hits_after
             else:
-                hits_after_1k = hits_after_1k
+                if hits_after_1k.iloc[0, 7] > (contig_bounds[1] + 10):
+                    hits_after_1k = hits_after
 
-            if hits_after_1k.empty:
-                hits_after_1k = hits_after
+
             if hits_after_1k.empty:
                 hit_after = pandas.DataFrame(data=numpy.zeros(shape=(1, 12)),
                                              columns=hits_after.columns.values)
@@ -824,14 +818,11 @@ def before_and_after_hits(hit_info, compo_table, contig_bounds, hits_to_search):
             if hits_before_1k.empty:
                 hits_before_1k = hits_before
 
-
-            if hits_before_1k.iloc[0, 7] > (contig_bounds[1] + 10):
-                hits_before_1k = hits_before
             else:
-                hits_before_1k = hits_before_1k
+                if hits_before_1k.iloc[0, 7] > (contig_bounds[1] + 10):
+                    hits_before_1k = hits_before
 
-            if hits_before_1k.empty:
-                hits_before_1k = hits_before
+
             if hits_before_1k.empty:
                 hit_before = pandas.DataFrame(data=numpy.zeros(shape=(1, 12)),
                                               columns=hits_before.columns.values)
@@ -842,13 +833,13 @@ def before_and_after_hits(hit_info, compo_table, contig_bounds, hits_to_search):
             hits_after = hits_after.sort_values(by=['qend'], ascending=False)
             hits_after_1k = hits_after.loc[hits_after['align'] > 2000]
 
-            if hits_after_1k.iloc[0, 6] < (contig_bounds[0] - 10):
-                hits_after_1k = hits_after
-            else:
-                hits_after_1k = hits_after_1k
-
             if hits_after_1k.empty:
                 hits_after_1k = hits_after
+            else:
+                if hits_after_1k.iloc[0, 6] < (contig_bounds[0] - 10):
+                    hits_after_1k = hits_after
+
+
             if hits_after_1k.empty:
                 hit_after = pandas.DataFrame(data=numpy.zeros(shape=(1, 12)),
                                              columns=hits_after.columns.values)
