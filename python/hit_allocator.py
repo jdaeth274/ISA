@@ -999,13 +999,19 @@ def gff_to_dna(gff_csv, contig_csv, isolate_id, input_k):
 
     return out_gff_csv
 
-def gene_name_tryer(prospective_csv, library_csv, out_hit, missing_isolate, mergio):
+def gene_name_tryer(prospective_csv, library_csv, out_hit, missing_isolate, mergio, isolate_id):
     ## Function to take in hits they have missed the first few cutoffs in the hit_integrator function
     ## And try to merge them instead using the flank gene names and then the mge charecteristics
     ## Input: prospective_csv: The single line isolate from the hit_integrator function
     ##        library_csv: The library csv
     ##        out_hit: The total hit df
     ##        missing_isolate: The df for the isolates with not library hit
+    odd_ones = False
+    if isolate_id in ['10050_2#46','11511_7#57','11657_8#30','11658_8#3',
+                      '12291_5#6','13353_7#58']:
+        print("~~~~~~~~~~~~~~~~~~~~ start point ~~~~~~~~~~~~~~~~~~~~~~~~")
+        print(prospective_csv)
+        odd_ones = True
 
     missing_copy = missing_isolate.copy()
     out_hit_copy = out_hit.copy()
@@ -1059,6 +1065,10 @@ def gene_name_tryer(prospective_csv, library_csv, out_hit, missing_isolate, merg
         missing_current['mge_length'] = pandas.Series(prospective_csv['mge_length'], index=missing_current.index)
         missing_current['reason'] = pandas.Series(["No gene name matches"], index=missing_current.index)
         missing_copy = missing_copy.append(missing_current, sort = False)
+
+    if odd_ones:
+        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~ in gene name tryer ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+        print(prospective_csv)
 
     return out_hit_copy, missing_copy
 
@@ -1212,7 +1222,7 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
 
 
                         if gene_hits.empty and length_hits.empty:
-                            out_hit, missing_df = gene_name_tryer(prospective_csv, library_csv, out_hit, missing_df, mergio)
+                            out_hit, missing_df = gene_name_tryer(prospective_csv, library_csv, out_hit, missing_df, mergio, isolate_id)
                             if odd_ones:
                                 print("~~~~~~~~~~~~~~~~~~~~ start point 6 ~~~~~~~~~~~~~~~~~~~~~~~~")
                                 print(prospective_csv)
@@ -1223,7 +1233,7 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
                             after_gene_name = prospective_csv['after_gene_name'][0]
                             if len(remain_48.index) == 1:
                                 if remain_48['before_gene_name'][0] != before_gene_name and remain_48['after_gene_name'][0] != after_gene_name:
-                                    out_hit, missing_df = gene_name_tryer(prospective_csv, library_csv, out_hit, missing_df, mergio)
+                                    out_hit, missing_df = gene_name_tryer(prospective_csv, library_csv, out_hit, missing_df, mergio, isolate_id)
                                     if odd_ones:
                                         print("~~~~~~~~~~~~~~~~~~~~ start point 7 ~~~~~~~~~~~~~~~~~~~~~~~~")
                                         print(prospective_csv)
@@ -1241,7 +1251,7 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
                                 lengers = abs(remain_48['insert_length'] - target_insert)
                                 closest_index = lengers.idxmin()
                                 if remain_48['before_gene_name'].iloc[closest_index] != before_gene_name and remain_48['after_gene_name'].iloc[closest_index] != after_gene_name:
-                                    out_hit, missing_df = gene_name_tryer(prospective_csv, library_csv, out_hit, missing_df, mergio)
+                                    out_hit, missing_df = gene_name_tryer(prospective_csv, library_csv, out_hit, missing_df, mergio, isolate_id)
                                     if odd_ones:
                                         print("~~~~~~~~~~~~~~~~~~~~ start point 8 ~~~~~~~~~~~~~~~~~~~~~~~~")
                                         print(prospective_csv)
@@ -1259,18 +1269,18 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
                                 print("Odd behaviour here")
 
                     else:
-                        out_hit, missing_df = gene_name_tryer(prospective_csv, library_csv, out_hit, missing_df, mergio)
+                        out_hit, missing_df = gene_name_tryer(prospective_csv, library_csv, out_hit, missing_df, mergio, isolate_id)
                         if odd_ones:
                             print("~~~~~~~~~~~~~~~~~~~~ start point 9 ~~~~~~~~~~~~~~~~~~~~~~~~")
                             print(prospective_csv)
                 else:
-                    out_hit, missing_df = gene_name_tryer(prospective_csv, library_csv, out_hit, missing_df, mergio)
+                    out_hit, missing_df = gene_name_tryer(prospective_csv, library_csv, out_hit, missing_df, mergio, isolate_id)
                     if odd_ones:
                         print("~~~~~~~~~~~~~~~~~~~~ start point 10 ~~~~~~~~~~~~~~~~~~~~~~~~")
                         print(prospective_csv)
         else:
             ## Try to see if there is a hit with the same start and end gene names and mge_length +- 50 bp or gene +- 1
-            out_hit, missing_df = gene_name_tryer(prospective_csv, library_csv, out_hit, missing_df, mergio)
+            out_hit, missing_df = gene_name_tryer(prospective_csv, library_csv, out_hit, missing_df, mergio, isolate_id)
             if odd_ones:
                 print("~~~~~~~~~~~~~~~~~~~~ start point 11   ~~~~~~~~~~~~~~~~~~~~~~~~")
                 print(prospective_csv)
