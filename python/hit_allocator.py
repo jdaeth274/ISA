@@ -1200,6 +1200,8 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
                                     if isolate_id in ['10050_2#46', '11511_7#57', '11657_8#30', '11658_8#3',
                                                       '12291_5#6', '13353_7#58']:
                                         print(remain_48)
+                                        print("{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}~~~~~~~~~~~~~~~~~~~~~~~~~@@@@@@@@@@@@@@@")
+
                                     prospective_csv['insert_name'] = pandas.Series(remain_48['insert_name'], index=prospective_csv.index)
                                     out_hit = out_hit.append(prospective_csv, sort = False)
                             elif len(remain_48.index) > 1:
@@ -1213,6 +1215,7 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
                                 else:
                                     if isolate_id in ['10050_2#46', '11511_7#57', '11657_8#30', '11658_8#3',
                                                       '12291_5#6', '13353_7#58']:
+                                        print("{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}~~~~~~~~~~~~~~~~~~~~~~~~~@@@@@@@@@@@@@@@")
                                         print(remain_48.iloc[closest_index])
                                         print(closest_index)
                                     prospective_csv['insert_name'] = pandas.Series(remain_48['insert_name'].iloc[closest_index], index=remain_48.index)
@@ -1233,6 +1236,7 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
 
     if isolate_id in ['10050_2#46','11511_7#57','11657_8#30','11658_8#3',
                       '12291_5#6','13353_7#58']:
+        print("~~~@@@@@@@@@@@@@@@@@~~~~~~~~~~~~~~~~~~~~~~~~~@@@@@@@@@@@@@@@")
         print(prospective_csv)
 
     return(out_hit, missing_df)
