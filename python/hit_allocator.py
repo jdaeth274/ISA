@@ -1086,7 +1086,7 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
 
     if isolate_id in ['10050_2#46','11511_7#57','11657_8#30','11658_8#3',
                       '12291_5#6','13353_7#58']:
-        print("zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz~~~~~~~~~~~~~~~~~~~~~~~~~@@@@@@@@@@@@@@@")
+        print("~~~~~~~~~~~~~~~~~~~~ start point ~~~~~~~~~~~~~~~~~~~~~~~~")
         print(prospective_csv)
 
 
@@ -1205,7 +1205,7 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
                                     if isolate_id in ['10050_2#46', '11511_7#57', '11657_8#30', '11658_8#3',
                                                       '12291_5#6', '13353_7#58']:
                                         print(remain_48)
-                                        print("{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}~~~~~~~~~~~~~~~~~~~~~~~~~@@@@@@@@@@@@@@@")
+                                        print("~~~~~~~~~~~~~~~~~~~~ single hit adder ~~~~~~~~~~~~~~~~~~~~~~~~")
                             elif len(remain_48.index) > 1:
                                 ## If there are two hits with similar tendencies base on insert length
                                 remain_48 = remain_48.reset_index(drop=True)
@@ -1219,7 +1219,7 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
                                     out_hit = out_hit.append(prospective_csv, sort=False)
                                     if isolate_id in ['10050_2#46', '11511_7#57', '11657_8#30', '11658_8#3',
                                                       '12291_5#6', '13353_7#58']:
-                                        print("{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}~~~~~~~~~~~~~~~~~~~~~~~~~@@@@@@@@@@@@@@@")
+                                        print("~~~~~~~~~~~~~~~~~~~~ multi hit adder ~~~~~~~~~~~~~~~~~~~~~~~~")
                                         print(remain_48.iloc[closest_index])
                                         print(closest_index)
 
@@ -1238,7 +1238,7 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
 
     if isolate_id in ['10050_2#46','11511_7#57','11657_8#30','11658_8#3',
                       '12291_5#6','13353_7#58']:
-        print("~~~@@@@@@@@@@@@@@@@@~~~~~~~~~~~~~~~~~~~~~~~~~@@@@@@@@@@@@@@@")
+        print("~~~~~~~~~~~~~~~~~~~~ end point ~~~~~~~~~~~~~~~~~~~~~~~~")
         print(prospective_csv)
 
     return(out_hit, missing_df)
