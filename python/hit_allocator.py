@@ -1197,6 +1197,9 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
                                 if remain_48['before_gene_name'][0] != before_gene_name and remain_48['after_gene_name'][0] != after_gene_name:
                                     out_hit, missing_df = gene_name_tryer(prospective_csv, library_csv, out_hit, missing_df, mergio)
                                 else:
+                                    if isolate_id in ['10050_2#46', '11511_7#57', '11657_8#30', '11658_8#3',
+                                                      '12291_5#6', '13353_7#58']:
+                                        print(remain_48)
                                     prospective_csv['insert_name'] = pandas.Series(remain_48['insert_name'], index=prospective_csv.index)
                                     out_hit = out_hit.append(prospective_csv, sort = False)
                             elif len(remain_48.index) > 1:
@@ -1208,6 +1211,10 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
                                 if remain_48['before_gene_name'].iloc[closest_index] != before_gene_name and remain_48['after_gene_name'].iloc[closest_index] != after_gene_name:
                                     out_hit, missing_df = gene_name_tryer(prospective_csv, library_csv, out_hit, missing_df, mergio)
                                 else:
+                                    if isolate_id in ['10050_2#46', '11511_7#57', '11657_8#30', '11658_8#3',
+                                                      '12291_5#6', '13353_7#58']:
+                                        print(remain_48.iloc[closest_index])
+                                        print(closest_index)
                                     prospective_csv['insert_name'] = pandas.Series(remain_48['insert_name'].iloc[closest_index], index=remain_48.index)
                                     out_hit = out_hit.append(prospective_csv, sort=False)
 
