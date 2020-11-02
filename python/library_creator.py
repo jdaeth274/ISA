@@ -1117,7 +1117,7 @@ def library_integrator(library_csv, prospective_csv, isolate_id):
                         before_gene_name = prospective_csv['before_gene_name'][0]
                         after_gene_name = prospective_csv['after_gene_name'][0]
 
-                        gene_name_matches = remain_48[(remain_48['before_gene_name'] == before_gene_name) |\
+                        gene_name_matches = remain_48[(remain_48['before_gene_name'] == before_gene_name) &\
                                                       (remain_48['after_gene_name'] == after_gene_name)]
                         if gene_name_matches.empty:
                             novel_hit = True
