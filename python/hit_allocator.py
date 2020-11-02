@@ -1037,6 +1037,9 @@ def gene_name_tryer(prospective_csv, library_csv, out_hit, missing_isolate, merg
         if len(tot_hit.index) == 1:
             prospective_csv['insert_name'] = pandas.Series(tot_hit['insert_name'], index=prospective_csv.index)
             out_hit_copy = out_hit_copy.append(prospective_csv, sort = False)
+            if odd_ones:
+                print("~~~~~~~~~~~~~~~~~~~~~~~~~~~ tot hit index == 1 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+                print(prospective_csv)
         elif len(tot_hit.index) > 1:
             tot_hit = tot_hit.reset_index(drop=True)
             length_target = prospective_csv['mge_length'][0]
@@ -1045,6 +1048,9 @@ def gene_name_tryer(prospective_csv, library_csv, out_hit, missing_isolate, merg
             single_hit = tot_hit.iloc[min_val].to_frame().transpose()
             prospective_csv['insert_name'] = pandas.Series(single_hit['insert_name'], index=prospective_csv.index)
             out_hit_copy = out_hit_copy.append(prospective_csv, sort = False)
+            if odd_ones:
+                print("~~~~~~~~~~~~~~~~~~~~~~~~~~~ tot hit index > 1 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+                print(prospective_csv)
         else:
             missing_current = pandas.DataFrame()
             missing_current['id'] = pandas.Series(prospective_csv['id'])
