@@ -1051,6 +1051,9 @@ def gene_name_tryer(prospective_csv, library_csv, out_hit, missing_isolate, merg
             if odd_ones:
                 print("~~~~~~~~~~~~~~~~~~~~~~~~~~~ tot hit index > 1 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
                 print(prospective_csv)
+                print(single_hit)
+                print(mge_dist)
+                print(tot_hit)
         else:
             missing_current = pandas.DataFrame()
             missing_current['id'] = pandas.Series(prospective_csv['id'])
@@ -1116,9 +1119,6 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
         out_hit, missing_df = gene_name_tryer(prospective_csv, library_csv, out_hit, missing_df)
     else:
 
-        if odd_ones:
-            print("~~~~~~~~~~~~~~~~~~~~ start point 1 ~~~~~~~~~~~~~~~~~~~~~~~~")
-            print(prospective_csv)
 
         mge_hits = lib_new[(lib_new['mge_genes'] >= (prospective_csv['mge_genes'][0] - 1)) &\
                            (lib_new['mge_genes'] <= (prospective_csv['mge_genes'][0] + 1))]
@@ -1133,9 +1133,6 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
                 before_gene_num = prospective_csv['before_flank_gene'][0]
                 after_gene_num = prospective_csv['after_flank_gene'][0]
 
-                if odd_ones:
-                    print("~~~~~~~~~~~~~~~~~~~~ start point 2 ~~~~~~~~~~~~~~~~~~~~~~~~")
-                    print(prospective_csv)
 
                 before_gene_hits = mge_length_hits[(mge_length_hits['before_flank_gene'] >= (before_gene_num - 1)) & \
                                                    (mge_length_hits['before_flank_gene'] <= (before_gene_num + 1))]
@@ -1152,9 +1149,6 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
                     before_flank_empty = True
                     after_flank_empty = True
 
-                    if odd_ones:
-                        print("~~~~~~~~~~~~~~~~~~~~ start point 3 ~~~~~~~~~~~~~~~~~~~~~~~~")
-                        print(prospective_csv)
 
                     if not before_empty and after_empty:
                         before_mean_flank = prospective_csv['before_flank_avg'][0]
@@ -1187,9 +1181,6 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
                             (after_gene_hits['after_flank_avg'] <= (after_mean_flank + 25))]
 
                         after_flank_empty = after_flank_means.empty
-                        if odd_ones:
-                            print("~~~~~~~~~~~~~~~~~~~~ start point 4 ~~~~~~~~~~~~~~~~~~~~~~~~")
-                            print(prospective_csv)
 
                     if not before_flank_empty or not after_flank_empty:
 
@@ -1201,9 +1192,6 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
                         insert_genes = prospective_csv['insert_genes'][0]
                         insert_length = prospective_csv['insert_length'][0]
 
-                        if odd_ones:
-                            print("~~~~~~~~~~~~~~~~~~~~ start point 5 ~~~~~~~~~~~~~~~~~~~~~~~~")
-                            print(prospective_csv)
 
 
 
@@ -1222,16 +1210,11 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
                         length_hits = remaining_hits[(remaining_hits['insert_length'] >= (insert_length - 500)) & \
                                                      (remaining_hits['insert_length'] <= (insert_length + 500))]
 
-                        if odd_ones:
-                            print("~~~~~~~~~~~~~~~~~~~~ start point 20 ~~~~~~~~~~~~~~~~~~~~~~~~")
-                            print(prospective_csv)
 
 
                         if gene_hits.empty and length_hits.empty:
                             out_hit, missing_df = gene_name_tryer(prospective_csv, library_csv, out_hit, missing_df, mergio, isolate_id)
-                            if odd_ones:
-                                print("~~~~~~~~~~~~~~~~~~~~ start point 6 ~~~~~~~~~~~~~~~~~~~~~~~~")
-                                print(prospective_csv)
+
                         else:
                             remain_48 = pandas.concat([gene_hits, length_hits], ignore_index=True, sort = False)
                             remain_48 = remain_48.drop_duplicates()
@@ -1246,10 +1229,7 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
                                 else:
                                     prospective_csv['insert_name'] = pandas.Series(remain_48['insert_name'], index=prospective_csv.index)
                                     out_hit = out_hit.append(prospective_csv, sort = False)
-                                    if isolate_id in ['10050_2#46', '11511_7#57', '11657_8#30', '11658_8#3',
-                                                      '12291_5#6', '13353_7#58']:
-                                        print(remain_48)
-                                        print("~~~~~~~~~~~~~~~~~~~~ single hit adder ~~~~~~~~~~~~~~~~~~~~~~~~")
+
                             elif len(remain_48.index) > 1:
                                 ## If there are two hits with similar tendencies base on insert length
                                 remain_48 = remain_48.reset_index(drop=True)
@@ -1258,17 +1238,11 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
                                 closest_index = lengers.idxmin()
                                 if remain_48['before_gene_name'].iloc[closest_index] != before_gene_name and remain_48['after_gene_name'].iloc[closest_index] != after_gene_name:
                                     out_hit, missing_df = gene_name_tryer(prospective_csv, library_csv, out_hit, missing_df, mergio, isolate_id)
-                                    if odd_ones:
-                                        print("~~~~~~~~~~~~~~~~~~~~ start point 8 ~~~~~~~~~~~~~~~~~~~~~~~~")
-                                        print(prospective_csv)
+
                                 else:
                                     prospective_csv['insert_name'] = pandas.Series(remain_48['insert_name'].iloc[closest_index], index=remain_48.index)
                                     out_hit = out_hit.append(prospective_csv, sort=False)
-                                    if isolate_id in ['10050_2#46', '11511_7#57', '11657_8#30', '11658_8#3',
-                                                      '12291_5#6', '13353_7#58']:
-                                        print("~~~~~~~~~~~~~~~~~~~~ multi hit adder ~~~~~~~~~~~~~~~~~~~~~~~~")
-                                        print(remain_48.iloc[closest_index])
-                                        print(closest_index)
+
 
 
                             else:
@@ -1276,26 +1250,20 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
 
                     else:
                         out_hit, missing_df = gene_name_tryer(prospective_csv, library_csv, out_hit, missing_df, mergio, isolate_id)
-                        if odd_ones:
-                            print("~~~~~~~~~~~~~~~~~~~~ start point 9 ~~~~~~~~~~~~~~~~~~~~~~~~")
-                            print(prospective_csv)
+
                 else:
                     out_hit, missing_df = gene_name_tryer(prospective_csv, library_csv, out_hit, missing_df, mergio, isolate_id)
-                    if odd_ones:
-                        print("~~~~~~~~~~~~~~~~~~~~ start point 10 ~~~~~~~~~~~~~~~~~~~~~~~~")
-                        print(prospective_csv)
+
         else:
             ## Try to see if there is a hit with the same start and end gene names and mge_length +- 50 bp or gene +- 1
             out_hit, missing_df = gene_name_tryer(prospective_csv, library_csv, out_hit, missing_df, mergio, isolate_id)
-            if odd_ones:
-                print("~~~~~~~~~~~~~~~~~~~~ start point 11   ~~~~~~~~~~~~~~~~~~~~~~~~")
-                print(prospective_csv)
+
 
 
     if isolate_id in ['10050_2#46','11511_7#57','11657_8#30','11658_8#3',
                       '12291_5#6','13353_7#58']:
         print("~~~~~~~~~~~~~~~~~~~~ end point ~~~~~~~~~~~~~~~~~~~~~~~~")
-        print(prospective_csv)
+    
 
     return(out_hit, missing_df)
 
