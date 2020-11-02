@@ -1084,6 +1084,8 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
     #'before_flank_gene', 'after_flank_gene', 'before_flank_avg',
     #'after_flank_avg'
 
+    odd_ones = False
+
     if isolate_id in ['10050_2#46','11511_7#57','11657_8#30','11658_8#3',
                       '12291_5#6','13353_7#58']:
         print("~~~~~~~~~~~~~~~~~~~~ start point ~~~~~~~~~~~~~~~~~~~~~~~~")
@@ -1267,7 +1269,7 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
             ## Try to see if there is a hit with the same start and end gene names and mge_length +- 50 bp or gene +- 1
             out_hit, missing_df = gene_name_tryer(prospective_csv, library_csv, out_hit, missing_df, mergio)
             if odd_ones:
-                print("~~~~~~~~~~~~~~~~~~~~ start point 11 ~~~~~~~~~~~~~~~~~~~~~~~~")
+                print("~~~~~~~~~~~~~~~~~~~~ start point 11   ~~~~~~~~~~~~~~~~~~~~~~~~")
                 print(prospective_csv)
 
 
