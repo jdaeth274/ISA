@@ -1226,7 +1226,7 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
 
     if isolate_id in ['10050_2#46','11511_7#57','11657_8#30','11658_8#3',
                       '12291_5#6','13353_7#58']:
-        print(out_hit.tail())
+        print(prospective_csv)
 
     return(out_hit, missing_df)
 
@@ -2476,6 +2476,7 @@ if __name__ == '__main__':
     print("This many hits to get through: %s" % len(proper_hits.index))
     print("")
 
+    print(library_dat['insert_name'])
 
     ## Now loop through the blast results ##
 
