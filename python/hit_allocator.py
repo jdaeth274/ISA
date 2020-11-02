@@ -763,6 +763,8 @@ def before_and_after_hits(hit_info, compo_table, contig_bounds, hits_to_search):
     ## greater than 2000, then if this isn't on contig looks for hits
     ## simply on the contig, no matter the size.
     overhang = 50
+    compo_names = ['query', 'subject', 'pid', 'align', 'gap', 'mismatch', 'qstart',
+                   'qend', 'sstart', 'send', 'eval', 'bitscore']
 
     if hit_info[0] < hit_info[1]:
         if hits_to_search == "both" or hits_to_search == "before":
@@ -784,7 +786,7 @@ def before_and_after_hits(hit_info, compo_table, contig_bounds, hits_to_search):
 
             if hits_before_1k.empty:
                 hit_before = pandas.DataFrame(data=numpy.zeros(shape=(1, 12)),
-                                              columns=hits_before.columns.values)
+                                              columns=compo_names)
             else:
                 hit_before = hits_before_1k.iloc[0]
 
@@ -804,7 +806,7 @@ def before_and_after_hits(hit_info, compo_table, contig_bounds, hits_to_search):
 
             if hits_after_1k.empty:
                 hit_after = pandas.DataFrame(data=numpy.zeros(shape=(1, 12)),
-                                             columns=hits_after.columns.values)
+                                             columns=compo_names)
             else:
                 hit_after = hits_after_1k.iloc[0]
 
@@ -825,7 +827,7 @@ def before_and_after_hits(hit_info, compo_table, contig_bounds, hits_to_search):
 
             if hits_before_1k.empty:
                 hit_before = pandas.DataFrame(data=numpy.zeros(shape=(1, 12)),
-                                              columns=hits_before.columns.values)
+                                              columns=compo_names)
             else:
                 hit_before = hits_before_1k.iloc[0]
         if hits_to_search == "both" or hits_to_search == "after":
@@ -842,7 +844,7 @@ def before_and_after_hits(hit_info, compo_table, contig_bounds, hits_to_search):
 
             if hits_after_1k.empty:
                 hit_after = pandas.DataFrame(data=numpy.zeros(shape=(1, 12)),
-                                             columns=hits_after.columns.values)
+                                             columns=compo_names)
             else:
                 hit_after = hits_after_1k.iloc[0]
 
@@ -1190,19 +1192,31 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
                         else:
                             remain_48 = pandas.concat([gene_hits, length_hits], ignore_index=True, sort = False)
                             remain_48 = remain_48.drop_duplicates()
+                            before_gene_name = prospective_csv['before_gene_name'][0]
+                            after_gene_name = prospective_csv['after_gene_name'][0]
+
 
 
                             if len(remain_48.index) == 1:
-                                prospective_csv['insert_name'] = pandas.Series(remain_48['insert_name'], index=prospective_csv.index)
-                                out_hit = out_hit.append(prospective_csv, sort = False)
+
+                                if remain_48['before_gene_name'][0] != before_gene_name and remain_48['after_gene_name'][0] != after_gene_name:
+                                    out_hit, missing_df = gene_name_tryer(prospective_csv, library_csv, out_hit, missing_df, mergio)
+                                else:
+                                    prospective_csv['insert_name'] = pandas.Series(remain_48['insert_name'], index=prospective_csv.index)
+                                    out_hit = out_hit.append(prospective_csv, sort = False)
                             elif len(remain_48.index) > 1:
                                 ## If there are two hits with similar tendencies base on insert length
                                 remain_48 = remain_48.reset_index(drop=True)
                                 target_insert = prospective_csv['insert_length'][0]
                                 lengers = abs(remain_48['insert_length'] - target_insert)
                                 closest_index = lengers.idxmin()
-                                prospective_csv['insert_name'] = pandas.Series(remain_48['insert_name'].iloc[closest_index], index = remain_48.index)
-                                out_hit = out_hit.append(prospective_csv, sort = False)
+                                if remain_48['before_gene_name'].iloc[closest_index] != before_gene_name and remain_48['after_gene_name'].iloc[closest_index] != after_gene_name:
+                                    out_hit, missing_df = gene_name_tryer(prospective_csv, library_csv, out_hit, missing_df, mergio)
+                                else:
+                                    prospective_csv['insert_name'] = pandas.Series(remain_48['insert_name'].iloc[closest_index], index=remain_48.index)
+                                    out_hit = out_hit.append(prospective_csv, sort=False)
+
+
                             else:
                                 print("Odd behaviour here")
 
@@ -2439,11 +2453,11 @@ if __name__ == '__main__':
 
 
     library_dat['insert_name'] = pandas.Series(range(1,(len(library_dat.index) + 1)))
-    with open("./realtered_act_refs.txt") as file:
+    with open(("./" + files_for_input.output + "_realtered_act_refs.txt")) as file:
         refs_to_alter = file.read().splitlines()
 
     clusters_to_skip = []
-    with open("./new_act_refs.txt") as file:
+    with open(("./" + files_for_input.output + "_new_act_refs.txt")) as file:
         new_refs = file.read().splitlines()
     ## Set up the csv for isolates that were missed due to incomplete hits
     missing_colnames = ["id","mge_start","mge_end","mge_length","ref_name","cluster_name","reason"]

@@ -19,7 +19,7 @@ echo "This is the outfolder name: $4"
 echo "This is the prefix: $5"
 echo "This is where the gubbins_res are stored $6"
 echo "Flank length to extract: $7"
-echo "Go through Act compos (yes/no): $8"
+echo "Go through Act compos (yes/loc_of_act_compos): $8"
 echo "Just blast res (yes/no): $9"
 echo "Reference db loc : ${10}"
 
@@ -65,6 +65,9 @@ then
           python "${pythondir}running_act_comparisons.py" \
           --csv $ref_isolate_fasta --perl_dir $perldir --act_dir ./act_compos/
 
+          act_compos_loc="./act_compos/"
+      else
+        act_compos_loc=$8
       fi
       if [ -d ./tmp_dna_dir ]
       then
@@ -152,13 +155,13 @@ then
     ## Now we run the library creation step
     python "${pythondir}library_creator.py" \
     --hit_csv "$4/$5_merged_blast_file" --reference_csv $ref_isolate_gff --align_cutoff $3 \
-    --act_loc ./act_compos/referoo.fasta. --contig_loc ./contig_bounds/ --output "$4/$5" \
+    --act_loc "${act_compos_loc}referoo.fasta." --contig_loc ./contig_bounds/ --output "$4/$5" \
     --fasta_csv $ref_isolate_fasta
 
     ## Now for the hit allocation step
     python "${pythondir}hit_allocator.py" \
     --blast_csv "$4/$5_merged_blast_file" --lib_csv "$4/$5_library.csv" --reference_csv $ref_isolate_gff \
-    --fasta_csv $ref_isolate_fasta --act_loc ./act_compos/referoo.fasta. --contig_loc ./contig_bounds/ \
+    --fasta_csv $ref_isolate_fasta --act_loc "${act_compos_loc}referoo.fasta." --contig_loc ./contig_bounds/ \
     --output "$4/$5" --align $3
 
     ## Now for the edge list
@@ -175,7 +178,7 @@ then
 
     ## Now to find out the blast locations
     python "${pythondir}blast_hits.py" --gubbins_res $6 --reccy_hits "$4/$5_reccy_hits.csv" \
-    --hit_csv "$4/$5_hits_df.csv" --act_compos ./act_compos/referoo.fasta. --flank_length $7 --dna_dir "./tmp_dna_dir/" \
+    --hit_csv "$4/$5_hits_df.csv" --act_compos "${act_compos_loc}referoo.fasta." --flank_length $7 --dna_dir "./tmp_dna_dir/" \
     --out_dir "$4/$5_flanks" --out_name "$4/$5_flanks_extracted.csv"
 
 

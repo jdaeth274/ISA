@@ -762,6 +762,8 @@ def before_and_after_hits(hit_info, compo_table, contig_bounds, hits_to_search):
     ## greater than 2000, then if this isn't on contig looks for hits
     ## simply on the contig, no matter the size.
     overhang = 50
+    compo_names = ['query', 'subject', 'pid', 'align', 'gap', 'mismatch', 'qstart',
+                   'qend', 'sstart', 'send', 'eval', 'bitscore']
 
     if hit_info[0] < hit_info[1]:
         if hits_to_search == "both" or hits_to_search == "before":
@@ -785,7 +787,7 @@ def before_and_after_hits(hit_info, compo_table, contig_bounds, hits_to_search):
 
             if hits_before_1k.empty:
                 hit_before = pandas.DataFrame(data=numpy.zeros(shape=(1, 12)),
-                                              columns=hits_before.columns.values)
+                                              columns=compo_names)
             else:
                 hit_before = hits_before_1k.iloc[0]
 
@@ -803,7 +805,7 @@ def before_and_after_hits(hit_info, compo_table, contig_bounds, hits_to_search):
 
             if hits_after_1k.empty:
                 hit_after = pandas.DataFrame(data=numpy.zeros(shape=(1, 12)),
-                                             columns=hits_after.columns.values)
+                                             columns=compo_names)
             else:
                 hit_after = hits_after_1k.iloc[0]
 
@@ -823,7 +825,7 @@ def before_and_after_hits(hit_info, compo_table, contig_bounds, hits_to_search):
 
             if hits_before_1k.empty:
                 hit_before = pandas.DataFrame(data=numpy.zeros(shape=(1, 12)),
-                                              columns=hits_before.columns.values)
+                                              columns=compo_names)
             else:
                 hit_before = hits_before_1k.iloc[0]
         if hits_to_search == "both" or hits_to_search == "after":
@@ -840,7 +842,7 @@ def before_and_after_hits(hit_info, compo_table, contig_bounds, hits_to_search):
 
             if hits_after_1k.empty:
                 hit_after = pandas.DataFrame(data=numpy.zeros(shape=(1, 12)),
-                                             columns=hits_after.columns.values)
+                                             columns=compo_names)
             else:
                 hit_after = hits_after_1k.iloc[0]
 
@@ -2368,10 +2370,27 @@ if __name__ == '__main__':
     print("This many hits to get through: %s" % len(proper_hits.index))
     print("")
 
+    try:
+        with open(("./" + files_for_input.output + "_realtered_act_refs.txt")) as file:
+            refs_to_alter = file.read().splitlines()
+        print("Using previous realtered_act_refs")
+    except:
+        print("No previous refs to alter")
+        print(("./" + files_for_input.output + "_realtered_act_refs.txt"))
+        refs_to_alter = []
+    try:
+        with open(("./" + files_for_input.output + "_new_act_refs.txt")) as file:
+            new_refs = file.read().splitlines()
+        print("Using previous new_act_refs")
+    except:
+        print("No previous new refs")
+        print(("./" + files_for_input.output + "_new_act_refs.txt"))
+        new_refs = []
 
-    refs_to_alter = []
+    print(refs_to_alter)
+    print(new_refs)
     clusters_to_skip = []
-    new_refs = []
+
     ## Now loop through the blast results ##
 
     for k in range(len(proper_hits.index)):
@@ -2828,9 +2847,9 @@ if __name__ == '__main__':
     toc1 = time.perf_counter()
     toc = time.perf_counter()
 
-    with open("./realtered_act_refs.txt", mode='wt', encoding='utf-8') as myfile:
+    with open(("./" + files_for_input.output + "_realtered_act_refs.txt"), mode='wt', encoding='utf-8') as myfile:
         myfile.write('\n'.join(refs_to_alter) + '\n')
-    with open("./new_act_refs.txt", mode='wt', encoding='utf-8') as myfile:
+    with open(("./" + files_for_input.output + "_new_act_refs.txt"), mode='wt', encoding='utf-8') as myfile:
         myfile.write('\n'.join(new_refs) + '\n')
 
 
