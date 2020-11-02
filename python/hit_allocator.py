@@ -451,8 +451,7 @@ def merged_contig_checker(merged_csv, contig_file_abs_path, act_path):
 
 
         iter_val = "{0:0=5d}".format((k + 1))
-        print("Completed %s of %s rows. Just finished: %s" % (iter_val, len(file_locs), isolate_id),
-              end="\r",flush=True)
+        print("Completed %s of %s rows. Just finished: %s" % (iter_val, len(file_locs), isolate_id), end="\r",flush=True)
 
     ## Now we'll remove the merged rows from the df
     merged_csv = merged_csv.drop(merged_rows_to_drop)
