@@ -1045,7 +1045,7 @@ def gene_name_tryer(prospective_csv, library_csv, out_hit, missing_isolate, merg
             length_target = prospective_csv['mge_length'][0]
             mge_dist = abs(tot_hit['mge_length'] - length_target)
             min_val = mge_dist.idxmin()
-            single_hit = tot_hit.iloc[min_val].to_frame().transpose()
+            single_hit = tot_hit.iloc[min_val]#.to_frame().transpose()
             prospective_csv['insert_name'] = pandas.Series(single_hit['insert_name'], index=prospective_csv.index)
             out_hit_copy = out_hit_copy.append(prospective_csv, sort = False)
             if odd_ones:
