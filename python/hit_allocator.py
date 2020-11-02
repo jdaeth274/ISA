@@ -1206,6 +1206,9 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
                         length_hits = remaining_hits[(remaining_hits['insert_length'] >= (insert_length - 500)) & \
                                                      (remaining_hits['insert_length'] <= (insert_length + 500))]
 
+                        if odd_ones:
+                            print("~~~~~~~~~~~~~~~~~~~~ start point 20 ~~~~~~~~~~~~~~~~~~~~~~~~")
+                            print(prospective_csv)
 
 
                         if gene_hits.empty and length_hits.empty:
