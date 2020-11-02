@@ -400,7 +400,7 @@ def merged_contig_checker(merged_csv, contig_file_abs_path, act_path):
     file_locs = set(multi_row_db.iloc[:,8].copy().to_list())
     file_locs = list(file_locs)
 
-    print(len(file_locs))
+
 
     merged_rows_to_drop = []
     merged_rows_to_add = pandas.DataFrame(columns=merged_csv.columns)
@@ -1194,11 +1194,7 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
                             remain_48 = remain_48.drop_duplicates()
                             before_gene_name = prospective_csv['before_gene_name'][0]
                             after_gene_name = prospective_csv['after_gene_name'][0]
-
-
-
                             if len(remain_48.index) == 1:
-
                                 if remain_48['before_gene_name'][0] != before_gene_name and remain_48['after_gene_name'][0] != after_gene_name:
                                     out_hit, missing_df = gene_name_tryer(prospective_csv, library_csv, out_hit, missing_df, mergio)
                                 else:
@@ -1229,7 +1225,9 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
             out_hit, missing_df = gene_name_tryer(prospective_csv, library_csv, out_hit, missing_df, mergio)
 
 
-
+    if isolate_id in ['10050_2#46','11511_7#57','11657_8#30','11658_8#3',
+                      '12291_5#6','13353_7#58']:
+        print(out_hit.tail())
 
     return(out_hit, missing_df)
 
@@ -2479,8 +2477,7 @@ if __name__ == '__main__':
     print("This many hits to get through: %s" % len(proper_hits.index))
     print("")
 
-    print(new_refs)
-    print(refs_to_alter)
+
     ## Now loop through the blast results ##
 
     for k in range(len(narrowed_prop.index)):

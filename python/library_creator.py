@@ -1109,14 +1109,23 @@ def library_integrator(library_csv, prospective_csv, isolate_id):
                     else:
                         remain_48 = pandas.concat([gene_hits, length_hits], ignore_index=True, sort = False)
                         remain_48 = remain_48.drop_duplicates()
-                        flanks_length = remain_48[remain_48['flanks_length'] > prospective_csv['flanks_length'][0]]
+                        before_gene_name = prospective_csv['before_gene_name'][0]
+                        after_gene_name = prospective_csv['after_gene_name'][0]
 
-
-                        if flanks_length.empty:
-                            ids_to_drop = remain_48['id'].tolist()
+                        gene_name_matches = remain_48[(remain_48['before_gene_name'] == before_gene_name) |\
+                                                      (remain_48['after_gene_name'] == after_gene_name)]
+                        if gene_name_matches.empty:
                             novel_hit = True
                         else:
-                            novel_hit = False
+
+                            flanks_length = remain_48[remain_48['flanks_length'] > prospective_csv['flanks_length'][0]]
+
+
+                            if flanks_length.empty:
+                                ids_to_drop = remain_48['id'].tolist()
+                                novel_hit = True
+                            else:
+                                novel_hit = False
 
 
                 else:

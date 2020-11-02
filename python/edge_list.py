@@ -26,9 +26,11 @@ def col_creator(hit_csv):
     cols_df = numpy.zeros(shape=(len(hit_csv.index), len(colnames_hits)))
     cols_df = pandas.DataFrame(cols_df)
     hit_col_num = 0
+    print(colnames_hits)
 
     for hit in colnames_hits:
         hit_isos = hit_csv[hit_csv['insert_name'] == hit]
+
         hit_ids = hit_isos['id']
         hit_col = hit_ids.append(pandas.Series(numpy.repeat(numpy.nan, (len(hit_csv.index) - len(hit_isos.index)))), ignore_index=True)
         cols_df.iloc[:,hit_col_num] = pandas.Series(hit_col, index= cols_df.index)
@@ -52,6 +54,7 @@ if __name__ == '__main__':
         current_col = cluster_cols.iloc[:, busta]
         current_col = current_col.dropna()
         current_col = list(current_col)
+        print(current_col)
         if len(current_col) > 1:
             for person in current_col:
                 myindex = current_col.index(person)
