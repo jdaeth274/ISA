@@ -2040,6 +2040,8 @@ def before_and_after_check(hit_to_check, mge_locs, compo_table, hit_loc, other_h
 
     added_hits = pandas.DataFrame()
 
+
+
     if hit_loc == "before":
         if mge_ori == "forward":
             if check_ori == "forward":
@@ -2067,7 +2069,7 @@ def before_and_after_check(hit_to_check, mge_locs, compo_table, hit_loc, other_h
                 poss_hits = compo_table[(compo_table['qend'] < (mge_locs[0] + 50)) & \
                                         (compo_table['qend'] > hit_check_query[0]) & \
                                         (compo_table['send'] < hit_check_subject[1]) &\
-                                        (compo_table['sstart'] > other_hit_subject[1])]
+                                        (compo_table['sstart'] > other_hit_subject[0])]
                 poss_hits = poss_hits.sort_values(by=['qend'], ascending=True)
                 if not poss_hits.empty:
                     hit_orig = pandas.DataFrame(hit_to_check).transpose()
@@ -2084,11 +2086,15 @@ def before_and_after_check(hit_to_check, mge_locs, compo_table, hit_loc, other_h
 
         elif mge_ori == "reverse":
             if check_ori == "forward":
+
                 poss_hits = compo_table[(compo_table['qstart'] > (mge_locs[1] - 50)) & \
                                         (compo_table['qstart'] < hit_check_query[1]) & \
                                         (compo_table['sstart'] < hit_check_subject[0]) & \
                                         (compo_table['send'] > other_hit_subject[0])]
                 poss_hits = poss_hits.sort_values(by=['qstart'], ascending=False)
+
+
+
                 if not poss_hits.empty:
                     hit_orig = pandas.DataFrame(hit_to_check).transpose()
                     poss_hits = poss_hits.reset_index(drop=True)
@@ -2407,6 +2413,7 @@ if __name__ == '__main__':
 
     print(refs_to_alter)
     print(new_refs)
+    print("")
     clusters_to_skip = []
 
     ## Now loop through the blast results ##
@@ -2429,6 +2436,8 @@ if __name__ == '__main__':
             isolate_id = isolate_id_z[0:last_occy]
         else:
             isolate_id = isolate_id_z
+
+
 
 
         #cluster_2 = ["10900_6#9", "15608_3#45", "15608_3#49", "15608_3#55", "15608_3#71", "15608_3#75", "15608_4#18", \
@@ -2587,7 +2596,25 @@ if __name__ == '__main__':
 
         all_one_tig = contig_before == contig_mge and contig_mge == contig_after and which_hit == "both"
 
+        ## Sometimes the overlap will be minimal but will still return yes, in which case we need to check for
+        ## closer hits to the insert.
+
+        if overlap == "Yes":
+            if mge_ori == "forward":
+                if hit_before_loc[1] == hitters[0] and hit_after_loc[0] == hitters[1]:
+                    overlap = "Yes"
+                else:
+                    overlap = "No"
+            elif mge_ori == "reverse":
+                if hit_before_loc[0] == hitters[0] and hit_after_loc[1] == hitters[1]:
+                    overlap = "Yes"
+                else:
+                    overlap = "No"
+
+
+
         if all_one_tig and contig_bef_ref == contig_aft_ref and overlap == "No":
+
 
             hit_before_check = before_and_after_check(hit_before, hitters, compo_table, "before", hit_after, isolate_id)
             hit_after_check = before_and_after_check(hit_after, hitters, compo_table, "after", hit_before, isolate_id)
@@ -2620,6 +2647,8 @@ if __name__ == '__main__':
             #   hit_before, hit_after, all_one_tig_5k = final_acceptor(hit_before, hit_after, isolate_id, mge_bounds, mge_ori)
             #   hit_before_loc = hit_before.iloc[[6, 7]]
             #   hit_after_loc = hit_after.iloc[[6, 7]]
+
+        
 
         if all_one_tig_5k:
 

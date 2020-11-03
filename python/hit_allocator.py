@@ -1006,12 +1006,7 @@ def gene_name_tryer(prospective_csv, library_csv, out_hit, missing_isolate, merg
     ##        library_csv: The library csv
     ##        out_hit: The total hit df
     ##        missing_isolate: The df for the isolates with not library hit
-    odd_ones = False
-    if isolate_id in ['10050_2#46','11511_7#57','11657_8#30','11658_8#3',
-                      '12291_5#6','13353_7#58']:
-        print("~~~~~~~~~~~~~~~~~~~~ start point ~~~~~~~~~~~~~~~~~~~~~~~~")
-        print(prospective_csv)
-        odd_ones = True
+
 
     missing_copy = missing_isolate.copy()
     out_hit_copy = out_hit.copy()
@@ -1037,9 +1032,7 @@ def gene_name_tryer(prospective_csv, library_csv, out_hit, missing_isolate, merg
         if len(tot_hit.index) == 1:
             prospective_csv['insert_name'] = pandas.Series(tot_hit['insert_name'], index=prospective_csv.index)
             out_hit_copy = out_hit_copy.append(prospective_csv, sort = False)
-            if odd_ones:
-                print("~~~~~~~~~~~~~~~~~~~~~~~~~~~ tot hit index == 1 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-                print(prospective_csv)
+
         elif len(tot_hit.index) > 1:
             tot_hit = tot_hit.reset_index(drop=True)
             length_target = prospective_csv['mge_length'][0]
@@ -1048,15 +1041,7 @@ def gene_name_tryer(prospective_csv, library_csv, out_hit, missing_isolate, merg
             single_hit = tot_hit.iloc[min_val]#.to_frame().transpose()
             prospective_csv['insert_name'] = pandas.Series(single_hit['insert_name'], index=prospective_csv.index)
             out_hit_copy = out_hit_copy.append(prospective_csv, sort = False)
-            if odd_ones:
-                print("~~~~~~~~~~~~~~~~~~~~~~~~~~~ tot hit index > 1 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-                print(prospective_csv)
-                print("~~~~~~~~~~~~~~~~~~~~~~~~~~~ The single hit ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-                print(single_hit)
-                print("~~~~~~~~~~~~~~~~~~~~~~~~~~~ The mge dist ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-                print(mge_dist)
-                print("~~~~~~~~~~~~~~~~~~~~~~~~~~~ Tot hit ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-                print(tot_hit)
+
         else:
             missing_current = pandas.DataFrame()
             missing_current['id'] = pandas.Series(prospective_csv['id'])
@@ -1078,9 +1063,6 @@ def gene_name_tryer(prospective_csv, library_csv, out_hit, missing_isolate, merg
         missing_current['reason'] = pandas.Series(["No gene name matches"], index=missing_current.index)
         missing_copy = missing_copy.append(missing_current, sort = False)
 
-    if odd_ones:
-        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~ in gene name tryer ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-        print(prospective_csv)
 
     return out_hit_copy, missing_copy
 
@@ -1108,11 +1090,6 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
 
     odd_ones = False
 
-    if isolate_id in ['10050_2#46','11511_7#57','11657_8#30','11658_8#3',
-                      '12291_5#6','13353_7#58']:
-        print("~~~~~~~~~~~~~~~~~~~~ start point ~~~~~~~~~~~~~~~~~~~~~~~~")
-        print(prospective_csv)
-        odd_ones = True
 
 
     ## So there is a hit with the same number of mge genes, let now check the element length +- 2 bp
@@ -1226,9 +1203,7 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
                             if len(remain_48.index) == 1:
                                 if remain_48['before_gene_name'][0] != before_gene_name and remain_48['after_gene_name'][0] != after_gene_name:
                                     out_hit, missing_df = gene_name_tryer(prospective_csv, library_csv, out_hit, missing_df, mergio, isolate_id)
-                                    if odd_ones:
-                                        print("~~~~~~~~~~~~~~~~~~~~ start point 7 ~~~~~~~~~~~~~~~~~~~~~~~~")
-                                        print(prospective_csv)
+
                                 else:
                                     prospective_csv['insert_name'] = pandas.Series(remain_48['insert_name'], index=prospective_csv.index)
                                     out_hit = out_hit.append(prospective_csv, sort = False)
@@ -1263,9 +1238,7 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
 
 
 
-    if isolate_id in ['10050_2#46','11511_7#57','11657_8#30','11658_8#3',
-                      '12291_5#6','13353_7#58']:
-        print("~~~~~~~~~~~~~~~~~~~~ end point ~~~~~~~~~~~~~~~~~~~~~~~~")
+
 
 
     return(out_hit, missing_df)
@@ -2706,6 +2679,21 @@ if __name__ == '__main__':
             contig_aft_ref = contig_checker(ref_contig_tab, hit_after_sub_loc)
 
         all_one_tig = contig_before == contig_mge and contig_mge == contig_after and which_hit == "both"
+
+        ## Sometimes the overlap will be minimal but will still return yes, in which case we need to check for
+        ## closer hits to the insert.
+
+        if overlap == "Yes":
+            if mge_ori == "forward":
+                if hit_before_loc[1] == hitters[0] and hit_after_loc[0] == hitters[1]:
+                    overlap = "Yes"
+                else:
+                    overlap = "No"
+            elif mge_ori == "reverse":
+                if hit_before_loc[0] == hitters[0] and hit_after_loc[1] == hitters[1]:
+                    overlap = "Yes"
+                else:
+                    overlap = "No"
 
         if all_one_tig and contig_bef_ref == contig_aft_ref and overlap == "No":
 
