@@ -12,7 +12,7 @@ conda activate insertion_site_analysis
 cd /rds/general/project/bacterial_evo_genomics/live/gps_annotations_4_2_2020/gps_gubbins_runs
 
 bash ./ISA/bash/isa_pipeline.sh ./gps_run_data/gps ./gps_run_data/tn1207.fasta \
-2000 gps_mega_run2 gps_mega ./ 500 no no /rds/general/project/bacterial_evo_genomics/live/gps_annotations_4_2_2020/strep_reference_fasta/strep_ref_database
+2000 gps_mega_run3 gps_mega ./ 500 ./act_compos_mega/ no /rds/general/project/bacterial_evo_genomics/live/gps_annotations_4_2_2020/strep_reference_fasta/strep_ref_database
 
 duration=$(( SECONDS - start ))
 
