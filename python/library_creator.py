@@ -856,6 +856,15 @@ def before_and_after_hits(hit_info, compo_table, contig_bounds, hits_to_search):
 
         print(hit_before)
         print(hit_after)
+
+        if isinstance(hit_before, pandas.DataFrame):
+            hit_before = hit_before.iloc[0]
+        if isinstance(hit_after, pandas.DataFrame):
+            hit_after = hit_after.iloc[0]
+
+        print(hit_before)
+        print(hit_after)
+
         if hit_before.iloc[3] > hit_after.iloc[3]:
             is_aft_within_bef = within_a_hit(hit_before, hit_after)
         elif hit_before.iloc[3] < hit_after.iloc[3]:
