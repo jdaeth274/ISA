@@ -854,7 +854,8 @@ def before_and_after_hits(hit_info, compo_table, contig_bounds, hits_to_search):
         is_aft_within_bef = False
         is_bef_within_aft = False
 
-
+        print(hit_before)
+        print(hit_after)
         if hit_before.iloc[3] > hit_after.iloc[3]:
             is_aft_within_bef = within_a_hit(hit_before, hit_after)
         elif hit_before.iloc[3] < hit_after.iloc[3]:
