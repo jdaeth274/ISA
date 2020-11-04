@@ -2414,7 +2414,7 @@ if __name__ == '__main__':
         ## First we'll get the hit locs in place for each of the hits
         print("On isolate: ", k, end='\r', flush=True)
 
-        if k < 3560:
+        if k < 3564:
             continue
         current_row = proper_hits.iloc[[k]]
         hitters = (list(current_row.iloc[0, [5, 6]]))
