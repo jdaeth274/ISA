@@ -497,7 +497,7 @@ def ref_contains_hit(compo_table, hitters, mge_bounds, isolate_id):
             if hits_bef.empty:
                 hit_bef_length = 0
                 hit_bef = before_and_after_hits(hitters, compo_table, mge_bounds, "before")
-                if hit_bef.iloc[0,0] == 0:
+                if isinstance(hit_bef.iloc[0], int):
                     hit_bef = "No"
             else:
                 hit_bef = hits_bef.iloc[0]
@@ -511,7 +511,7 @@ def ref_contains_hit(compo_table, hitters, mge_bounds, isolate_id):
             if hits_aft.empty:
                 hit_aft_length = 0
                 hit_aft = before_and_after_hits(hitters, compo_table, mge_bounds, "after")
-                if hit_aft.iloc[0,0] == 0:
+                if isinstance(hit_aft.iloc[0], int):
                     hit_aft = "No"
             else:
                 hit_aft = hits_aft.iloc[0]
@@ -571,11 +571,7 @@ def ref_contains_hit(compo_table, hitters, mge_bounds, isolate_id):
                     hit_bef_length = 0
                     hit_bef = before_and_after_hits(hitters, compo_table, mge_bounds, "before")
                     print(hit_bef)
-                    if isinstance(hit_bef.iloc[0], str):
-                        print("THIS WAY WORKS FOR THE VALUES")
-                    else:
-                        print("THIS DOESN@T SEEM TO WORK")
-                    if hit_bef.iloc[0].values[0] == 0:
+                    if isinstance(hit_bef.iloc[0], int):
                         hit_bef = "No"
                 else:
                     hit_bef = hits_bef.iloc[0]
@@ -587,8 +583,10 @@ def ref_contains_hit(compo_table, hitters, mge_bounds, isolate_id):
                 if hits_aft.empty:
                     hit_aft_length = 0
                     hit_aft = before_and_after_hits(hitters, compo_table, mge_bounds, "after")
-                    if hit_aft.iloc[0,0] == 0:
+                    if isinstance(hit_aft.iloc[0], int):
                         hit_aft = "No"
+                    # if hit_aft.iloc[0,0] == 0:
+                    #     hit_aft = "No"
                 else:
                     hit_aft = hits_aft.iloc[0]
                     hit_aft_length = hit_aft['qend'] - hitters[1]
@@ -2522,6 +2520,10 @@ if __name__ == '__main__':
 
                     refs_to_alter.append(ref_name)
                     new_refs.append(new_ref_name)
+                    with open(("./" + files_for_input.output + "_realtered_act_refs.txt"), mode='wt', encoding='utf-8') as myfile:
+                        myfile.write('\n'.join(refs_to_alter) + '\n')
+                    with open(("./" + files_for_input.output + "_new_act_refs.txt"), mode='wt',encoding='utf-8') as myfile:
+                        myfile.write('\n'.join(new_refs) + '\n')
                     act_map = True
         else:
             act_map = True
