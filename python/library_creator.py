@@ -571,6 +571,10 @@ def ref_contains_hit(compo_table, hitters, mge_bounds, isolate_id):
                     hit_bef_length = 0
                     hit_bef = before_and_after_hits(hitters, compo_table, mge_bounds, "before")
                     print(hit_bef)
+                    if isinstance(hit_bef.iloc[0], str):
+                        print("THIS WAY WORKS FOR THE VALUES")
+                    else:
+                        print("THIS DOESN@T SEEM TO WORK")
                     if hit_bef.iloc[0].values[0] == 0:
                         hit_bef = "No"
                 else:
