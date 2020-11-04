@@ -1008,12 +1008,7 @@ def library_integrator(library_csv, prospective_csv, isolate_id):
     #'before_flank_gene', 'after_flank_gene', 'before_flank_avg',
     #'after_flank_avg'
 
-    odd_ones = False
-    if isolate_id in ['10050_2#46', '11511_7#57', '11657_8#30', '11658_8#3',
-                      '12291_5#6', '13353_7#58']:
-        print("~~~~~~~~~~~~~~~~~~~~ start point ~~~~~~~~~~~~~~~~~~~~~~~~")
-        print(prospective_csv)
-        odd_ones = True
+
 
 
     ## So there is a hit with the same number of mge genes, let now check the element length +- 2 bp
@@ -1148,9 +1143,6 @@ def library_integrator(library_csv, prospective_csv, isolate_id):
         lib_new = lib_new.drop(indies_to_drop)
         lib_new = lib_new.reset_index(drop=True)
 
-    if odd_ones:
-        print(novel_hit)
-        print(lib_new.tail())
 
 
     return(lib_new)
@@ -2422,6 +2414,8 @@ if __name__ == '__main__':
         ## First we'll get the hit locs in place for each of the hits
         print("On isolate: ", k, end='\r', flush=True)
 
+        if k < 3560:
+            continue
         current_row = proper_hits.iloc[[k]]
         hitters = (list(current_row.iloc[0, [5, 6]]))
         if hitters[0] < hitters[1]:
@@ -2648,7 +2642,7 @@ if __name__ == '__main__':
             #   hit_before_loc = hit_before.iloc[[6, 7]]
             #   hit_after_loc = hit_after.iloc[[6, 7]]
 
-        
+
 
         if all_one_tig_5k:
 
