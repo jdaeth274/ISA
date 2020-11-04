@@ -497,7 +497,7 @@ def ref_contains_hit(compo_table, hitters, mge_bounds, isolate_id):
             if hits_bef.empty:
                 hit_bef_length = 0
                 hit_bef = before_and_after_hits(hitters, compo_table, mge_bounds, "before")
-                if hit_bef.iloc[0] == 0:
+                if hit_bef.iloc[0,0] == 0:
                     hit_bef = "No"
             else:
                 hit_bef = hits_bef.iloc[0]
@@ -511,7 +511,7 @@ def ref_contains_hit(compo_table, hitters, mge_bounds, isolate_id):
             if hits_aft.empty:
                 hit_aft_length = 0
                 hit_aft = before_and_after_hits(hitters, compo_table, mge_bounds, "after")
-                if hit_aft.iloc[0] == 0:
+                if hit_aft.iloc[0,0] == 0:
                     hit_aft = "No"
             else:
                 hit_aft = hits_aft.iloc[0]
@@ -570,7 +570,7 @@ def ref_contains_hit(compo_table, hitters, mge_bounds, isolate_id):
                 if hits_bef.empty:
                     hit_bef_length = 0
                     hit_bef = before_and_after_hits(hitters, compo_table, mge_bounds, "before")
-                    if hit_bef.iloc[0] == 0:
+                    if hit_bef.iloc[0,0] == 0:
                         hit_bef = "No"
                 else:
                     hit_bef = hits_bef.iloc[0]
@@ -582,7 +582,7 @@ def ref_contains_hit(compo_table, hitters, mge_bounds, isolate_id):
                 if hits_aft.empty:
                     hit_aft_length = 0
                     hit_aft = before_and_after_hits(hitters, compo_table, mge_bounds, "after")
-                    if hit_aft.iloc[0] == 0:
+                    if hit_aft.iloc[0,0] == 0:
                         hit_aft = "No"
                 else:
                     hit_aft = hits_aft.iloc[0]
