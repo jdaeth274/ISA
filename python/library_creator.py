@@ -2584,6 +2584,7 @@ if __name__ == '__main__':
         if hit_before[0] == 0:
             contig_before = None
             hit_before_length = 0
+            contig_bef_ref = 17
         else:
             hit_before_loc = hit_before.iloc[[6, 7]]
             hit_before_sub_loc = hit_before.iloc[[8,9]]
@@ -2596,6 +2597,7 @@ if __name__ == '__main__':
         if hit_after[0] == 0:
             contig_after = None
             hit_after_length = 0
+            contig_aft_ref = 38
         else:
             hit_after_loc = hit_after.iloc[[6, 7]]
             hit_after_sub_loc = hit_after.iloc[[8,9]]
