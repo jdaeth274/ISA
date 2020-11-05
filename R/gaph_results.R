@@ -2,10 +2,10 @@
 ## Outputting flank scores for different cluster scores #######################
 ###############################################################################
 
-require(ggplot2)
-require(stringr)
-require(ggpubr)
-require(tictoc)
+require(ggplot2, quietly = TRUE)
+require(stringr, quietly = TRUE)
+require(ggpubr, quietly = TRUE)
+require(tictoc, quietly = TRUE)
 
 graph_getter <- function(dir_to_files,graph_name){
   
@@ -326,9 +326,15 @@ folder_to_res <- function(results_folder, flanks_veccy, graph_name){
   
 }
 
-flanks_vec <- seq(500, 7500, 500)
+###############################################################################
+## system arguments: 1: End flank length 
+##                   2: Directory of blast results 
 
-pmen_mega_res <- folder_to_res(results_folder = "~/Dropbox/phd/insertion_site_analysis/pmen_mega_reccy_test/",
+input_args <- commandArgs(trailingOnly = TRUE)
+
+flanks_vec <- seq(500, input_args[1], 500)
+
+pmen_mega_res <- folder_to_res(results_folder = input_args[2],
                                flanks_veccy = flanks_vec, 
                                graph_name = "PMEN MEGA")
 
