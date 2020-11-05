@@ -329,7 +329,7 @@ folder_to_res <- function(results_folder, flanks_veccy, graph_name){
 ###############################################################################
 ## system arguments: 1: End flank length 
 ##                   2: Directory of blast results 
-
+##                   3: pdf out 
 input_args <- commandArgs(trailingOnly = TRUE)
 
 flanks_vec <- seq(500, input_args[1], 500)
@@ -338,10 +338,16 @@ pmen_mega_res <- folder_to_res(results_folder = input_args[2],
                                flanks_veccy = flanks_vec, 
                                graph_name = "PMEN MEGA")
 
+pdf(file = input_args[3], paper = "a4r", width = 12, height = 7)
+
+print(pmen_mega_res$whole_res$pneumo_plot)
+
+print(pmen_mega_res$before_res$pneumo_plot)
+
+print(pmen_mega_res$after_res$pneumo_plot)
 
 
-
-
+dev.off()
 
 
 
