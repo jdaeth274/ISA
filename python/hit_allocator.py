@@ -497,7 +497,7 @@ def ref_contains_hit(compo_table, hitters, mge_bounds, isolate_id):
             if hits_bef.empty:
                 hit_bef_length = 0
                 hit_bef = before_and_after_hits(hitters, compo_table, mge_bounds, "before")
-                if hit_bef.iloc[0] == 0:
+                if isinstance(hit_bef.iloc[0], int):
                     hit_bef = "No"
             else:
                 hit_bef = hits_bef.iloc[0]
@@ -511,7 +511,7 @@ def ref_contains_hit(compo_table, hitters, mge_bounds, isolate_id):
             if hits_aft.empty:
                 hit_aft_length = 0
                 hit_aft = before_and_after_hits(hitters, compo_table, mge_bounds, "after")
-                if hit_aft.iloc[0] == 0:
+                if isinstance(hit_aft.iloc[0], int):
                     hit_aft = "No"
             else:
                 hit_aft = hits_aft.iloc[0]
@@ -570,7 +570,7 @@ def ref_contains_hit(compo_table, hitters, mge_bounds, isolate_id):
                 if hits_bef.empty:
                     hit_bef_length = 0
                     hit_bef = before_and_after_hits(hitters, compo_table, mge_bounds, "before")
-                    if hit_bef.iloc[0] == 0:
+                    if isinstance(hit_bef.iloc[0], int):
                         hit_bef = "No"
                 else:
                     hit_bef = hits_bef.iloc[0]
@@ -582,7 +582,7 @@ def ref_contains_hit(compo_table, hitters, mge_bounds, isolate_id):
                 if hits_aft.empty:
                     hit_aft_length = 0
                     hit_aft = before_and_after_hits(hitters, compo_table, mge_bounds, "after")
-                    if hit_aft.iloc[0] == 0:
+                    if isinstance(hit_aft.iloc[0], int):
                         hit_aft = "No"
                 else:
                     hit_aft = hits_aft.iloc[0]
@@ -852,6 +852,10 @@ def before_and_after_hits(hit_info, compo_table, contig_bounds, hits_to_search):
         is_aft_within_bef = False
         is_bef_within_aft = False
 
+        if isinstance(hit_before, pandas.DataFrame):
+            hit_before = hit_before.iloc[0]
+        if isinstance(hit_after, pandas.DataFrame):
+            hit_after = hit_after.iloc[0]
 
         if hit_before.iloc[3] > hit_after.iloc[3]:
             is_aft_within_bef = within_a_hit(hit_before, hit_after)
