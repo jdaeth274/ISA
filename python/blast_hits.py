@@ -116,8 +116,9 @@ def outside_control(insertion_node, tree, example_id, act_comp_dir, ref_insertio
             after_forward = compo_table[(compo_table['sstart'] >= ref_insertion[1]) & (compo_table['send'] >= ref_insertion[1])]
 
             ## INsert code here looking to arrange these values and then take the closest match to the start
-
-            print(before_forward)
+            print(ref_insertion)
+            print(before_forward.head())
+            print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
             print(after_forward)
 
 
