@@ -101,7 +101,7 @@ then
       fi
       #rm output.mfa
 
-      blastn -db temp_blast_db -query "../$2" -outfmt 10 -num_alignments 1000000 -evalue 0.05 -out tmp_blast_csv.csv
+      blastn -db temp_blast_db -query "../$2" -outfmt 10 -num_alignments 1000000 -evalue 0.05 -out "$5_tmp_blast_csv.csv"
 
       cd ../
 
@@ -146,7 +146,7 @@ then
 
 
     Rscript --vanilla "${rdir}merging_blast_hits.R" \
-    ./tmp_dna_dir/tmp_blast_csv.csv ./contig_bounds "$4/$5_merged_blast_file"
+    "./tmp_dna_dir/$5_tmp_blast_csv.csv" ./contig_bounds "$4/$5_merged_blast_file"
 
     Fazza=$fasta_list
     Lines=$(cat $fasta_list | wc -l)
