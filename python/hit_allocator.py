@@ -2038,7 +2038,7 @@ def final_acceptor(hit_before, hit_after, isolate_id, mge_bounds, mge_ori):
                 hit_bef_out = hit_new_bef
         elif mge_ori == "reverse":
             new_end = hit_before.iloc[6] + 5000
-            if new_end > mge_bounds[0]:
+            if new_end < mge_bounds[1]:
                 min_send = min([hit_before['sstart'], hit_before['send']])
                 hit_bef_out = pandas.Series({'query': hit_before['query'],
                                              'subject': hit_before['subject'],
@@ -2061,8 +2061,27 @@ def final_acceptor(hit_before, hit_after, isolate_id, mge_bounds, mge_ori):
     ## Now for the after hits
     if hit_after_length < 5000:
         if mge_ori == "reverse":
-            new_end = hit_after.iloc[6] + 5000
+            new_end = hit_after.iloc[7] - 5000
             if new_end > mge_bounds[0]:
+                max_send = max([hit_after['sstart'], hit_after['send']])
+                hit_aft_out = pandas.Series({'query': hit_after['query'],
+                                             'subject': hit_after['subject'],
+                                             'pid': hit_after['pid'],
+                                             'align': 5000,
+                                             'gap': hit_after['gap'],
+                                             'mismatch': hit_after['mismatch'],
+                                             'qstart': new_end,
+                                             'qend': hit_after['qend'],
+                                             'sstart': max_send,
+                                             'send': max_send - 5000,
+                                             'eval': hit_after['eval'],
+                                             'bitscore': hit_after['bitscore']})
+                hit_after_length = 5000
+            else:
+                hit_aft_out = hit_new_aft
+        elif mge_ori == "forward":
+            new_end = hit_after.iloc[6] + 5000
+            if new_end < mge_bounds[1]:
                 min_send = min([hit_after['sstart'], hit_after['send']])
                 hit_aft_out = pandas.Series({'query': hit_after['query'],
                                              'subject': hit_after['subject'],
@@ -2074,25 +2093,6 @@ def final_acceptor(hit_before, hit_after, isolate_id, mge_bounds, mge_ori):
                                              'qend': new_end,
                                              'sstart': min_send,
                                              'send': min_send + 5000,
-                                             'eval': hit_after['eval'],
-                                             'bitscore': hit_after['bitscore']})
-                hit_after_length = 5000
-            else:
-                hit_aft_out = hit_new_aft
-        elif mge_ori == "forward":
-            new_end = hit_after.iloc[7] - 5000
-            if new_end > mge_bounds[0]:
-                max_send = max([hit_after['sstart'], hit_after['send']])
-                hit_aft_out = pandas.Series({'query': hit_after['query'],
-                                             'subject': hit_after['subject'],
-                                             'pid': hit_after['pid'],
-                                             'align': 5000,
-                                             'gap': hit_after['gap'],
-                                             'mismatch': hit_after['mismatch'],
-                                             'qstart': new_end,
-                                             'qend': hit_new_aft['qend'],
-                                             'sstart': max_send - 5000,
-                                             'send': max_send,
                                              'eval': hit_after['eval'],
                                              'bitscore': hit_after['bitscore']})
                 hit_after_length = 5000
@@ -2727,9 +2727,11 @@ if __name__ == '__main__':
 
             if not all_one_tig_5k:
 
-               hit_before, hit_after, all_one_tig_5k = final_acceptor(hit_before, hit_after, isolate_id, mge_bounds, mge_ori)
-               hit_before_loc = hit_before.iloc[[6, 7]]
-               hit_after_loc = hit_after.iloc[[6, 7]]
+                hit_before, hit_after, all_one_tig_5k = final_acceptor(hit_before, hit_after, isolate_id, mge_bounds, mge_ori)
+                hit_before_loc = hit_before.iloc[[6, 7]]
+                hit_after_loc = hit_after.iloc[[6, 7]]
+
+
 
 
 
@@ -2867,6 +2869,7 @@ if __name__ == '__main__':
                 if genes_mge_num <= gene_insert_num:
                     hit_df, missing_isolate = hit_detector(library_dat, library_pros, isolate_id, hit_df, missing_isolate, mergio)
                 else:
+
                     missing_current = pandas.DataFrame()
                     missing_current['id'] = pandas.Series(isolate_id)
                     missing_current['mge_start'] = pandas.Series(hitters[0], index=missing_current.index)
@@ -2991,6 +2994,7 @@ if __name__ == '__main__':
                 if genes_mge_num <= gene_insert_num:
                     hit_df, missing_isolate = hit_detector(library_dat, library_pros, isolate_id, hit_df, missing_isolate, mergio)
                 else:
+                    
                     missing_current = pandas.DataFrame()
                     missing_current['id'] = pandas.Series(isolate_id)
                     missing_current['mge_start'] = pandas.Series(hitters[0], index=missing_current.index)

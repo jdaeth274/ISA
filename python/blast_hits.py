@@ -25,6 +25,7 @@ def get_options():
     parser.add_argument('--gubbins_res', required=True,  help='Directory where all cluster dirs of gubbins res are stored"', type=str)
     parser.add_argument('--reccy_hits', required=True, help='csv from reccy finder with hits within recombinations', type=str)
     parser.add_argument('--hit_csv', required=True, help='hits csv out from hit_allocator', type=str)
+    parser.add_argument('--contig_bounds', required=True, help='bounds of contigs used in reconstruction', type = str)
     parser.add_argument('--act_compos', required=True, help='Location of act comparisons, with .referoo.fasta. prefix', type=str)
     parser.add_argument('--flank_length', required=True, help='Length to extract from flanks', type=int)
     parser.add_argument('--dna_dir', required=True, help='location of dna files', type=str)
@@ -668,7 +669,31 @@ def compo_enlarger(start_act, ori, pos, act_compo, target_length, debug_id):
 
     return gap_list
 
-def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, reference_id, flanking_length):
+def contig_checker(contig_csv, hit_to_check):
+    ## This is a function to check what contig a BLAST hit appears on
+    ## Input: contig_csv: The CSV file containing contig start in a single column and contig end in another
+    ##        hit_to_check: Start and end of a BLAST hit
+    ## Output: Contig number of BLAST hit.
+    hit_contig = 0
+    for j in range(len(contig_csv.index)):
+        c_start_and_end = contig_csv.iloc[j]
+        if j == 0:
+            overhang_before = 0
+            overhang_after = 10
+        else:
+            overhang_before = 15
+            overhang_after = 15
+        start_hit = hit_to_check[0] >= (c_start_and_end[0] - overhang_before) and \
+                    hit_to_check[0] <= (c_start_and_end[1] + overhang_after)
+        end_hit = hit_to_check[1] >= (c_start_and_end[0] - overhang_before) and \
+                  hit_to_check[1] <= (c_start_and_end[1] + overhang_after)
+
+        if start_hit == True and end_hit == True:
+            hit_contig = j + 1
+
+    return hit_contig
+
+def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, reference_id, flanking_length, contig_loc):
     ## Function to take in the reccy hits csv for a paticular cluster. Then work through the
     ## reccy hits and find the isolate with the fewest snps around the insertion site. This will
     ## then be output in the out_df along with the end and start points for the flanks to be taken
@@ -817,8 +842,8 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
                 rec_end_bef = ref_insert_start
                 rec_start_aft = ref_insert_end
 
-                rec_start_bef = rec_end_bef - flanking_length
-                rec_end_aft = rec_start_aft + flanking_length
+                rec_start_bef = ref_insert_start - flanking_length
+                rec_end_aft = ref_insert_end + flanking_length
 
                 reccy_starts_bef_control.append(rec_start_bef)
                 reccy_ends_bef_control.append(rec_end_bef)
@@ -914,6 +939,14 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
         act_file = act_compos + current_isolate + ".crunch.gz"
         compo_names = ['query', 'subject', 'pid', 'align', 'gap', 'mismatch', 'qstart',
                        'qend', 'sstart', 'send', 'eval', 'bitscore']
+
+        contig_suffix = "#contig_bounds.csv"
+        contig_isolate = re.sub("#", "_", current_isolate)
+        contig_file_path = contig_loc + contig_isolate + contig_suffix
+
+        contig_file = pandas.read_csv(contig_file_path)
+
+
         compo_table = pandas.read_csv(act_file, sep='\t', names=compo_names)
 
         before_subset = compo_table[(compo_table['sstart'] == bef_hits[0]) & (compo_table['send'] == bef_hits[1])]
@@ -988,16 +1021,18 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
         if mge_hits[0] < mge_hits[1]:
             rec_start_bef = before_subset.iloc[0,6]
             rec_end_bef = before_subset.iloc[0,7]
-            bef_length = rec_end_bef - rec_start_bef
+            bef_hits = [rec_end_bef - flanking_length, rec_end_bef]
             rec_start_aft = after_subset.iloc[0,6]
             rec_end_aft = after_subset.iloc[0,7]
-            aft_length = rec_end_aft - rec_start_aft
+            aft_hits = [rec_end_aft ,rec_end_aft + flanking_length]
+            bef_contig = contig_checker(contig_file, bef_hits)
+            aft_contig = contig_checker(contig_file, aft_hits)
 
 
 
+            if bef_contig == 0:
 
-            if bef_length < flanking_length:
-
+                print("Need to expand before")
                 bef_regions = compo_enlarger(before_subset, "forward","bef",compo_table,
                                              flanking_length, current_isolate)
 
@@ -1005,8 +1040,8 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
                 rec_start_bef = rec_end_bef - flanking_length
                 bef_regions = [[rec_start_bef, rec_end_bef]]
 
-            if aft_length < flanking_length:
-
+            if aft_contig == 0:
+                print("Need to expand after")
                 aft_regions = compo_enlarger(after_subset, "forward","aft", compo_table,
                                              flanking_length, current_isolate)
             else:
@@ -1022,14 +1057,17 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
         elif mge_hits[0] > mge_hits[1]:
             rec_start_bef = before_subset.iloc[0, 6]
             rec_end_bef = before_subset.iloc[0, 7]
-            bef_length = rec_end_bef - rec_start_bef
+            bef_hits = [rec_start_bef, rec_start_bef + flanking_length]
             rec_start_aft = after_subset.iloc[0, 6]
             rec_end_aft = after_subset.iloc[0, 7]
             aft_length = rec_end_aft - rec_start_aft
+            aft_hits = [rec_end_aft, rec_end_aft - flanking_length]
+            bef_contig = contig_checker(contig_file, bef_hits)
+            aft_contig = contig_checker(contig_file, aft_hits)
 
 
-            if bef_length < flanking_length:
-
+            if bef_contig == 0:
+                print("Need to expand reverse before")
                 bef_regions = compo_enlarger(before_subset, "reverse", "bef", compo_table,
                                              flanking_length, current_isolate)
 
@@ -1038,8 +1076,8 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
                 rec_end_bef = rec_start_bef + flanking_length
                 bef_regions = [[rec_start_bef, rec_end_bef]]
 
-            if aft_length < flanking_length:
-
+            if aft_contig == 0:
+                print("Need to expand reverse after")
                 aft_regions = compo_enlarger(after_subset, "reverse", "aft", compo_table,
                                              flanking_length, current_isolate)
             else:
@@ -1237,6 +1275,7 @@ if __name__ == '__main__':
     fasta_directory = input_args.dna_dir
     out_dir = input_args.out_dir
     out_name = input_args.out_name
+    contig_bounds = input_args.contig_bounds
 
     tot_flanks_csv = pandas.DataFrame()
 
@@ -1272,7 +1311,7 @@ if __name__ == '__main__':
         branch_mutations = pandas.read_csv(embl_branch_loc)
         embl_reccy_csv = pandas.read_csv(embl_rec_loc)
 
-        flanks_csv, regions_bef, regions_aft = isolate_narrow(current_dat, current_pyt, tree, embl_reccy_csv, branch_mutations, current_ref_name, flanking_length)
+        flanks_csv, regions_bef, regions_aft = isolate_narrow(current_dat, current_pyt, tree, embl_reccy_csv, branch_mutations, current_ref_name, flanking_length, contig_bounds)
 
         extract_flanks = extracting_flanks(flanks_csv, out_dir,current_ref_name, fasta_directory, regions_bef, regions_aft)
 

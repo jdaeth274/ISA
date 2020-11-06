@@ -19,7 +19,7 @@ graph_getter <- function(dir_to_files,graph_name){
   summo_csv_file <- list.files(dir_to_files, pattern = "*species_compo*")
   summary_csv <- paste(dir_to_files, summo_csv_file,sep = "")
   summo_csv <- read.csv(summary_csv, stringsAsFactors = FALSE)
-  
+  browser()
   blast_results <- list.files(dir_to_files, pattern = "*list*.csv")
   
   counted_summo <- plyr::count(summo_csv$insertion_point)  
@@ -163,7 +163,7 @@ pneumo_finder <- function(data_set){
 }
 
 series_display <- function(list_of_results, prefix, flanks_vector, cluster, region = "total", 
-                           reference = TRUE, sd = TRUE){
+                           reference = TRUE, sd = FALSE){
   
   graph_df <- data.frame(data = matrix(NA, ncol = 9, nrow = (length(list_of_results) * 2)))
   colnames(graph_df) <- c("weighted_bit","ranked_pneumo","bit_pneumo","cluster","flank",
@@ -320,7 +320,7 @@ folder_to_res <- function(results_folder, flanks_veccy, graph_name){
   }
   
   after_name <- paste(graph_name, "after flanks")
-  pmen3_mega_after <- series_display(pmen3_list_aft, after_name, flanks_veccy, "total")
+  pmen3_mega_after <- series_display(pmen3_list_aft, after_name, flanks_veccy, "28")
   toc()
   return(list(whole_res = pmen3_mega_total, before_res = pmen3_mega_before, after_res = pmen3_mega_after))
   
@@ -332,7 +332,7 @@ folder_to_res <- function(results_folder, flanks_veccy, graph_name){
 ##                   3: pdf out 
 input_args <- commandArgs(trailingOnly = TRUE)
 
-flanks_vec <- seq(500, input_args[1], 500)
+flanks_vec <- seq(500, as.integer(input_args[1]), 500)
 
 pmen_mega_res <- folder_to_res(results_folder = input_args[2],
                                flanks_veccy = flanks_vec, 
