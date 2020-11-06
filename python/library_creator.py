@@ -255,7 +255,7 @@ def row_merger(narrowed_rows):
 
 
     if len(end_rows.index) == 0:
-        # print(first_row.iloc[0])
+
         returned_row = narrowed_rows.drop(['merged_index', 'contig_pos', 'end_loc', 'start_loc'], axis=1)
         merged_indexers = []
         merged_locs = []
@@ -266,7 +266,7 @@ def row_merger(narrowed_rows):
         first_row = end_rows.iloc[0, :].copy()
         ## while loop to incorporate rest of hits
         if len(start_rows.index) == 0:
-            #print(first_row.iloc[0])
+
             returned_row = narrowed_rows.drop(['merged_index', 'contig_pos', 'end_loc', 'start_loc'], axis = 1 )
             merged_indexers = []
             merged_locs = []
@@ -570,7 +570,7 @@ def ref_contains_hit(compo_table, hitters, mge_bounds, isolate_id):
                 if hits_bef.empty:
                     hit_bef_length = 0
                     hit_bef = before_and_after_hits(hitters, compo_table, mge_bounds, "before")
-                    print(hit_bef)
+
                     if isinstance(hit_bef.iloc[0], int):
                         hit_bef = "No"
                 else:
@@ -2422,8 +2422,7 @@ if __name__ == '__main__':
         ## First we'll get the hit locs in place for each of the hits
         print("On isolate: ", k, end='\r', flush=True)
 
-        if k < 3564:
-            continue
+
         current_row = proper_hits.iloc[[k]]
         hitters = (list(current_row.iloc[0, [5, 6]]))
         if hitters[0] < hitters[1]:
@@ -2655,7 +2654,9 @@ if __name__ == '__main__':
             #   hit_before, hit_after, all_one_tig_5k = final_acceptor(hit_before, hit_after, isolate_id, mge_bounds, mge_ori)
             #   hit_before_loc = hit_before.iloc[[6, 7]]
             #   hit_after_loc = hit_after.iloc[[6, 7]]
-
+        if isolate_id in ["14723_3#14","14723_3#22","14723_3#26","5749_6#10","5901_2#4","5901_3#12"]:
+            print("Missing iso all one tig")
+            print(all_one_tig_5k)
 
 
         if all_one_tig_5k:

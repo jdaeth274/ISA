@@ -2749,7 +2749,9 @@ if __name__ == '__main__':
                 hit_before_loc = hit_before.iloc[[6, 7]]
                 hit_after_loc = hit_after.iloc[[6, 7]]
 
-
+        if isolate_id in ["14723_3#14","14723_3#22","14723_3#26","5749_6#10","5901_2#4","5901_3#12"]:
+            print("Missing iso all one tig")
+            print(all_one_tig_5k)
 
 
 
@@ -3047,9 +3049,6 @@ if __name__ == '__main__':
             missing_current['insert_end'] = pandas.Series(hitters[1], index=missing_current.index)
             missing_current['before_gene_name'] = pandas.Series("No hit", index=missing_current.index)
             missing_current['after_gene_name'] = pandas.Series("No hit", index=missing_current.index)
-            missing_current['mge_length'] = pandas.Series(current_mge_length, index=missing_current.index)
-            missing_current['reason'] = pandas.Series(["No map back to gub ref"], missing_current.index)
-            missing_isolate = missing_isolate.append(missing_current, sort=False)
             if current_row['merged'].values[0] == "Yes":
                 missing_current['mge_length'] = pandas.Series(current_row['align'], index=missing_current.index)
                 missing_current['reason'] = pandas.Series(["MERGED No good hits before and after"],missing_current.index)
@@ -3060,6 +3059,7 @@ if __name__ == '__main__':
             missing_isolate = missing_isolate.append(missing_current, sort = False)
         end_len = len(missing_isolate.index) + len(hit_df.index)
         if end_len != start_len + 1:
+            print("")
             print("missing")
             print(isolate_id)
 
