@@ -1051,21 +1051,30 @@ def gene_name_tryer(prospective_csv, library_csv, out_hit, missing_isolate, merg
             missing_current['id'] = pandas.Series(prospective_csv['id'])
             missing_current['mge_start'] = pandas.Series(prospective_csv['mge_start'], index=missing_current.index)
             missing_current['mge_end'] = pandas.Series(prospective_csv['mge_end'], index=missing_current.index)
+            missing_current['insert_start'] = pandas.Series(prospective_csv['insert_start'],index = missing_current.index)
+            missing_current['insert_end'] = pandas.Series(prospective_csv['insert_end'],index=missing_current.index)
             missing_current['ref_name'] = pandas.Series(prospective_csv['ref_name'], index=missing_current.index)
             missing_current['cluster_name'] = pandas.Series(prospective_csv['cluster_name'], index=missing_current.index)
             missing_current['mge_length'] = pandas.Series(prospective_csv['mge_length'], index=missing_current.index)
+            missing_current['before_gene_name'] = pandas.Series(prospective_csv['before_gene_name'], index = missing_current.index)
+            missing_current['after_gene_name'] = pandas.Series(prospective_csv['after_gene_name'], index=missing_current.index)
             missing_current['reason'] = pandas.Series(["No gene name matches"], index=missing_current.index)
             missing_copy = missing_copy.append(missing_current, sort = False)
+
     else:
         missing_current = pandas.DataFrame()
         missing_current['id'] = pandas.Series(prospective_csv['id'])
         missing_current['mge_start'] = pandas.Series(prospective_csv['mge_start'], index=missing_current.index)
         missing_current['mge_end'] = pandas.Series(prospective_csv['mge_end'], index=missing_current.index)
+        missing_current['insert_start'] = pandas.Series(prospective_csv['insert_start'], index=missing_current.index)
+        missing_current['insert_end'] = pandas.Series(prospective_csv['insert_end'], index=missing_current.index)
         missing_current['ref_name'] = pandas.Series(prospective_csv['ref_name'], index=missing_current.index)
         missing_current['cluster_name'] = pandas.Series(prospective_csv['cluster_name'], index=missing_current.index)
         missing_current['mge_length'] = pandas.Series(prospective_csv['mge_length'], index=missing_current.index)
+        missing_current['before_gene_name'] = pandas.Series(prospective_csv['before_gene_name'],index=missing_current.index)
+        missing_current['after_gene_name'] = pandas.Series(prospective_csv['after_gene_name'], index=missing_current.index)
         missing_current['reason'] = pandas.Series(["No gene name matches"], index=missing_current.index)
-        missing_copy = missing_copy.append(missing_current, sort = False)
+        missing_copy = missing_copy.append(missing_current, sort=False)
 
 
     return out_hit_copy, missing_copy
@@ -2474,7 +2483,8 @@ if __name__ == '__main__':
     with open(("./" + files_for_input.output + "_new_act_refs.txt")) as file:
         new_refs = file.read().splitlines()
     ## Set up the csv for isolates that were missed due to incomplete hits
-    missing_colnames = ["id","mge_start","mge_end","mge_length","ref_name","cluster_name","reason"]
+    missing_colnames = ["id","mge_start","mge_end","mge_length","insert_start","insert_end","before_gene_name", "after_gene_name",
+                        "ref_name","cluster_name","reason"]
     missing_isolate = pandas.DataFrame(columns=missing_colnames)
 
     ## Set up the csv for the isolates with matching hits
@@ -2544,6 +2554,10 @@ if __name__ == '__main__':
             missing_current['id'] = pandas.Series(isolate_id)
             missing_current['mge_start'] = pandas.Series(hitters[0], index=missing_current.index)
             missing_current['mge_end'] = pandas.Series(hitters[1], index=missing_current.index)
+            missing_current['insert_start'] = pandas.Series(hitters[0], index=missing_current.index)
+            missing_current['insert_end'] = pandas.Series(hitters[1], index=missing_current.index)
+            missing_current['before_gene_name'] = pandas.Series("No_hit", index=missing_current.index)
+            missing_current['after_gene_name'] = pandas.Series("No_hit", index=missing_current.index)
             missing_current['ref_name'] = pandas.Series(ref_name, index=missing_current.index)
             missing_current['cluster_name'] = pandas.Series(cluster_name, index=missing_current.index)
             missing_current['mge_length'] = pandas.Series(current_mge_length, index=missing_current.index)
@@ -2566,11 +2580,15 @@ if __name__ == '__main__':
                     missing_current['id'] = pandas.Series(isolate_id)
                     missing_current['mge_start'] = pandas.Series(hitters[0], index=missing_current.index)
                     missing_current['mge_end'] = pandas.Series(hitters[1], index=missing_current.index)
-                    missing_current['ref_name'] = pandas.Series(ref_name,  index=missing_current.index)
-                    missing_current['cluster_name'] = pandas.Series(cluster_name,  index=missing_current.index)
-                    missing_current['mge_length'] = pandas.Series(current_mge_length,  index=missing_current.index)
-                    missing_current['reason'] = pandas.Series(["In clusters to skip"],  index=missing_current.index)
-                    missing_isolate = missing_isolate.append(missing_current)
+                    missing_current['insert_start'] = pandas.Series(hitters[0], index=missing_current.index)
+                    missing_current['insert_end'] = pandas.Series(hitters[1], index=missing_current.index)
+                    missing_current['before_gene_name'] = pandas.Series("No_hit", index=missing_current.index)
+                    missing_current['after_gene_name'] = pandas.Series("No_hit", index=missing_current.index)
+                    missing_current['ref_name'] = pandas.Series(ref_name, index=missing_current.index)
+                    missing_current['cluster_name'] = pandas.Series(cluster_name, index=missing_current.index)
+                    missing_current['mge_length'] = pandas.Series(current_mge_length, index=missing_current.index)
+                    missing_current['reason'] = pandas.Series(["In clusters to skip"], index=missing_current.index)
+                    missing_isolate = missing_isolate.append(missing_current, sort=False)
                     clusters_to_skip.append(cluster_name)
                     continue
                 else:
@@ -2822,10 +2840,13 @@ if __name__ == '__main__':
                             missing_current['id'] = pandas.Series(isolate_id)
                             missing_current['mge_start'] = pandas.Series(hitters[0], index=missing_current.index)
                             missing_current['mge_end'] = pandas.Series(hitters[1], index=missing_current.index)
+                            missing_current['insert_start'] = pandas.Series(current_insert_locs[0], index=missing_current.index)
+                            missing_current['insert_end'] = pandas.Series(current_insert_locs[1], index=missing_current.index)
+                            missing_current['before_gene_name'] = pandas.Series(before_gene, index=missing_current.index)
+                            missing_current['after_gene_name'] = pandas.Series(after_gene, index=missing_current.index)
                             missing_current['ref_name'] = pandas.Series(ref_name, index=missing_current.index)
                             missing_current['cluster_name'] = pandas.Series(cluster_name, index=missing_current.index)
-                            missing_current['mge_length'] = pandas.Series(current_mge_length,
-                                                                          index=missing_current.index)
+                            missing_current['mge_length'] = pandas.Series(current_mge_length, index=missing_current.index)
                             missing_current['reason'] = pandas.Series(["No map back to gub ref"], missing_current.index)
                             missing_isolate = missing_isolate.append(missing_current, sort=False)
 
@@ -2874,10 +2895,14 @@ if __name__ == '__main__':
                     missing_current['id'] = pandas.Series(isolate_id)
                     missing_current['mge_start'] = pandas.Series(hitters[0], index=missing_current.index)
                     missing_current['mge_end'] = pandas.Series(hitters[1], index=missing_current.index)
+                    missing_current['insert_start'] = pandas.Series(current_insert_locs[0], index=missing_current.index)
+                    missing_current['insert_end'] = pandas.Series(current_insert_locs[1], index=missing_current.index)
+                    missing_current['before_gene_name'] = pandas.Series(before_gene, index=missing_current.index)
+                    missing_current['after_gene_name'] = pandas.Series(after_gene, index=missing_current.index)
                     missing_current['ref_name'] = pandas.Series(ref_name, index=missing_current.index)
                     missing_current['cluster_name'] = pandas.Series(cluster_name, index=missing_current.index)
                     missing_current['mge_length'] = pandas.Series(current_mge_length, index=missing_current.index)
-                    missing_current['reason'] = pandas.Series(["More mge than insert"], missing_current.index)
+                    missing_current['reason'] = pandas.Series(["More MGE than insert"], missing_current.index)
                     missing_isolate = missing_isolate.append(missing_current, sort=False)
 
 
@@ -2949,10 +2974,13 @@ if __name__ == '__main__':
                             missing_current['id'] = pandas.Series(isolate_id)
                             missing_current['mge_start'] = pandas.Series(hitters[0], index=missing_current.index)
                             missing_current['mge_end'] = pandas.Series(hitters[1], index=missing_current.index)
+                            missing_current['insert_start'] = pandas.Series(current_insert_locs[0],index=missing_current.index)
+                            missing_current['insert_end'] = pandas.Series(current_insert_locs[1],index=missing_current.index)
+                            missing_current['before_gene_name'] = pandas.Series(before_gene,index=missing_current.index)
+                            missing_current['after_gene_name'] = pandas.Series(after_gene, index=missing_current.index)
                             missing_current['ref_name'] = pandas.Series(ref_name, index=missing_current.index)
                             missing_current['cluster_name'] = pandas.Series(cluster_name, index=missing_current.index)
-                            missing_current['mge_length'] = pandas.Series(current_mge_length,
-                                                                          index=missing_current.index)
+                            missing_current['mge_length'] = pandas.Series(current_mge_length, index=missing_current.index)
                             missing_current['reason'] = pandas.Series(["No map back to gub ref"], missing_current.index)
                             missing_isolate = missing_isolate.append(missing_current, sort=False)
                             continue
@@ -2994,15 +3022,19 @@ if __name__ == '__main__':
                 if genes_mge_num <= gene_insert_num:
                     hit_df, missing_isolate = hit_detector(library_dat, library_pros, isolate_id, hit_df, missing_isolate, mergio)
                 else:
-                    
+
                     missing_current = pandas.DataFrame()
                     missing_current['id'] = pandas.Series(isolate_id)
                     missing_current['mge_start'] = pandas.Series(hitters[0], index=missing_current.index)
                     missing_current['mge_end'] = pandas.Series(hitters[1], index=missing_current.index)
+                    missing_current['insert_start'] = pandas.Series(current_insert_locs[0], index=missing_current.index)
+                    missing_current['insert_end'] = pandas.Series(current_insert_locs[1], index=missing_current.index)
+                    missing_current['before_gene_name'] = pandas.Series(before_gene, index=missing_current.index)
+                    missing_current['after_gene_name'] = pandas.Series(after_gene, index=missing_current.index)
                     missing_current['ref_name'] = pandas.Series(ref_name, index=missing_current.index)
                     missing_current['cluster_name'] = pandas.Series(cluster_name, index=missing_current.index)
                     missing_current['mge_length'] = pandas.Series(current_mge_length, index=missing_current.index)
-                    missing_current['reason'] = pandas.Series(["More mge than insert"], missing_current.index)
+                    missing_current['reason'] = pandas.Series(["More MGE than insert"], missing_current.index)
                     missing_isolate = missing_isolate.append(missing_current, sort=False)
         else:
             missing_current = pandas.DataFrame()
@@ -3011,6 +3043,13 @@ if __name__ == '__main__':
             missing_current['mge_end'] = pandas.Series(hitters[1], index=missing_current.index)
             missing_current['ref_name'] = pandas.Series(ref_name, index=missing_current.index)
             missing_current['cluster_name'] = pandas.Series(cluster_name, index=missing_current.index)
+            missing_current['insert_start'] = pandas.Series(hitters[0], index=missing_current.index)
+            missing_current['insert_end'] = pandas.Series(hitters[1], index=missing_current.index)
+            missing_current['before_gene_name'] = pandas.Series("No hit", index=missing_current.index)
+            missing_current['after_gene_name'] = pandas.Series("No hit", index=missing_current.index)
+            missing_current['mge_length'] = pandas.Series(current_mge_length, index=missing_current.index)
+            missing_current['reason'] = pandas.Series(["No map back to gub ref"], missing_current.index)
+            missing_isolate = missing_isolate.append(missing_current, sort=False)
             if current_row['merged'].values[0] == "Yes":
                 missing_current['mge_length'] = pandas.Series(current_row['align'], index=missing_current.index)
                 missing_current['reason'] = pandas.Series(["MERGED No good hits before and after"],missing_current.index)
