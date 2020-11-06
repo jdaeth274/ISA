@@ -165,6 +165,7 @@ def outside_control(insertion_node, tree, example_id, act_comp_dir, ref_insertio
                 isolate_after_start = after_row.iloc[6]
 
                 print("Here's the after_start_return_object:","\n",isolate_before_end)
+                break
 
             else:
                 begin_diff = reverse_subset.iloc[0, 8] - ref_insertion[1]
@@ -172,6 +173,7 @@ def outside_control(insertion_node, tree, example_id, act_comp_dir, ref_insertio
 
                 isolate_before_end = forward_subset.iloc[0, 6] + begin_diff
                 isolate_after_start = forward_subset.iloc[0, 7] - after_diff
+                break
 
 
 
@@ -183,6 +185,7 @@ def outside_control(insertion_node, tree, example_id, act_comp_dir, ref_insertio
 
             isolate_before_end = forward_subset.iloc[0, 6] + begin_diff
             isolate_after_start = forward_subset.iloc[0, 7] - after_diff
+            break
 
 
 

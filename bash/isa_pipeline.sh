@@ -169,7 +169,7 @@ then
 
     ## Now lets find the reccy hits for the isolates
       python "${pythondir}reccy_detector.py" --gubbins_res $6 --hit_locs_csv "$4/$5_hits_df.csv" \
-      --out_name "$4/$5"
+      --out_name "$4/$5" --contig_bounds ./contig_bounds/
 
   fi
 

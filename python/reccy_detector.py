@@ -32,6 +32,7 @@ def get_options():
 
     parser.add_argument('--gubbins_res', required=True, help='Directory where all cluster dirs of gubbins res are stored"', type=str)
     parser.add_argument('--hit_locs_csv', required=True, help='Hit csv file from hit allocator', type=str)
+    parser.add_argument('--contig_bounds', required=True, help="contig bound location", type=str)
     parser.add_argument('--out_name', required=True, help= 'Prefix to append to out out_files', type = str)
 
     args = parser.parse_args()
@@ -406,8 +407,7 @@ def reccy_finder(ref_gff, closest_vals, node_label, example_id, node_rec, tree):
 
             if new_end_node_subset_loccy.empty:
                 ## Lets try with a slightly larger margin around the closer vals
-                new_end_node_subset_loccy = new_end_node_subset[(new_end_node_subset['start'] <= midpoint) & (
-                            new_end_node_subset['end'] >= midpoint)]
+                new_end_node_subset_loccy = new_end_node_subset[(new_end_node_subset['start'] <= midpoint) & (new_end_node_subset['end'] >= midpoint)]
 
                 if new_end_node_subset_loccy.empty:
                     new_end_node_subset_loccy = new_end_node_subset[
@@ -736,8 +736,31 @@ def reccy_finder(ref_gff, closest_vals, node_label, example_id, node_rec, tree):
 
         return  out_df, False
 
+def contig_checker(contig_csv, hit_to_check):
+    ## This is a function to check what contig a BLAST hit appears on
+    ## Input: contig_csv: The CSV file containing contig start in a single column and contig end in another
+    ##        hit_to_check: Start and end of a BLAST hit
+    ## Output: Contig number of BLAST hit.
+    hit_contig = 0
+    for j in range(len(contig_csv.index)):
+        c_start_and_end = contig_csv.iloc[j]
+        if j == 0:
+            overhang_before = 0
+            overhang_after = 10
+        else:
+            overhang_before = 15
+            overhang_after = 15
+        start_hit = hit_to_check[0] >= (c_start_and_end[0] - overhang_before) and \
+                    hit_to_check[0] <= (c_start_and_end[1] + overhang_after)
+        end_hit = hit_to_check[1] >= (c_start_and_end[0] - overhang_before) and \
+                  hit_to_check[1] <= (c_start_and_end[1] + overhang_after)
 
-def reccy_main(tree_loc, ref_gff_tsv, hit_csv):
+        if start_hit == True and end_hit == True:
+            hit_contig = j + 1
+
+    return hit_contig
+
+def reccy_main(tree_loc, ref_gff_tsv, hit_csv, reference_contig_csv):
     ## Function to search through the hit_csv, which now has the insertion nodes of its cluster attached,
     ## and find out if the hits are within a reconstructed recombination event (hence likely to be transformation)
 
@@ -812,85 +835,14 @@ def reccy_main(tree_loc, ref_gff_tsv, hit_csv):
             after_locs = noders.iloc[0, [7, 8]]
             example_id = noders.iloc[0, 0]
 
-            before_loc_list = before_locs.tolist()
-            after_loc_list = after_locs.tolist()
-            closest_vals = sorted(product(before_loc_list, after_loc_list), key=lambda t: abs(t[0] - t[1]))[0]
+            contig_before = contig_checker(reference_contig_csv, before_locs)
+            contig_after = contig_checker(reference_contig_csv, after_locs)
 
-            closest_vals = sorted(closest_vals)
+            if contig_after == contig_before:
 
-            ## First we check if we should use the node as the end node or the start node
-            if noders_row['node_rec'] == "Yes":
-                new_row, add_row = reccy_finder(ref_gff_tsv, closest_vals, node_label, example_id,
-                                                "Yes", tree)
-
-                if add_row == True:
-                    start_inserts.append(new_row.iloc[0, 0])
-                    end_inserts.append(new_row.iloc[0, 1])
-                    start_nodes.append(new_row.iloc[0, 2])
-                    end_nodes.append(new_row.iloc[0, 3])
-                    start_gubbs.append(new_row.iloc[0, 4])
-                    end_gubbs.append(new_row.iloc[0, 5])
-                    gubb_lengths.append(new_row.iloc[0, 6])
-                    isolate_idzs.append(new_row.iloc[0, 7])
-                    snippy_counts.append(new_row.iloc[0, 8])
-                    insertion_nodes.append(new_row.iloc[0, 9])
-                    inny_node_tips.append(leaf_tip_nums(tree, example_id, current_node=insertion_nodes[-1]))
-                    end_node_tips.append(leaf_tip_nums(tree, example_id, current_node=end_nodes[-1]))
-                    insert_name.append(noders.iloc[0, noders.columns.get_loc('insert_name')])
-
-
-
-
-                else:
-                    non_start_insert.append(new_row.iloc[0, 0])
-                    non_end_insert.append(new_row.iloc[0, 1])
-                    non_example_isolate.append(new_row.iloc[0, 2])
-                    non_insertion_node.append(new_row.iloc[0, 3])
-                    non_inny_node_tips.append(leaf_tip_nums(tree, example_id, current_node=non_insertion_node[-1]))
-                    non_inny_insert_name.append(noders.iloc[0, noders.columns.get_loc('insert_name')])
-
-
-            else:
-                new_row, add_row = reccy_finder(ref_gff_tsv, closest_vals, node_label, example_id,
-                                                "No", tree)
-                if add_row == True:
-                    start_inserts.append(new_row.iloc[0, 0])
-                    end_inserts.append(new_row.iloc[0, 1])
-                    start_nodes.append(new_row.iloc[0, 2])
-                    end_nodes.append(new_row.iloc[0, 3])
-                    start_gubbs.append(new_row.iloc[0, 4])
-                    end_gubbs.append(new_row.iloc[0, 5])
-                    gubb_lengths.append(new_row.iloc[0, 6])
-                    isolate_idzs.append(new_row.iloc[0, 7])
-                    snippy_counts.append(new_row.iloc[0, 8])
-                    insertion_nodes.append(new_row.iloc[0, 9])
-                    inny_node_tips.append(leaf_tip_nums(tree, example_id, current_node=insertion_nodes[-1]))
-                    end_node_tips.append(leaf_tip_nums(tree, example_id, current_node=start_nodes[-1]))
-                    insert_name.append(noders.iloc[0, noders.columns.get_loc('insert_name')])
-
-
-
-
-
-                else:
-                    non_start_insert.append(new_row.iloc[0, 0])
-                    non_end_insert.append(new_row.iloc[0, 1])
-                    non_example_isolate.append(new_row.iloc[0, 2])
-                    non_insertion_node.append(new_row.iloc[0, 3])
-                    non_inny_node_tips.append(leaf_tip_nums(tree, example_id, current_node=non_insertion_node[-1]))
-                    non_inny_insert_name.append(noders.iloc[0, noders.columns.get_loc('insert_name')])
-                    ## new row here
-
-        else:
-            for k in range(len(check_if_same_insertion_loci)):
-                current_name = check_if_same_insertion_loci.index[k]
-                subset_noders = noders[noders['cluster_names'] == current_name]
-                noders_row = subset_noders.iloc[0]
-                before_locs = subset_noders.iloc[0, [5, 6]]
-                after_locs = subset_noders.iloc[0, [7, 8]]
-                example_id = subset_noders.iloc[0, 0]
-
-                closest_vals = sorted(product(before_locs, after_locs), key=lambda t: abs(t[0] - t[1]))[0]
+                before_loc_list = before_locs.tolist()
+                after_loc_list = after_locs.tolist()
+                closest_vals = sorted(product(before_loc_list, after_loc_list), key=lambda t: abs(t[0] - t[1]))[0]
 
                 closest_vals = sorted(closest_vals)
 
@@ -898,6 +850,7 @@ def reccy_main(tree_loc, ref_gff_tsv, hit_csv):
                 if noders_row['node_rec'] == "Yes":
                     new_row, add_row = reccy_finder(ref_gff_tsv, closest_vals, node_label, example_id,
                                                     "Yes", tree)
+
                     if add_row == True:
                         start_inserts.append(new_row.iloc[0, 0])
                         end_inserts.append(new_row.iloc[0, 1])
@@ -912,7 +865,6 @@ def reccy_main(tree_loc, ref_gff_tsv, hit_csv):
                         inny_node_tips.append(leaf_tip_nums(tree, example_id, current_node=insertion_nodes[-1]))
                         end_node_tips.append(leaf_tip_nums(tree, example_id, current_node=end_nodes[-1]))
                         insert_name.append(noders.iloc[0, noders.columns.get_loc('insert_name')])
-
 
 
 
@@ -945,6 +897,9 @@ def reccy_main(tree_loc, ref_gff_tsv, hit_csv):
                         insert_name.append(noders.iloc[0, noders.columns.get_loc('insert_name')])
 
 
+
+
+
                     else:
                         non_start_insert.append(new_row.iloc[0, 0])
                         non_end_insert.append(new_row.iloc[0, 1])
@@ -952,6 +907,102 @@ def reccy_main(tree_loc, ref_gff_tsv, hit_csv):
                         non_insertion_node.append(new_row.iloc[0, 3])
                         non_inny_node_tips.append(leaf_tip_nums(tree, example_id, current_node=non_insertion_node[-1]))
                         non_inny_insert_name.append(noders.iloc[0, noders.columns.get_loc('insert_name')])
+            else:
+                before_loc_list = before_locs.tolist()
+                after_loc_list = after_locs.tolist()
+                closest_vals = sorted(product(before_loc_list, after_loc_list), key=lambda t: abs(t[0] - t[1]))[0]
+
+                closest_vals = sorted(closest_vals)
+                non_start_insert.append(closest_vals[0])
+                non_end_insert.append(closest_vals[1])
+                non_example_isolate.append(example_id)
+                non_insertion_node.append(node_label)
+                non_inny_node_tips.append(leaf_tip_nums(tree, example_id, current_node=non_insertion_node[-1]))
+                non_inny_insert_name.append(noders.iloc[0, noders.columns.get_loc('insert_name')])
+                ## new row here
+
+        else:
+            for k in range(len(check_if_same_insertion_loci)):
+                current_name = check_if_same_insertion_loci.index[k]
+                subset_noders = noders[noders['cluster_names'] == current_name]
+                noders_row = subset_noders.iloc[0]
+                before_locs = subset_noders.iloc[0, [5, 6]]
+                after_locs = subset_noders.iloc[0, [7, 8]]
+                example_id = subset_noders.iloc[0, 0]
+
+                closest_vals = sorted(product(before_locs, after_locs), key=lambda t: abs(t[0] - t[1]))[0]
+
+                closest_vals = sorted(closest_vals)
+                contig_before = contig_checker(reference_contig_csv, before_locs)
+                contig_after = contig_checker(reference_contig_csv, after_locs)
+
+                if contig_after == contig_before:
+                ## First we check if we should use the node as the end node or the start node
+                    if noders_row['node_rec'] == "Yes":
+                        new_row, add_row = reccy_finder(ref_gff_tsv, closest_vals, node_label, example_id,
+                                                        "Yes", tree)
+                        if add_row == True:
+                            start_inserts.append(new_row.iloc[0, 0])
+                            end_inserts.append(new_row.iloc[0, 1])
+                            start_nodes.append(new_row.iloc[0, 2])
+                            end_nodes.append(new_row.iloc[0, 3])
+                            start_gubbs.append(new_row.iloc[0, 4])
+                            end_gubbs.append(new_row.iloc[0, 5])
+                            gubb_lengths.append(new_row.iloc[0, 6])
+                            isolate_idzs.append(new_row.iloc[0, 7])
+                            snippy_counts.append(new_row.iloc[0, 8])
+                            insertion_nodes.append(new_row.iloc[0, 9])
+                            inny_node_tips.append(leaf_tip_nums(tree, example_id, current_node=insertion_nodes[-1]))
+                            end_node_tips.append(leaf_tip_nums(tree, example_id, current_node=end_nodes[-1]))
+                            insert_name.append(noders.iloc[0, noders.columns.get_loc('insert_name')])
+
+
+
+
+
+                        else:
+                            non_start_insert.append(new_row.iloc[0, 0])
+                            non_end_insert.append(new_row.iloc[0, 1])
+                            non_example_isolate.append(new_row.iloc[0, 2])
+                            non_insertion_node.append(new_row.iloc[0, 3])
+                            non_inny_node_tips.append(leaf_tip_nums(tree, example_id, current_node=non_insertion_node[-1]))
+                            non_inny_insert_name.append(noders.iloc[0, noders.columns.get_loc('insert_name')])
+
+
+                    else:
+                        new_row, add_row = reccy_finder(ref_gff_tsv, closest_vals, node_label, example_id,
+                                                        "No", tree)
+                        if add_row == True:
+                            start_inserts.append(new_row.iloc[0, 0])
+                            end_inserts.append(new_row.iloc[0, 1])
+                            start_nodes.append(new_row.iloc[0, 2])
+                            end_nodes.append(new_row.iloc[0, 3])
+                            start_gubbs.append(new_row.iloc[0, 4])
+                            end_gubbs.append(new_row.iloc[0, 5])
+                            gubb_lengths.append(new_row.iloc[0, 6])
+                            isolate_idzs.append(new_row.iloc[0, 7])
+                            snippy_counts.append(new_row.iloc[0, 8])
+                            insertion_nodes.append(new_row.iloc[0, 9])
+                            inny_node_tips.append(leaf_tip_nums(tree, example_id, current_node=insertion_nodes[-1]))
+                            end_node_tips.append(leaf_tip_nums(tree, example_id, current_node=start_nodes[-1]))
+                            insert_name.append(noders.iloc[0, noders.columns.get_loc('insert_name')])
+
+
+                        else:
+                            non_start_insert.append(new_row.iloc[0, 0])
+                            non_end_insert.append(new_row.iloc[0, 1])
+                            non_example_isolate.append(new_row.iloc[0, 2])
+                            non_insertion_node.append(new_row.iloc[0, 3])
+                            non_inny_node_tips.append(leaf_tip_nums(tree, example_id, current_node=non_insertion_node[-1]))
+                            non_inny_insert_name.append(noders.iloc[0, noders.columns.get_loc('insert_name')])
+                else:
+                    non_start_insert.append(closest_vals[0])
+                    non_end_insert.append(closest_vals[1])
+                    non_example_isolate.append(example_id)
+                    non_insertion_node.append(node_label)
+                    non_inny_node_tips.append(leaf_tip_nums(tree, example_id, current_node=non_insertion_node[-1]))
+                    non_inny_insert_name.append(noders.iloc[0, noders.columns.get_loc('insert_name')])
+
     gubb_lengths = [x + 1 for x in gubb_lengths]
 
 
@@ -996,6 +1047,7 @@ if __name__ == '__main__':
     hit_csv = pandas.read_csv(input_args.hit_locs_csv)
     base_loc = input_args.gubbins_res
     unique_clusters = hit_csv['cluster_name'].unique()
+    contig_loc = input_args.contig_bounds
 
     tot_reccy_csv = pandas.DataFrame()
     tot_non_reccy = pandas.DataFrame()
@@ -1006,6 +1058,11 @@ if __name__ == '__main__':
         print("On cluster: %s, %s of %s" % (cluster, seq_clus, len(unique_clusters)))
         tic_cluster = time.perf_counter()
         current_dat = hit_csv[hit_csv['cluster_name'] == cluster]
+        current_ref_name = current_dat['ref_name'].iloc[0]
+        contig_suffix = "#contig_bounds.csv"
+        contig_isolate = re.sub("#", "_", current_ref_name)
+        contig_file_path = contig_loc + contig_isolate + contig_suffix
+        ref_contig = pandas.read_csv(contig_file_path)
         current_dir = base_loc + cluster
         print(current_dir)
         try:
@@ -1025,7 +1082,7 @@ if __name__ == '__main__':
 
         ref_gff = reference_gff_clean(gff_loc)
 
-        current_reccy_hits, current_reccy_misses = reccy_main(tree_loc, ref_gff, current_dat)
+        current_reccy_hits, current_reccy_misses = reccy_main(tree_loc, ref_gff, current_dat, ref_contig)
 
         current_reccy_hits['cluster_name'] = cluster
         current_reccy_misses['cluster_name'] = cluster
