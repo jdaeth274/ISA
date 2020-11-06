@@ -117,6 +117,9 @@ def outside_control(insertion_node, tree, example_id, act_comp_dir, ref_insertio
 
             ## INsert code here looking to arrange these values and then take the closest match to the start
 
+            print(before_forward)
+            print(after_forward)
+
 
             bef_forward_ordering = before_forward.sort_values(by=['send'], ascending=False)
             bef_reverse_ordering = before_forward.sort_values(by=['sstart'], ascending=False)
