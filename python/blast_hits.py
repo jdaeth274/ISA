@@ -86,6 +86,7 @@ def outside_control(insertion_node, tree, example_id, act_comp_dir, ref_insertio
     ## to look at
 
     outside_isolates, ultimate_node = chains_of_isolates_plus_one(tree,example_id, insertion_node)
+    print(insertion_node)
 
     lengths_of_izzys = []
 
