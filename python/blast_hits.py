@@ -95,82 +95,94 @@ def outside_control(insertion_node, tree, example_id, act_comp_dir, ref_insertio
         chain_len = chains_of_isolates(tree, current_isolate, ultimate_node)
         lengths_of_izzys.append(len(chain_len))
 
-    min_node_izzy = lengths_of_izzys.index(min(lengths_of_izzys))
-    outside_iso = outside_isolates[min_node_izzy]
+    min_lengths = sorted(lengths_of_izzys)
+    finding_ref = True
 
-    act_file = act_comp_dir + outside_iso + ".crunch.gz"
-    compo_names = ['query', 'subject', 'pid', 'align', 'gap', 'mismatch', 'qstart',
-                   'qend', 'sstart', 'send', 'eval', 'bitscore']
-    compo_table = pandas.read_csv(act_file, sep='\t', names=compo_names)
+    for ref in min_lengths:
 
-    compo_table = compo_transformer(compo_table)
+        min_node_izzy = ref
+        outside_iso = outside_isolates[min_node_izzy]
 
+        act_file = act_comp_dir + outside_iso + ".crunch.gz"
+        compo_names = ['query', 'subject', 'pid', 'align', 'gap', 'mismatch', 'qstart',
+                       'qend', 'sstart', 'send', 'eval', 'bitscore']
+        compo_table = pandas.read_csv(act_file, sep='\t', names=compo_names)
 
-
-    forward_subset = compo_table[(compo_table['sstart'] <= ref_insertion[0]) & (compo_table['send'] >= ref_insertion[1])]
-    if forward_subset.empty:
-        reverse_subset = compo_table[(compo_table['send'] <= ref_insertion[0]) & (compo_table['sstart'] >= ref_insertion[1])]
-        if reverse_subset.empty:
-            before_forward = compo_table[(compo_table['sstart'] <= ref_insertion[0]) & (compo_table['send'] <= ref_insertion[0])]
-
-            after_forward = compo_table[(compo_table['sstart'] >= ref_insertion[1]) & (compo_table['send'] >= ref_insertion[1])]
-
-            ## INsert code here looking to arrange these values and then take the closest match to the start
-            print(ref_insertion)
-            print(before_forward.head())
-            print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-            print(after_forward)
+        compo_table = compo_transformer(compo_table)
 
 
-            bef_forward_ordering = before_forward.sort_values(by=['send'], ascending=False)
-            bef_reverse_ordering = before_forward.sort_values(by=['sstart'], ascending=False)
-            bef_forward_send_row = bef_forward_ordering.iloc[0]
-            bef_reverse_sstart_row = bef_reverse_ordering.iloc[0]
-            bef_forward_send = bef_forward_send_row.iloc[9]
-            bef_forward_sstart = bef_reverse_sstart_row.iloc[8]
 
-            if bef_forward_send < bef_forward_sstart:
-                before_row = bef_reverse_sstart_row
-            elif bef_forward_sstart < bef_forward_send:
-                before_row = bef_forward_send_row
+        forward_subset = compo_table[(compo_table['sstart'] <= ref_insertion[0]) & (compo_table['send'] >= ref_insertion[1])]
+        if forward_subset.empty:
+            reverse_subset = compo_table[(compo_table['send'] <= ref_insertion[0]) & (compo_table['sstart'] >= ref_insertion[1])]
+            if reverse_subset.empty:
+                before_forward = compo_table[(compo_table['sstart'] <= ref_insertion[0]) & (compo_table['send'] <= ref_insertion[0])]
 
-            aft_reverse_ordering = after_forward.sort_values(by=['send'], ascending=True)
-            aft_forward_ordering = after_forward.sort_values(by=['sstart'], ascending=True)
-            aft_reverse_send_row = aft_reverse_ordering.iloc[0]
-            aft_forward_sstart_row = aft_forward_ordering.iloc[0]
-            aft_reverse_send = aft_reverse_send_row.iloc[9]
-            aft_forward_sstart = aft_forward_sstart_row.iloc[8]
+                after_forward = compo_table[(compo_table['sstart'] >= ref_insertion[1]) & (compo_table['send'] >= ref_insertion[1])]
 
-            if aft_reverse_send < aft_forward_sstart:
-                after_row = aft_reverse_send_row
-            elif aft_forward_sstart < aft_reverse_send:
-                after_row = aft_forward_sstart_row
+                ## INsert code here looking to arrange these values and then take the closest match to the start
+                print(ref_insertion)
+                print(before_forward.head())
+                print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+                print(after_forward)
+
+                if after_forward.empty or before_forward.empty:
+                    outside_iso = False
+                    isolate_before_end = False
+                    isolate_after_start = False
+
+                    continue
 
 
-            print("Yes here")
+                bef_forward_ordering = before_forward.sort_values(by=['send'], ascending=False)
+                bef_reverse_ordering = before_forward.sort_values(by=['sstart'], ascending=False)
+                bef_forward_send_row = bef_forward_ordering.iloc[0]
+                bef_reverse_sstart_row = bef_reverse_ordering.iloc[0]
+                bef_forward_send = bef_forward_send_row.iloc[9]
+                bef_forward_sstart = bef_reverse_sstart_row.iloc[8]
 
-            isolate_before_end = before_row.iloc[7]
-            isolate_after_start = after_row.iloc[6]
+                if bef_forward_send < bef_forward_sstart:
+                    before_row = bef_reverse_sstart_row
+                elif bef_forward_sstart < bef_forward_send:
+                    before_row = bef_forward_send_row
 
-            print("Here's the after_start_return_object:","\n",isolate_before_end)
+                aft_reverse_ordering = after_forward.sort_values(by=['send'], ascending=True)
+                aft_forward_ordering = after_forward.sort_values(by=['sstart'], ascending=True)
+                aft_reverse_send_row = aft_reverse_ordering.iloc[0]
+                aft_forward_sstart_row = aft_forward_ordering.iloc[0]
+                aft_reverse_send = aft_reverse_send_row.iloc[9]
+                aft_forward_sstart = aft_forward_sstart_row.iloc[8]
+
+                if aft_reverse_send < aft_forward_sstart:
+                    after_row = aft_reverse_send_row
+                elif aft_forward_sstart < aft_reverse_send:
+                    after_row = aft_forward_sstart_row
+
+
+                print("Yes here")
+
+                isolate_before_end = before_row.iloc[7]
+                isolate_after_start = after_row.iloc[6]
+
+                print("Here's the after_start_return_object:","\n",isolate_before_end)
+
+            else:
+                begin_diff = reverse_subset.iloc[0, 8] - ref_insertion[1]
+                after_diff = ref_insertion[0] - reverse_subset.iloc[0, 9]
+
+                isolate_before_end = forward_subset.iloc[0, 6] + begin_diff
+                isolate_after_start = forward_subset.iloc[0, 7] - after_diff
+
+
 
         else:
-            begin_diff = reverse_subset.iloc[0, 8] - ref_insertion[1]
-            after_diff = ref_insertion[0] - reverse_subset.iloc[0, 9]
+
+            begin_diff = ref_insertion[0] - forward_subset.iloc[0,8]
+            after_diff = forward_subset.iloc[0,9] - ref_insertion[1]
+
 
             isolate_before_end = forward_subset.iloc[0, 6] + begin_diff
             isolate_after_start = forward_subset.iloc[0, 7] - after_diff
-
-
-
-    else:
-
-        begin_diff = ref_insertion[0] - forward_subset.iloc[0,8]
-        after_diff = forward_subset.iloc[0,9] - ref_insertion[1]
-
-
-        isolate_before_end = forward_subset.iloc[0, 6] + begin_diff
-        isolate_after_start = forward_subset.iloc[0, 7] - after_diff
 
 
 
