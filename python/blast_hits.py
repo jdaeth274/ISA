@@ -88,20 +88,20 @@ def outside_control(insertion_node, tree, example_id, act_comp_dir, ref_insertio
     outside_isolates, ultimate_node = chains_of_isolates_plus_one(tree,example_id, insertion_node)
     print(insertion_node)
 
-    lengths_of_izzys = []
+    lengths_of_izzys = {}
 
     for k in range(len(outside_isolates)):
         current_isolate = outside_isolates[k]
         chain_len = chains_of_isolates(tree, current_isolate, ultimate_node)
-        lengths_of_izzys.append(len(chain_len))
+        lengths_of_izzys[current_isolate] = chain_len
 
-    min_lengths = sorted(lengths_of_izzys)
+    length_dict_sorted = {k: v for k, v in sorted(lengths_of_izzys.items(), key= lambda item: item[1])}
     finding_ref = True
 
-    for ref in min_lengths:
+    for ref in length_dict_sorted:
 
-        min_node_izzy = ref
-        outside_iso = outside_isolates[min_node_izzy]
+
+        outside_iso = ref
 
         act_file = act_comp_dir + outside_iso + ".crunch.gz"
         compo_names = ['query', 'subject', 'pid', 'align', 'gap', 'mismatch', 'qstart',

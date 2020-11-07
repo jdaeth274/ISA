@@ -2,10 +2,10 @@
 
 set -e
 
-if [ $# != 8 ]
+if [ $# != 9 ]
 then
-  echo "This need 8 args you have $#."
-  echo "Requires: <run_output_folder/prefix> <tmp_dna_dir> <actcompos_dir/prefix> <outdir> <prefix> <flank length file> <gubbins_res_loc> <strep_ref_db_loc>"
+  echo "This need 9 args you have $#."
+  echo "Requires: <run_output_folder/prefix> <tmp_dna_dir> <actcompos_dir/prefix> <outdir> <prefix> <flank length file> <gubbins_res_loc> <strep_ref_db_loc> <contig_bound_location>"
   exit
 fi
 
@@ -24,6 +24,7 @@ echo "This is the prefix: $5"
 echo "Flanking region length file: $6"
 echo "This is the gubbins_res_loc $7"
 echo "This is the reference db base_file $8"
+echo "This is the contig bound location $9"
 
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
@@ -53,7 +54,7 @@ else
 
   python "${pythondir}blast_hits.py" --gubbins_res $7 --reccy_hits $reccy_csv \
       --hit_csv $hit_csv --act_compos $3 --flank_length $current_flanks --dna_dir $2 \
-      --out_dir "$4/$5_${current_flanks}_flanks" --out_name "$4/$5_${current_flanks}_flanks_extracted.csv" --contig_bounds ./contig_bounds/
+      --out_dir "$4/$5_${current_flanks}_flanks" --out_name "$4/$5_${current_flanks}_flanks_extracted.csv" --contig_bounds $9
 
 
     ls -d "$PWD/$4/$5_${current_flanks}_flanks/"*_whole_blast_seq.fasta* > "$4/$5_${current_flanks}_isolate_blast_list"
