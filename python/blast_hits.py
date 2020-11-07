@@ -782,6 +782,8 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
                 total_span = starts_span + ends_span
                 expansio.append(total_span)
                 mge_isolates.append(august_isolate)
+                if august_isolate == "13414_2#7":
+                    print("This isolate does come up here")
             else:
                 expansio.append(1)
 
@@ -840,7 +842,8 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
         snp_count_indiv = min(total_life_forever)
         mge_id = mge_isolates[mge_seq_to_look_at]
         mge_deets = pyt_csv[pyt_csv['id'] == mge_id]
-
+        if mge_id == "13414_2#7":
+            print("This isolate does come up here")
         ## Check if reference among the tips for this node insertion.
 
         reference_presence = reference_present(insertion_node=insertion_node,
