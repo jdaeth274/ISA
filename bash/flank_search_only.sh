@@ -51,6 +51,13 @@ else
     echo "::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
     echo "On flank length: ${current_flanks}"
 
+  if [ ! -d "$4/$5_${current_flanks}_flanks" ]
+      then
+      mkdir "$4/$5_${current_flanks}_flanks"
+    else
+      rm -r "$4/$5_${current_flanks}_flanks"
+      mkdir "$4/$5_${current_flanks}_flanks"
+    fi
 
   python "${pythondir}blast_hits.py" --gubbins_res $7 --reccy_hits $reccy_csv \
       --hit_csv $hit_csv --act_compos $3 --flank_length $current_flanks --dna_dir $2 \

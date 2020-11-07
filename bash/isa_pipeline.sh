@@ -176,6 +176,15 @@ then
     python "${pythondir}node_mutation.py" --gubbins_res $6 --hit_locs_csv "$4/$5_hits_df.csv" \
     --out_name $5
 
+     if [ ! -d "$4/$5_flanks" ]
+      then
+        mkdir "$4/$5_flanks"
+      else
+      rm -r "$4/$5_flanks"
+      mkdir "$4/$5_flanks"
+      fi
+
+
     ## Now to find out the blast locations
     python "${pythondir}blast_hits.py" --gubbins_res $6 --reccy_hits "$4/$5_reccy_hits.csv" \
     --hit_csv "$4/$5_hits_df.csv" --act_compos "${act_compos_loc}referoo.fasta." --flank_length $7 --dna_dir "./tmp_dna_dir/" \
@@ -197,16 +206,27 @@ then
   if [ ! -d "$4/blast_results" ]
     then
         mkdir "$4/blast_results"
+  else
+      rm -r "$4/blast_results"
+      mkdir "$4/blast_results"
     fi
 
   if [ ! -d "$4/before_flank_blast_res" ]
     then
         mkdir "$4/before_flank_blast_res"
+  else
+    rm -r "$4/before_flank_blast_res"
+    mkdir "$4/before_flank_blast_res"
+
     fi
 
   if [ ! -d "$4/after_flank_blast_res" ]
     then
         mkdir "$4/after_flank_blast_res"
+
+  else
+    rm -r "$4/after_flank_blast_res"
+    mkdir "$4/after_flank_blast_res"
     fi
 
 
