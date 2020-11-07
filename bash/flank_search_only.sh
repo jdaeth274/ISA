@@ -70,15 +70,24 @@ else
     if [ ! -d "$4/${current_flanks}_blast_results" ]
       then
       mkdir "$4/${current_flanks}_blast_results"
+    else
+      rm -r "$4/${current_flanks}_blast_results"
+      mkdir "$4/${current_flanks}_blast_results"
     fi
 
     if [ ! -d "$4/${current_flanks}_before_flank_blast_res" ]
       then
       mkdir "$4/${current_flanks}_before_flank_blast_res"
+    else
+      rm -r "$4/${current_flanks}_before_flank_blast_res"
+      mkdir "$4/${current_flanks}_before_flank_blast_res"
     fi
 
     if [ ! -d "$4/${current_flanks}_after_flank_blast_res" ]
       then
+      mkdir "$4/${current_flanks}_after_flank_blast_res"
+    else
+      rm -r "$4/${current_flanks}_after_flank_blast_res"
       mkdir "$4/${current_flanks}_after_flank_blast_res"
     fi
 
