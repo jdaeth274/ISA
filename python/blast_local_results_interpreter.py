@@ -38,6 +38,11 @@ if __name__ == '__main__':
         sys.exit("No Blast results for this isolate: %s" % bassy_name)
 
     elif os.stat(input_args.results_csv).st_size == 0:
+        bassy_name = os.path.basename(input_args.results_csv)
+
+        bassy_name = re.split("_", bassy_name, maxsplit=2)[:2]
+
+        bassy_name = bassy_name[0] + "_" + bassy_name[1]
         print("No Blast results for this isolate: %s" % bassy_name)
         sys.exit(0)
 
