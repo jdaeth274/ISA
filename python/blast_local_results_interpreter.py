@@ -38,7 +38,8 @@ if __name__ == '__main__':
         sys.exit("No Blast results for this isolate: %s" % bassy_name)
 
     elif os.stat(input_args.results_csv).st_size == 0:
-        sys.exit("This is an empty file")
+        print("No Blast results for this isolate: %s" % bassy_name)
+        sys.exit(0)
 
     elif os.stat(input_args.results_csv).st_size != 0:
 
