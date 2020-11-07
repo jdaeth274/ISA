@@ -56,7 +56,9 @@ if __name__ == '__main__':
         if "!" in izzy:
             insertion_point.append("reference")
         else:
+            print(top_hit.iloc[0])
             matching_python_record = python_hit_locs[python_hit_locs['id'] == top_hit.iloc[0]]
+            print(matching_python_record)
             clus_name = matching_python_record['insert_name'].values[0]
 
 
