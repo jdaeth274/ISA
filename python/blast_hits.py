@@ -86,7 +86,7 @@ def outside_control(insertion_node, tree, example_id, act_comp_dir, ref_insertio
     ## to look at
 
     outside_isolates, ultimate_node = chains_of_isolates_plus_one(tree,example_id, insertion_node)
-    print(insertion_node)
+
 
     lengths_of_izzys = {}
 
@@ -156,12 +156,12 @@ def outside_control(insertion_node, tree, example_id, act_comp_dir, ref_insertio
                     after_row = aft_forward_sstart_row
 
 
-                print("Yes here")
+
 
                 isolate_before_end = before_row.iloc[7]
                 isolate_after_start = after_row.iloc[6]
 
-                print("Here's the after_start_return_object:","\n",isolate_before_end)
+
                 break
 
             else:
@@ -292,7 +292,7 @@ def largest_reccombination_block(before_row, after_row):
     return start_return, end_return
 
 
-def compo_enlarger(start_act, ori, pos, act_compo, target_length, debug_id):
+def compo_enlarger(start_act, ori, pos, act_compo, target_length, debug_id, pre_length):
     current_length = abs(start_act.iloc[0,6] - start_act.iloc[0, 7])
     current_gap =  current_length
 
@@ -710,6 +710,13 @@ def contig_checker(contig_csv, hit_to_check):
 
     return hit_contig
 
+def bounds_of_contig(contig_tab, contig_mge):
+    ## Function to get bounds of a contig
+    contig_bounds = contig_tab.iloc[contig_mge - 1]
+
+    return contig_bounds
+
+
 def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, reference_id, flanking_length, contig_loc):
     ## Function to take in the reccy hits csv for a paticular cluster. Then work through the
     ## reccy hits and find the isolate with the fewest snps around the insertion site. This will
@@ -782,8 +789,7 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
                 total_span = starts_span + ends_span
                 expansio.append(total_span)
                 mge_isolates.append(august_isolate)
-                if august_isolate == "13414_2#7":
-                    print("This isolate does come up here")
+
             else:
                 expansio.append(1)
 
@@ -842,8 +848,7 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
         snp_count_indiv = min(total_life_forever)
         mge_id = mge_isolates[mge_seq_to_look_at]
         mge_deets = pyt_csv[pyt_csv['id'] == mge_id]
-        if mge_id == "13414_2#7":
-            print("This isolate does come up here")
+
         ## Check if reference among the tips for this node insertion.
 
         reference_presence = reference_present(insertion_node=insertion_node,
@@ -1044,24 +1049,26 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
             bef_hits = [rec_end_bef - flanking_length, rec_end_bef]
             rec_start_aft = after_subset.iloc[0,6]
             rec_end_aft = after_subset.iloc[0,7]
-            aft_hits = [rec_end_aft ,rec_end_aft + flanking_length]
+            aft_hits = [rec_start_aft ,rec_start_aft + flanking_length]
             bef_contig = contig_checker(contig_file, bef_hits)
             aft_contig = contig_checker(contig_file, aft_hits)
 
 
 
             if bef_contig == 0:
-
-                print("Need to expand before")
-                bef_regions = compo_enlarger(before_subset, "forward","bef",compo_table,
-                                             flanking_length, current_isolate)
+                current_contig_bounds = bounds_of_contig(contig_file,contig_checker(contig_file, mge_hits))
+                current_length = rec_end_bef - current_contig_bounds.values[0]
+                print("Need to expand before, currently have %s, need %s" % (current_length, flanking_length))
+                bef_regions = compo_enlarger(before_subset, "forward","bef",compo_table, flanking_length, current_isolate, current_length)
 
             else:
                 rec_start_bef = rec_end_bef - flanking_length
                 bef_regions = [[rec_start_bef, rec_end_bef]]
 
             if aft_contig == 0:
-                print("Need to expand after")
+                current_contig_bounds = bounds_of_contig(contig_file, contig_checker(contig_file, mge_hits))
+                current_length = current_contig_bounds.values[1] - rec_start_aft
+                print("Need to expand before, currently have %s, need %s" % (current_length, flanking_length))
                 aft_regions = compo_enlarger(after_subset, "forward","aft", compo_table,
                                              flanking_length, current_isolate)
             else:
@@ -1080,16 +1087,17 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
             bef_hits = [rec_start_bef, rec_start_bef + flanking_length]
             rec_start_aft = after_subset.iloc[0, 6]
             rec_end_aft = after_subset.iloc[0, 7]
-            aft_length = rec_end_aft - rec_start_aft
             aft_hits = [rec_end_aft, rec_end_aft - flanking_length]
             bef_contig = contig_checker(contig_file, bef_hits)
             aft_contig = contig_checker(contig_file, aft_hits)
 
 
             if bef_contig == 0:
-                print("Need to expand reverse before")
+                current_contig_bounds = bounds_of_contig(contig_file, contig_checker(contig_file, mge_hits))
+                current_length = current_contig_bounds.values[1] - rec_start_bef
+                print("Need to expand reverse before, currently have %s, need %s" % (current_length, flanking_length))
                 bef_regions = compo_enlarger(before_subset, "reverse", "bef", compo_table,
-                                             flanking_length, current_isolate)
+                                             flanking_length, current_isolate, current_length)
 
 
             else:
@@ -1097,7 +1105,9 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
                 bef_regions = [[rec_start_bef, rec_end_bef]]
 
             if aft_contig == 0:
-                print("Need to expand reverse after")
+                current_contig_bounds = bounds_of_contig(contig_file, contig_checker(contig_file, mge_hits))
+                current_length = rec_end_aft - current_contig_bounds.values[0]
+                print("Need to expand reverse after, currently have %s, need %s" % (current_length, flanking_length))
                 aft_regions = compo_enlarger(after_subset, "reverse", "aft", compo_table,
                                              flanking_length, current_isolate)
             else:
