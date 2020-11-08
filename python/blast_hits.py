@@ -1070,7 +1070,7 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
                 current_length = current_contig_bounds.values[1] - rec_start_aft
                 print("Need to expand before, currently have %s, need %s" % (current_length, flanking_length))
                 aft_regions = compo_enlarger(after_subset, "forward","aft", compo_table,
-                                             flanking_length, current_isolate)
+                                             flanking_length, current_isolate, current_length)
             else:
                 rec_end_aft = rec_start_aft + flanking_length
                 aft_regions = [[rec_start_aft, rec_end_aft]]
@@ -1109,7 +1109,7 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
                 current_length = rec_end_aft - current_contig_bounds.values[0]
                 print("Need to expand reverse after, currently have %s, need %s" % (current_length, flanking_length))
                 aft_regions = compo_enlarger(after_subset, "reverse", "aft", compo_table,
-                                             flanking_length, current_isolate)
+                                             flanking_length, current_isolate, current_length)
             else:
                 rec_start_aft = rec_end_aft - flanking_length
                 aft_regions = [[rec_start_aft, rec_end_aft]]
