@@ -168,7 +168,7 @@ if(file.exists(gubbins_res)){
       df_both <- reccy_csv[,colnames(reccy_csv) %in% c("length", "density", "start", "end")]
       
       df_both$MGE <- rep("No", nrow(df_both))
-      tot_csv <- bind_rows(tot_csv, both_df)
+      tot_csv <- bind_rows(tot_csv, df_both)
     }
     toc()
     
