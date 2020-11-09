@@ -2275,18 +2275,11 @@ def act_mapper(hit_before, hit_after, act_loc, current_insert_locs):
     ## first test if both are within a single hit likely from an insertion away form where mge is within reference
 
     single_hit = compo_table[(compo_table['qstart'] <= current_insert_locs[0]) & (compo_table['qend'] >= current_insert_locs[1])]
-    print("~~~~~~~~~~~~~~~~~~~~~~~~~ SINGLE HIT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-    print(single_hit)
-    print("~~~~~~~~~~~~~~~~~~~~~~~~ insert locs ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-    print(current_insert_locs)
+
     if single_hit.empty:
         ## Maybe this represent the insertion of the mge in the element too so lets look for hits either side
         hit_1 = compo_table[(compo_table['qend'] >= (current_insert_locs[0] - 50)) & (compo_table['qstart'] <= (current_insert_locs[0] + 50))]
         hit_2 = compo_table[(compo_table['qstart'] <= (current_insert_locs[1] + 50)) & (compo_table['qend'] >= (current_insert_locs[1] + 50))]
-        print("~~~~~~~~~~~~~~~~~~~~~~~~~ HIT 1   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-        print(hit_1)
-        print("~~~~~~~~~~~~~~~~~~~~~~~~~ HIT 2  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-        print(hit_2)
 
 
         hit_1 = hit_1.sort_values(by='align', ascending=False)
@@ -2320,8 +2313,7 @@ def act_mapper(hit_before, hit_after, act_loc, current_insert_locs):
             nuevo_after['sstart'] = new_send
             nuevo_after['send'] = new_send + aft_adder
 
-            print(new_sstart, (new_sstart + bef_adder))
-            print(new_send, (new_send + aft_adder))
+
             mapped = True
     else:
         single_hit = single_hit.sort_values(by='align', ascending=False)
@@ -2468,11 +2460,7 @@ if __name__ == '__main__':
         ref_name = re.sub("\..*[a-zA-Z]*$", "", ref_name)
         cluster_name = cluster_name.iloc[0]
 
-        if cluster_name != "gpsc.43":
-            continue
-        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-        print(isolate_id)
-        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+
         act_map = False
         compo_ref = ref_name
         #print(cluster_name)
