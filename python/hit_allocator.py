@@ -3054,8 +3054,19 @@ if __name__ == '__main__':
                 missing_current['reason'] = pandas.Series(["MERGED No good hits before and after"],missing_current.index)
             else:
                 missing_current['mge_length'] = pandas.Series(current_mge_length, index=missing_current.index)
-                missing_current['reason'] = pandas.Series(["No good hits before and after"],
-                                                          missing_current.index)
+                if hit_before is None or hit_after is None:
+                    missing_current['reason'] = pandas.Series(["No good hits before and after- before and after none"],
+                                                              missing_current.index)
+                elif all_one_tig == False:
+                    missing_current['reason'] = pandas.Series(["No good hits before and after- no two hits on contig"],
+                                                              missing_current.index)
+                elif all_one_tig:
+                    missing_current['reason'] = pandas.Series(["No good hits before and after- hits too small"],
+                                                              missing_current.index)
+                else:
+                    missing_current['reason'] = pandas.Series(["No good hits before and after- misc"],
+                                                              missing_current.index)
+
             missing_isolate = missing_isolate.append(missing_current, sort = False)
         end_len = len(missing_isolate.index) + len(hit_df.index)
         if end_len != start_len + 1:

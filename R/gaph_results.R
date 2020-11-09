@@ -19,7 +19,7 @@ graph_getter <- function(dir_to_files,graph_name){
   summo_csv_file <- list.files(dir_to_files, pattern = "*species_compo*")
   summary_csv <- paste(dir_to_files, summo_csv_file,sep = "")
   summo_csv <- read.csv(summary_csv, stringsAsFactors = FALSE)
-  browser()
+  
   blast_results <- list.files(dir_to_files, pattern = "*list*.csv")
   
   counted_summo <- plyr::count(summo_csv$insertion_point)  
@@ -277,8 +277,9 @@ series_display <- function(list_of_results, prefix, flanks_vector, cluster, regi
 folder_to_res <- function(results_folder, flanks_veccy, graph_name){
   ## Function to take in the output from the flanks_only_search and output the over flanks graphs 
   ## Results folder should be the main run folder, flanks veccy the main 
-  
+
   folders <- list.files(results_folder, full.names = TRUE, include.dirs = TRUE)
+  folders <- sub("//","/",folders)
   whole_blast_res <- folders[grep("_blast_results", folders)]
   before_blast_res <- folders[grep("_before_flank_blast_res", folders)]
   after_blast_res <- folders[grep("_after_flank_blast_res", folders)]
@@ -288,6 +289,7 @@ folder_to_res <- function(results_folder, flanks_veccy, graph_name){
   pmen3_list <- list()
   
   for(k in whole_blast_res){
+
     current_graphed_res <- graph_getter(k, graph_name)
     pmen3_list[[length(pmen3_list) + 1]] <- current_graphed_res
     
@@ -314,13 +316,14 @@ folder_to_res <- function(results_folder, flanks_veccy, graph_name){
   pmen3_list_aft <- list()
   
   for(k in after_blast_res){
+
     current_graphed_res <- graph_getter(k, graph_name)
     pmen3_list_aft[[length(pmen3_list_aft) + 1]] <- current_graphed_res
     
   }
   
   after_name <- paste(graph_name, "after flanks")
-  pmen3_mega_after <- series_display(pmen3_list_aft, after_name, flanks_veccy, "28")
+  pmen3_mega_after <- series_display(pmen3_list_aft, after_name, flanks_veccy, "total")
   toc()
   return(list(whole_res = pmen3_mega_total, before_res = pmen3_mega_before, after_res = pmen3_mega_after))
   
@@ -331,8 +334,11 @@ parse_args <- function(){
   
   if(length(input_args) != 3){
     cat("Not enough arguments, need 3, you have:", length(input_args), "\n")
+    cat("\n")
     cat("Usage: Rscript --vanilla ./gaph_results.R <end flank length> <folder_of_flank_res> <pdf_out_file>")
-    stop()
+    cat("\n")
+    cat("\n")
+    stop("Not enough input files")
   }
   
   return(input_args)
@@ -344,7 +350,7 @@ parse_args <- function(){
 ##                   3: pdf out 
 
 
-input_args <- parse_args
+input_args <- parse_args()
 
 flanks_vec <- seq(500, as.integer(input_args[1]), 500)
 

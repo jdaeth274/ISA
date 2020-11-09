@@ -115,13 +115,19 @@ input_checker <- function(){
   
   if(length(input_args) != 4){
     cat("Incorrect number of files, this requires 4, you have:", length(input_args))
+    cat("\n")
     cat("Usage: Rscript --vanilla ./recombination_length_plots.R <gubbins_dirs> <reccy_csv> <mge_name> <out_prefix>")
-    stop()
+    cat("\n")
+    cat("\n")
+    stop("Not enough input files")
   }else{
     if(!(file.exists(input_args[2]))){
       cat("The input reccy csv doesn't exist")
+      cat("\n")
       cat("Usage: Rscript --vanilla ./recombination_length_plots.R <gubbins_dirs> <reccy_csv> <mge_name> <out_prefix>")
-      stop()
+      cat("\n")
+      cat("\n")
+      stop("Reccy file doesn't exist")
     }
     
     
