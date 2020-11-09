@@ -247,8 +247,8 @@ print(sum_up_by_MGE)
 
 dev.off()
 
-cat(out_csv_file_name)
-write.csv(tot_csv, file = out_csv_file_name, row.names = FALSE, quote = FALSE)
+
+write.csv(tot_csv, file = out_csv_name, row.names = FALSE, quote = FALSE)
 
 toc()
 end_time <- Sys.time()
