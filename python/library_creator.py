@@ -2320,6 +2320,8 @@ def act_mapper(hit_before, hit_after, act_loc, current_insert_locs):
             nuevo_after['sstart'] = new_send
             nuevo_after['send'] = new_send + aft_adder
 
+            print(new_sstart, (new_sstart + bef_adder))
+            print(new_send, (new_send + aft_adder))
             mapped = True
     else:
         single_hit = single_hit.sort_values(by='align', ascending=False)
