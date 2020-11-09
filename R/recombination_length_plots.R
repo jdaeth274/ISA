@@ -110,31 +110,79 @@ gubbins_res <- input_args[1]#"~/Dropbox/phd/insertion_site_analysis/data/pmen_ru
 reccy_hits <- read.csv(input_args[2],
                        stringsAsFactors = FALSE)
 mge_name <- input_args[3]
-out_pdf_file <- input_args[4]#"~/Dropbox/phd/insertion_site_analysis/pmen_mega_lib_updated_flanks/pmen_mega_recombination_length.pdf"
+out_name <- input_args[4]#"~/Dropbox/phd/insertion_site_analysis/pmen_mega_lib_updated_flanks/pmen_mega_recombination_length.pdf"
 
-unique_clusters <- unique(reccy_hits$cluster_name)
+out_pdf_file <- paste(out_name, ".pdf", sep = "")
+out_csv_name <- paste(out_name, ".csv", sep = "")
+
+## If input args one is just a directory run through the hits with the 
+## element in them, if its a file run through all the listed gubbins dirs 
 tot_csv <- NULL
 
-for(cluster in unique_clusters){
-  tic(paste("curating cluster:", cluster))
-  current_dir <- paste(gubbins_res,cluster, "_run_data", sep = "")
-  gubb_files <- list.files(current_dir, full.names = TRUE)
-  reccy_gff <- gubb_files[grep(".recombination_predictions.gff", gubb_files)]
-  narrowed_hits_df <- reccy_hits[reccy_hits$cluster_name == cluster,]
-  narrowed_hits_df$density <- narrowed_hits_df$snp_count / (narrowed_hits_df$gub_length)
-  narrowed_hits <- reccy_hits_cleaner(narrowed_hits_df, mge_name)
+if(file.exists(gubbins_res)){
+  gubbins_locs <- readLines(gubbins_res)
+  cat("This many clusters to work through:", length(gubbins_locs))
+  start_time <- Sys.time()
   
-  reccy_csv <- read.delim(reccy_gff,header = FALSE, comment.char = "#")
-  colnames(reccy_csv) <- c("type","prog","class","start","end","trent","alexander","arnold","attribute")
-  reccy_csv <- recombination_gff_cleaner(reccy_csv)
+  for(current_dir in gubbins_locs){
+    tic(paste("curating cluster:", cluster))
+    cluster <- basename(current_dir)
+    cluster <- sub("_run_data","",cluster)
+    gubb_files <- list.files(current_dir, full.names = TRUE)
+    reccy_gff <- gubb_files[grep(".recombination_predictions.gff", gubb_files)]
+    narrowed_hits_df <- reccy_hits[reccy_hits$cluster_name == cluster,]
+    if(nrow(narrowed_hits_df) > 0){
+      narrowed_hits_df$density <- narrowed_hits_df$snp_count / (narrowed_hits_df$gub_length)
+      narrowed_hits <- reccy_hits_cleaner(narrowed_hits_df, mge_name)
+      
+      reccy_csv <- read.delim(reccy_gff,header = FALSE, comment.char = "#")
+      colnames(reccy_csv) <- c("type","prog","class","start","end","trent","alexander","arnold","attribute")
+      reccy_csv <- recombination_gff_cleaner(reccy_csv)
+      
+      both_df <- reccy_combiner(reccy_csv, narrowed_hits)
+      both_df$cluster <- cluster
+      
+      tot_csv <- bind_rows(tot_csv, both_df)
+    }else{
+      reccy_csv <- read.delim(reccy_gff,header = FALSE, comment.char = "#")
+      colnames(reccy_csv) <- c("type","prog","class","start","end","trent","alexander","arnold","attribute")
+      reccy_csv <- recombination_gff_cleaner(reccy_csv)
+      df_both <- reccy_csv[,colnames(reccy_csv) %in% c("length", "density", "start", "end")]
+      
+      df_both$MGE <- rep("No", nrow(df_both))
+      tot_csv <- bind_rows(tot_csv, both_df)
+    }
+    toc()
+    
+  }  
   
-  both_df <- reccy_combiner(reccy_csv, narrowed_hits)
-  both_df$cluster <- cluster
-  
-  tot_csv <- bind_rows(tot_csv, both_df)
-  toc()
-}
+}else{
 
+  unique_clusters <- unique(reccy_hits$cluster_name)
+  cat("This many clusters to work through:", length(unique_clusters))
+  start_time <- Sys.time()
+  
+  for(cluster in unique_clusters){
+    tic(paste("curating cluster:", cluster))
+    current_dir <- paste(gubbins_res,cluster, "_run_data", sep = "")
+    gubb_files <- list.files(current_dir, full.names = TRUE)
+    reccy_gff <- gubb_files[grep(".recombination_predictions.gff", gubb_files)]
+    narrowed_hits_df <- reccy_hits[reccy_hits$cluster_name == cluster,]
+    narrowed_hits_df$density <- narrowed_hits_df$snp_count / (narrowed_hits_df$gub_length)
+    narrowed_hits <- reccy_hits_cleaner(narrowed_hits_df, mge_name)
+    
+    reccy_csv <- read.delim(reccy_gff,header = FALSE, comment.char = "#")
+    colnames(reccy_csv) <- c("type","prog","class","start","end","trent","alexander","arnold","attribute")
+    reccy_csv <- recombination_gff_cleaner(reccy_csv)
+    
+    both_df <- reccy_combiner(reccy_csv, narrowed_hits)
+    both_df$cluster <- cluster
+    
+    tot_csv <- bind_rows(tot_csv, both_df)
+    toc()
+  }
+
+}
 
 tic("Plotting out results")
 histo_mges <- ggplot(data = tot_csv) + geom_histogram(aes(tot_csv$density,
@@ -166,5 +214,6 @@ print(sum_up_by_MGE)
 dev.off()
 
 toc()
-cat("Finished")
+end_time <- Sys.time()
+cat("Finished in", (end_time - start_time))
 
