@@ -194,6 +194,7 @@ if(file.exists(gubbins_res)){
       df_both <- reccy_csv[,colnames(reccy_csv) %in% c("length", "density", "start", "end")]
       
       df_both$MGE <- rep("No", nrow(df_both))
+      df_both$cluster <- cluster
       tot_csv <- bind_rows(tot_csv, df_both)
     }
     toc()
