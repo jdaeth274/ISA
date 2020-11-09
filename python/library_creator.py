@@ -2277,6 +2277,8 @@ def act_mapper(hit_before, hit_after, act_loc, current_insert_locs):
     single_hit = compo_table[(compo_table['qstart'] <= current_insert_locs[0]) & (compo_table['qend'] >= current_insert_locs[1])]
     print("~~~~~~~~~~~~~~~~~~~~~~~~~ SINGLE HIT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
     print(single_hit)
+    print("~~~~~~~~~~~~~~~~~~~~~~~~ insert locs ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+    print(current_insert_locs)
     if single_hit.empty:
         ## Maybe this represent the insertion of the mge in the element too so lets look for hits either side
         hit_1 = compo_table[(compo_table['qend'] >= (current_insert_locs[0] - 50)) & (compo_table['qstart'] <= (current_insert_locs[1] + 50))]
