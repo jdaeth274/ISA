@@ -12,6 +12,7 @@ require(stringr, quietly = TRUE)
 require(ggplot2, quietly = TRUE)
 require(dplyr, quietly = TRUE)
 require(tictoc, quietly = TRUE)
+require(tools, quietly = TRUE)
 
 ###############################################################################
 ## FUNCTIONS ##################################################################
@@ -123,6 +124,7 @@ input_checker <- function(){
       stop()
     }
     
+    
     return(input_args)
   }
 }
@@ -134,8 +136,18 @@ input_checker <- function(){
 input_args <- input_checker()
 
 gubbins_res <- input_args[1]#"~/Dropbox/phd/insertion_site_analysis/data/pmen_run/"
-reccy_hits <- read.csv(input_args[2],
-                       stringsAsFactors = FALSE)
+if(tools::file_ext(input_args[2]) == "txt"){
+  cat("Using multiple reccy csv files", "\n")
+  reccy_files <- readLines(input_args[2])
+  reccy_hits <- NULL
+  for(file in reccy_files){
+    current_hit <- read.csv(file, stringsAsFactors = FALSE)
+    reccy_hits <- bind_rows(reccy_hits, current_hit)
+  }
+}else{
+  reccy_hits <- read.csv(input_args[2],
+                         stringsAsFactors = FALSE)
+}
 mge_name <- input_args[3]
 out_name <- input_args[4]#"~/Dropbox/phd/insertion_site_analysis/pmen_mega_lib_updated_flanks/pmen_mega_recombination_length.pdf"
 
