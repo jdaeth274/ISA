@@ -100,6 +100,15 @@ reccy_combiner <- function(whole_csv, mge_csv){
   return(df_both)
 }
 
+delim_reader <- function(delim_file){
+  reccy_csv <- "No"
+  try({
+    reccy_csv <- read.delim(reccy_gff,header = FALSE, comment.char = "#")
+    colnames(reccy_csv) <- c("type","prog","class","start","end","trent","alexander","arnold","attribute")
+  })
+  return(reccy_csv)
+}
+
 input_checker <- function(){
   input_args <- commandArgs(trailingOnly = TRUE)
   
@@ -153,8 +162,10 @@ if(file.exists(gubbins_res)){
       narrowed_hits_df$density <- narrowed_hits_df$snp_count / (narrowed_hits_df$gub_length)
       narrowed_hits <- reccy_hits_cleaner(narrowed_hits_df, mge_name)
       
-      reccy_csv <- read.delim(reccy_gff,header = FALSE, comment.char = "#")
-      colnames(reccy_csv) <- c("type","prog","class","start","end","trent","alexander","arnold","attribute")
+      reccy_csv <- delim_reader(reccy_gff)
+      if(class(reccy_csv) == "character"){
+        next
+      }
       reccy_csv <- recombination_gff_cleaner(reccy_csv)
       
       both_df <- reccy_combiner(reccy_csv, narrowed_hits)
@@ -162,9 +173,11 @@ if(file.exists(gubbins_res)){
       
       tot_csv <- bind_rows(tot_csv, both_df)
     }else{
-      cat(reccy_gff, "\n")
-      reccy_csv <- read.delim(reccy_gff,header = FALSE, comment.char = "#")
-      colnames(reccy_csv) <- c("type","prog","class","start","end","trent","alexander","arnold","attribute")
+      cat(reccy_gff, "\n") 
+      reccy_csv <- delim_reader(reccy_gff)
+      if(class(reccy_csv) == "character"){
+        next
+      }
       reccy_csv <- recombination_gff_cleaner(reccy_csv)
       df_both <- reccy_csv[,colnames(reccy_csv) %in% c("length", "density", "start", "end")]
       
@@ -190,8 +203,10 @@ if(file.exists(gubbins_res)){
     narrowed_hits_df$density <- narrowed_hits_df$snp_count / (narrowed_hits_df$gub_length)
     narrowed_hits <- reccy_hits_cleaner(narrowed_hits_df, mge_name)
     
-    reccy_csv <- read.delim(reccy_gff,header = FALSE, comment.char = "#")
-    colnames(reccy_csv) <- c("type","prog","class","start","end","trent","alexander","arnold","attribute")
+    reccy_csv <- delim_reader(reccy_gff)
+    if(class(reccy_csv) == "character"){
+      next
+    }
     reccy_csv <- recombination_gff_cleaner(reccy_csv)
     
     both_df <- reccy_combiner(reccy_csv, narrowed_hits)
