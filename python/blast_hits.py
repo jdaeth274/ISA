@@ -1378,7 +1378,9 @@ if __name__ == '__main__':
         branch_mutations = pandas.read_csv(embl_branch_loc)
         embl_reccy_csv = pandas.read_csv(embl_rec_loc)
 
-        flanks_csv, regions_bef, regions_aft = isolate_narrow(current_dat, current_pyt, tree, embl_reccy_csv, branch_mutations, current_ref_name, flanking_length, contig_bounds)
+        flanks_csv, regions_bef, regions_aft = isolate_narrow(current_dat, current_pyt, tree, embl_reccy_csv,
+                                                              branch_mutations, current_ref_name, flanking_length,
+                                                              contig_bounds, nice_ids_tot)
 
         extract_flanks = extracting_flanks(flanks_csv, out_dir,current_ref_name, fasta_directory, regions_bef, regions_aft)
 
