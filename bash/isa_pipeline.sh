@@ -188,7 +188,8 @@ then
     ## Now to find out the blast locations
     python "${pythondir}blast_hits.py" --gubbins_res $6 --reccy_hits "$4/$5_reccy_hits.csv" \
     --hit_csv "$4/$5_hits_df.csv" --act_compos "${act_compos_loc}referoo.fasta." --flank_length $7 --dna_dir "./tmp_dna_dir/" \
-    --out_dir "$4/$5_flanks" --out_name "$4/$5_flanks_extracted.csv" --contig_bounds ./contig_bounds/
+    --out_dir "$4/$5_flanks" --out_name "$4/$5_flanks_extracted.csv" --contig_bounds ./contig_bounds/ \
+    --proper_hits "$4/$5_proper_hits.csv"
 
 
 

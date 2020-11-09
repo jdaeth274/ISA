@@ -26,6 +26,7 @@ def get_options():
     parser.add_argument('--reccy_hits', required=True, help='csv from reccy finder with hits within recombinations', type=str)
     parser.add_argument('--hit_csv', required=True, help='hits csv out from hit_allocator', type=str)
     parser.add_argument('--contig_bounds', required=True, help='bounds of contigs used in reconstruction', type = str)
+    parser.add_argument('--proper_hits',required=True, help='proper hits csv output from library creator', type=str)
     parser.add_argument('--act_compos', required=True, help='Location of act comparisons, with .referoo.fasta. prefix', type=str)
     parser.add_argument('--flank_length', required=True, help='Length to extract from flanks', type=int)
     parser.add_argument('--dna_dir', required=True, help='location of dna files', type=str)
@@ -71,6 +72,20 @@ def leaf_tips(tree, example_id, current_node):
 
     return node_names
 
+def nice_proper_hits_ids(ids_list):
+    ## Function to turn all the double underscore ids into standard isolate names for the act compos:
+    ## Input: ids_list: list format of the first column of the proper hits
+    nicer = []
+    for id in ids_list:
+        if id.count('_') == 2:
+            last_occy = id.rfind('_')
+            isolate_id = id[0:last_occy]
+            nicer.append(isolate_id)
+        else:
+            nicer.append(id)
+
+    return nicer
+
 def reference_present(insertion_node, tree, reference, isolate_examp):
     leaf_tippies = leaf_tips(tree,isolate_examp, insertion_node)
 
@@ -80,12 +95,31 @@ def reference_present(insertion_node, tree, reference, isolate_examp):
         present = "Yes"
 
     return  present
+def all_presence_checker(id_list, series_ids):
+    ## Function to check whether the total list of ids is within the blast csv
+    ## Input: id_list: List of ids to check for presence all must be within the series ids
+    ##        series_ids: the series of ids to check through
+    skip = False
+    num_in = 0
+    for k in range(len(id_list)):
+        if id_list[k] in series_ids:
+            num_in += 1
 
-def outside_control(insertion_node, tree, example_id, act_comp_dir, ref_insertion):
+    if num_in == len(id_list):
+        skip = True
+
+
+    return skip
+
+def outside_control(insertion_node, tree, example_id, act_comp_dir, ref_insertion, nice_ids_tot):
     ## This function identifies control isolates outside of insertion node and the regions
     ## to look at
 
     outside_isolates, ultimate_node = chains_of_isolates_plus_one(tree,example_id, insertion_node)
+    skip = all_presence_checker(outside_isolates, nice_ids_tot)
+    while skip and ultimate_node != "internal_ROOT":
+        outside_isolates, ultimate_node = chains_of_isolates_plus_one(tree,example_id,ultimate_node)
+
 
 
     lengths_of_izzys = {}
@@ -99,7 +133,8 @@ def outside_control(insertion_node, tree, example_id, act_comp_dir, ref_insertio
     finding_ref = True
 
     for ref in length_dict_sorted:
-
+        if ref in nice_ids_tot:
+            continue
 
         outside_iso = ref
 
@@ -717,7 +752,7 @@ def bounds_of_contig(contig_tab, contig_mge):
     return contig_bounds
 
 
-def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, reference_id, flanking_length, contig_loc):
+def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, reference_id, flanking_length, contig_loc, nice_ids_tot):
     ## Function to take in the reccy hits csv for a paticular cluster. Then work through the
     ## reccy hits and find the isolate with the fewest snps around the insertion site. This will
     ## then be output in the out_df along with the end and start points for the flanks to be taken
@@ -892,7 +927,7 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
 
         elif reference_presence == "Yes":
             cont_id, cont_start, cont_end = outside_control(insertion_node, tree, isolate_row, act_compos,
-                                                            ref_insert_list)
+                                                            ref_insert_list, nice_ids_tot)
 
             csv_ref_name = cont_id + "!" + mge_id
 
@@ -1306,12 +1341,14 @@ if __name__ == '__main__':
     out_dir = input_args.out_dir
     out_name = input_args.out_name
     contig_bounds = input_args.contig_bounds
-
+    prop_hits = input_args.proper_hits
     tot_flanks_csv = pandas.DataFrame()
 
     pyt_csv = pandas.read_csv(pyt_csv)
     reccy_hits = pandas.read_csv(reccy_hits)
+    proper_hits = pandas.read_csv(prop_hits)
 
+    nice_ids_tot = nice_proper_hits_ids(proper_hits.iloc[:,0].tolist())
 
     base_loc = input_args.gubbins_res
     unique_clusters = reccy_hits['cluster_name'].unique()

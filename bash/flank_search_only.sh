@@ -61,7 +61,8 @@ else
 
   python "${pythondir}blast_hits.py" --gubbins_res $7 --reccy_hits $reccy_csv \
       --hit_csv $hit_csv --act_compos $3 --flank_length $current_flanks --dna_dir $2 \
-      --out_dir "$4/$5_${current_flanks}_flanks" --out_name "$4/$5_${current_flanks}_flanks_extracted.csv" --contig_bounds $9
+      --out_dir "$4/$5_${current_flanks}_flanks" --out_name "$4/$5_${current_flanks}_flanks_extracted.csv" --contig_bounds $9 \
+    --proper_hits "$4/$5_proper_hits.csv"
 
 
     ls -d "$PWD/$4/$5_${current_flanks}_flanks/"*_whole_blast_seq.fasta* > "$4/$5_${current_flanks}_isolate_blast_list"
