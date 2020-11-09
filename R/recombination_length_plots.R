@@ -139,7 +139,7 @@ tot_csv <- NULL
 
 if(file.exists(gubbins_res)){
   gubbins_locs <- readLines(gubbins_res)
-  cat("This many clusters to work through:", length(gubbins_locs))
+  cat("This many clusters to work through:", length(gubbins_locs), "\n")
   start_time <- Sys.time()
   
   for(current_dir in gubbins_locs){
@@ -162,6 +162,7 @@ if(file.exists(gubbins_res)){
       
       tot_csv <- bind_rows(tot_csv, both_df)
     }else{
+      cat(reccy_gff, "\n")
       reccy_csv <- read.delim(reccy_gff,header = FALSE, comment.char = "#")
       colnames(reccy_csv) <- c("type","prog","class","start","end","trent","alexander","arnold","attribute")
       reccy_csv <- recombination_gff_cleaner(reccy_csv)
