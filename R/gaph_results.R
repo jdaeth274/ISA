@@ -326,11 +326,25 @@ folder_to_res <- function(results_folder, flanks_veccy, graph_name){
   
 }
 
+parse_args <- function(){
+  input_args <- commandArgs(trailingOnly = TRUE)
+  
+  if(length(input_args) != 3){
+    cat("Not enough arguments, need 3, you have:", length(input_args), "\n")
+    cat("Usage: Rscript --vanilla ./gaph_results.R <end flank length> <folder_of_flank_res> <pdf_out_file>")
+    stop()
+  }
+  
+  return(input_args)
+}
+
 ###############################################################################
 ## system arguments: 1: End flank length 
 ##                   2: Directory of blast results 
 ##                   3: pdf out 
-input_args <- commandArgs(trailingOnly = TRUE)
+
+
+input_args <- parse_args
 
 flanks_vec <- seq(500, as.integer(input_args[1]), 500)
 
