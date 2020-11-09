@@ -105,7 +105,7 @@ delim_reader <- function(delim_file){
   try({
     reccy_csv <- read.delim(reccy_gff,header = FALSE, comment.char = "#")
     colnames(reccy_csv) <- c("type","prog","class","start","end","trent","alexander","arnold","attribute")
-  })
+  }, silent = TRUE)
   return(reccy_csv)
 }
 
@@ -173,7 +173,7 @@ if(file.exists(gubbins_res)){
       
       tot_csv <- bind_rows(tot_csv, both_df)
     }else{
-      cat(reccy_gff, "\n") 
+      
       reccy_csv <- delim_reader(reccy_gff)
       if(class(reccy_csv) == "character"){
         next
