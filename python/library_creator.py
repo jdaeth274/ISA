@@ -2465,7 +2465,9 @@ if __name__ == '__main__':
 
         if cluster_name != "gpsc.43":
             continue
-
+        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+        print(isolate_id)
+        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
         act_map = False
         compo_ref = ref_name
         #print(cluster_name)
