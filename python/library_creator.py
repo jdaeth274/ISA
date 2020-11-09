@@ -2275,6 +2275,7 @@ def act_mapper(hit_before, hit_after, act_loc, current_insert_locs):
     ## first test if both are within a single hit likely from an insertion away form where mge is within reference
 
     single_hit = compo_table[(compo_table['qstart'] <= current_insert_locs[0]) & (compo_table['qend'] >= current_insert_locs[1])]
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~ SINGLE HIT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
     print(single_hit)
     if single_hit.empty:
         ## Maybe this represent the insertion of the mge in the element too so lets look for hits either side
