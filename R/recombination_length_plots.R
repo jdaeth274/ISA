@@ -100,11 +100,29 @@ reccy_combiner <- function(whole_csv, mge_csv){
   return(df_both)
 }
 
+input_checker <- function(){
+  input_args <- commandArgs(trailingOnly = TRUE)
+  
+  if(length(input_args) != 4){
+    cat("Incorrect number of files, this requires 4, you have:", length(input_args))
+    cat("Usage: Rscript --vanilla ./recombination_length_plots.R <gubbins_dirs> <reccy_csv> <mge_name> <out_prefix>")
+    stop()
+  }else{
+    if(!(file.exists(input_args[2]))){
+      cat("The input reccy csv doesn't exist")
+      cat("Usage: Rscript --vanilla ./recombination_length_plots.R <gubbins_dirs> <reccy_csv> <mge_name> <out_prefix>")
+      stop()
+    }
+    
+    return(input_args)
+  }
+}
+
 ###############################################################################
 ## BEGIN ######################################################################
 ###############################################################################
 
-input_args <- commandArgs(trailingOnly = TRUE)
+input_args <- input_checker()
 
 gubbins_res <- input_args[1]#"~/Dropbox/phd/insertion_site_analysis/data/pmen_run/"
 reccy_hits <- read.csv(input_args[2],
@@ -125,9 +143,9 @@ if(file.exists(gubbins_res)){
   start_time <- Sys.time()
   
   for(current_dir in gubbins_locs){
-    tic(paste("curating cluster:", cluster))
     cluster <- basename(current_dir)
     cluster <- sub("_run_data","",cluster)
+    tic(paste("curating cluster:", cluster))
     gubb_files <- list.files(current_dir, full.names = TRUE)
     reccy_gff <- gubb_files[grep(".recombination_predictions.gff", gubb_files)]
     narrowed_hits_df <- reccy_hits[reccy_hits$cluster_name == cluster,]
