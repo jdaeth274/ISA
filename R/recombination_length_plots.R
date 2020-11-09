@@ -247,6 +247,8 @@ print(sum_up_by_MGE)
 
 dev.off()
 
+write.csv(tot_csv, file = out_csv_file_name, row.names = FALSE, quote = FALSE)
+
 toc()
 end_time <- Sys.time()
 cat("Finished in", (end_time - start_time))
