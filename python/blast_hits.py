@@ -117,12 +117,15 @@ def outside_control(insertion_node, tree, example_id, act_comp_dir, ref_insertio
 
     outside_isolates, ultimate_node = chains_of_isolates_plus_one(tree,example_id, insertion_node)
     skip = all_presence_checker(outside_isolates, nice_ids_tot)
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~ in the outside iso ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+    print(skip)
+    print(ultimate_node)
     while skip and ultimate_node != "internal_ROOT":
         outside_isolates, ultimate_node = chains_of_isolates_plus_one(tree,example_id,ultimate_node)
         skip = all_presence_checker(outside_isolates, nice_ids_tot)
         print("~~~~~~~~~~~~~~~~~~~~~~~~~~ in the while loop ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
         print(skip)
-        
+
 
 
 
