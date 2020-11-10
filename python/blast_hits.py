@@ -117,15 +117,11 @@ def outside_control(insertion_node, tree, example_id, act_comp_dir, ref_insertio
 
     outside_isolates, ultimate_node = chains_of_isolates_plus_one(tree,example_id, insertion_node)
     skip = all_presence_checker(outside_isolates, nice_ids_tot)
-    print("~~~~~~~~~~~~~~~~~~~~~~~~~~ in the outside iso ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-    print(skip)
-    print(ultimate_node)
+
     while skip and ultimate_node != "internal_ROOT":
         outside_isolates, ultimate_node = chains_of_isolates_plus_one(tree,example_id,ultimate_node)
         skip = all_presence_checker(outside_isolates, nice_ids_tot)
-        print("~~~~~~~~~~~~~~~~~~~~~~~~~~ in the while loop ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-        print(skip)
-
+    
     if skip == True:
         return 0, False, False
 
@@ -986,7 +982,7 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
     if len(isolate_id) == 0:
         return  "no", "no", "no"
 
-    
+
     out_df['isolate_id'] = pandas.Series(data=isolate_id)
     out_df['mge_start'] = pandas.Series(data=mge_bef, index=out_df.index)
     out_df['mge_end'] = pandas.Series(data=mge_aft, index=out_df.index)
