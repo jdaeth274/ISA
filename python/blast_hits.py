@@ -126,6 +126,8 @@ def outside_control(insertion_node, tree, example_id, act_comp_dir, ref_insertio
         print("~~~~~~~~~~~~~~~~~~~~~~~~~~ in the while loop ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
         print(skip)
 
+    if skip == True:
+        return 0, False, False
 
 
 
@@ -935,6 +937,9 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
         elif reference_presence == "Yes":
             cont_id, cont_start, cont_end = outside_control(insertion_node, tree, isolate_row, act_compos,
                                                             ref_insert_list, nice_ids_tot)
+            if isinstance(cont_id, int):
+                print("Can't extract control for this isolate, skipping: %s" % mge_id)
+                continue
 
             csv_ref_name = cont_id + "!" + mge_id
 
@@ -978,7 +983,10 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
         insert_start.append(mge_deets.iloc[0, 3])
         insert_end.append(mge_deets.iloc[0, 4])
 
+    if len(isolate_id) == 0:
+        return  "no", "no", "no"
 
+    
     out_df['isolate_id'] = pandas.Series(data=isolate_id)
     out_df['mge_start'] = pandas.Series(data=mge_bef, index=out_df.index)
     out_df['mge_end'] = pandas.Series(data=mge_aft, index=out_df.index)
@@ -1388,6 +1396,8 @@ if __name__ == '__main__':
         flanks_csv, regions_bef, regions_aft = isolate_narrow(current_dat, current_pyt, tree, embl_reccy_csv,
                                                               branch_mutations, current_ref_name, flanking_length,
                                                               contig_bounds, nice_ids_tot)
+        if isinstance(flanks_csv, str):
+            continue
 
         extract_flanks = extracting_flanks(flanks_csv, out_dir,current_ref_name, fasta_directory, regions_bef, regions_aft)
 
