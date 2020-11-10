@@ -121,7 +121,7 @@ def outside_control(insertion_node, tree, example_id, act_comp_dir, ref_insertio
     while skip and ultimate_node != "internal_ROOT":
         outside_isolates, ultimate_node = chains_of_isolates_plus_one(tree,example_id,ultimate_node)
         skip = all_presence_checker(outside_isolates, nice_ids_tot)
-    
+
     if skip == True:
         return 0, False, False
 
@@ -896,7 +896,7 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
                                                isolate_examp=isolate_row,
                                                reference=reference_id)
 
-        if reference_presence == "No":
+        if reference_presence == "No" and reference_id not in nice_ids_tot:
             csv_ref_name = "ref" + "!" + mge_id
 
             control_id.append(csv_ref_name)
@@ -930,7 +930,7 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
 
 
 
-        elif reference_presence == "Yes":
+        elif reference_presence == "Yes" or reference_id in nice_ids_tot:
             cont_id, cont_start, cont_end = outside_control(insertion_node, tree, isolate_row, act_compos,
                                                             ref_insert_list, nice_ids_tot)
             if isinstance(cont_id, int):

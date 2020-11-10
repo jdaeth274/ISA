@@ -18,6 +18,7 @@ graph_getter <- function(dir_to_files,graph_name){
   }
   summo_csv_file <- list.files(dir_to_files, pattern = "*species_compo*")
   summary_csv <- paste(dir_to_files, summo_csv_file,sep = "")
+
   summo_csv <- read.csv(summary_csv, stringsAsFactors = FALSE)
   
   blast_results <- list.files(dir_to_files, pattern = "*list*.csv")
@@ -170,7 +171,7 @@ series_display <- function(list_of_results, prefix, flanks_vector, cluster, regi
                           "region","sd_1","sd_2", "sd_3")
   
   ## for references flank has to be repped 6 times before input. 
-  graph_df$flank <- flanks_vector
+  graph_df$flank <- rep(flanks_vector, each = 2)
   graph_df$cluster <- rep(cluster, nrow(graph_df))
   new_regions <- paste(region, "Control")
   regionz <- rep("ND", length(region)*2)
@@ -274,7 +275,7 @@ series_display <- function(list_of_results, prefix, flanks_vector, cluster, regi
   
 }
 
-folder_to_res <- function(results_folder, flanks_veccy, graph_name){
+folder_to_res <- function(results_folder, graph_name){
   ## Function to take in the output from the flanks_only_search and output the over flanks graphs 
   ## Results folder should be the main run folder, flanks veccy the main 
 
@@ -287,9 +288,10 @@ folder_to_res <- function(results_folder, flanks_veccy, graph_name){
   ## whole blast res 
   tic("Running whole flanks sum up")
   pmen3_list <- list()
-  
-  for(k in whole_blast_res){
+  flanks_veccy <- sub("_blast_results","",basename(whole_blast_res))
 
+  for(k in whole_blast_res){
+    #next
     current_graphed_res <- graph_getter(k, graph_name)
     pmen3_list[[length(pmen3_list) + 1]] <- current_graphed_res
     
@@ -300,8 +302,9 @@ folder_to_res <- function(results_folder, flanks_veccy, graph_name){
   ## before blast res 
   tic("Before flanks sum up")
   pmen3_list_bef <- list()
-  
+  flanks_veccy <- sub("_before_flank_blast_res","",basename(whole_blast_res))
   for(k in before_blast_res){
+    #next
     current_graphed_res <- graph_getter(k, graph_name)
     pmen3_list_bef[[length(pmen3_list_bef) + 1]] <- current_graphed_res
     
@@ -314,9 +317,9 @@ folder_to_res <- function(results_folder, flanks_veccy, graph_name){
   ## after blast res 
   tic("After flanks sum up")
   pmen3_list_aft <- list()
-  
+  flanks_veccy <- sub("_after_flank_blast_res","",basename(whole_blast_res))
   for(k in after_blast_res){
-
+    
     current_graphed_res <- graph_getter(k, graph_name)
     pmen3_list_aft[[length(pmen3_list_aft) + 1]] <- current_graphed_res
     
@@ -335,7 +338,7 @@ parse_args <- function(){
   if(length(input_args) != 3){
     cat("Not enough arguments, need 3, you have:", length(input_args), "\n")
     cat("\n")
-    cat("Usage: Rscript --vanilla ./gaph_results.R <end flank length> <folder_of_flank_res> <pdf_out_file>")
+    cat("Usage: Rscript --vanilla ./gaph_results.R <Graph name> <folder_of_flank_res> <pdf_out_file>")
     cat("\n")
     cat("\n")
     stop("Not enough input files")
@@ -345,18 +348,17 @@ parse_args <- function(){
 }
 
 ###############################################################################
-## system arguments: 1: End flank length 
+## system arguments: 1: Graph name 
 ##                   2: Directory of blast results 
 ##                   3: pdf out 
 
 
 input_args <- parse_args()
 
-flanks_vec <- seq(500, as.integer(input_args[1]), 500)
+graph_name <- input_args[1]
 
 pmen_mega_res <- folder_to_res(results_folder = input_args[2],
-                               flanks_veccy = flanks_vec, 
-                               graph_name = "PMEN MEGA")
+                               graph_name = graph_name)
 
 pdf(file = input_args[3], paper = "a4r", width = 12, height = 7)
 
