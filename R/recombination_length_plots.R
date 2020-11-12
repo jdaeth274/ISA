@@ -13,7 +13,7 @@ require(ggplot2, quietly = TRUE)
 require(dplyr, quietly = TRUE)
 require(tictoc, quietly = TRUE)
 require(tools, quietly = TRUE)
-
+require("cowplot", quietly = TRUE)
 ###############################################################################
 ## FUNCTIONS ##################################################################
 ###############################################################################
@@ -261,7 +261,7 @@ compo_dot_plot_log_mges <- compo_dot_plot_mges + scale_x_log10(limits = c(1,1e5)
 sum_up_by_MGE <- ggarrange(histo_mges_length, histo_mges, compo_dot_plot_log_mges,
                            ncol = 1, nrow = 3, align = "hv")
 
-library("cowplot")
+
 ggdraw() +
   draw_plot(histo_mges_length, x = 0, y = .5, width = .5, height = .5) +
   draw_plot(histo_mges, x = .5, y = .5, width = .5, height = .5) +
@@ -276,7 +276,13 @@ print(sum_up_by_MGE)
 dev.off()
 
 png(filename = out_png_name, width = 17, height = 18, units = "cm", res = 1000)
-print(sum_up_by_MGE)
+ggdraw() +
+  draw_plot(histo_mges_length, x = 0, y = .5, width = .5, height = .5) +
+  draw_plot(histo_mges, x = .5, y = .5, width = .5, height = .5) +
+  draw_plot(compo_dot_plot_log_mges, x = 0, y = 0, width = 1, height = 0.5) +
+  draw_plot_label(label = c("A", "B", "C"), size = 15,
+                  x = c(0, 0.5, 0), y = c(1, 1, 0.5))
+
 dev.off()
 
 
