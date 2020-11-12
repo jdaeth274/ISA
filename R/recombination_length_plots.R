@@ -285,7 +285,7 @@ compo_dot_plot_mges <- ggplot(data = tot_csv) + geom_point(aes(x = length, y = d
   scale_fill_discrete(breaks = c("Yes","No"))
 
 
-compo_dot_plot_log_mges <- compo_dot_plot_mges + scale_x_log10(limits = c(1,1e5)) + scale_y_log10(limits = c(0.001, 1)) +
+compo_dot_plot_log_mges <- compo_dot_plot_mges + scale_x_log10(limits = c(1,1e5)) + scale_y_log10(limits = c(0.0001, 1)) +
   labs( y = "Density", x = "Bases") + 
   stat_density2d(aes(x = length, y = density)) 
 
