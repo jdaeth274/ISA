@@ -267,7 +267,7 @@ print(sum_up_by_MGE)
 
 dev.off()
 
-png(filename = out_png_name, width = 17, height = 18, units = "cm")
+png(filename = out_png_name, width = 17, height = 18, units = "cm", res = 1000)
 print(sum_up_by_MGE)
 dev.off()
 
