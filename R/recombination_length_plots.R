@@ -165,7 +165,7 @@ out_csv_name <- paste(out_name, ".csv", sep = "")
 ## element in them, if its a file run through all the listed gubbins dirs 
 tot_csv <- NULL
 
-if(file.exists(gubbins_res)){
+if(!(dir.exists(gubbins_res))){
   gubbins_locs <- readLines(gubbins_res)
   cat("This many clusters to work through:", length(gubbins_locs), "\n")
   start_time <- Sys.time()
@@ -260,6 +260,14 @@ compo_dot_plot_log_mges <- compo_dot_plot_mges + scale_x_log10(limits = c(1,1e5)
 
 sum_up_by_MGE <- ggarrange(histo_mges_length, histo_mges, compo_dot_plot_log_mges,
                            ncol = 1, nrow = 3, align = "hv")
+
+library("cowplot")
+ggdraw() +
+  draw_plot(histo_mges_length, x = 0, y = .5, width = .5, height = .5) +
+  draw_plot(histo_mges, x = .5, y = .5, width = .5, height = .5) +
+  draw_plot(compo_dot_plot_log_mges, x = 0, y = 0, width = 1, height = 0.5) +
+  draw_plot_label(label = c("A", "B", "C"), size = 15,
+                  x = c(0, 0.5, 0), y = c(1, 1, 0.5))
 
 pdf(file = out_pdf_file, paper = "a4r", width = 11, height = 7)
 print(compo_dot_plot_log_mges)
