@@ -278,23 +278,28 @@ histo_mges_length <- ggplot(data = tot_csv) + geom_histogram(aes(tot_csv$length,
                                                                  fill = MGE), alpha = 1,
                                                              colour = "black") +
   scale_x_log10(limits = c(1, 1e5)) + scale_y_log10() +
-  labs( y = "Count", x = "Bases")
+  labs( y = "Count", x = "Bases") + scale_fill_discrete(breaks = c("Yes","No")) + theme(legend.position = "none")
 
-compo_dot_plot_mges <- ggplot(data = tot_csv) + geom_point(aes(x = length, y = density, colour = MGE, alpha = MGE))
+compo_dot_plot_mges <- ggplot(data = tot_csv) + geom_point(aes(x = length, y = density, colour = MGE, alpha = MGE, fill = MGE)) + 
+  scale_colour_discrete(breaks = c("Yes","No")) + scale_alpha_manual(values = c("Yes" = 1,"No" = 0.05), breaks = c("Yes","No")) +
+  scale_fill_discrete(breaks = c("Yes","No"))
+
 
 compo_dot_plot_log_mges <- compo_dot_plot_mges + scale_x_log10(limits = c(1,1e5)) + scale_y_log10(limits = c(0.001, 1)) +
   labs( y = "Density", x = "Bases") + 
-  stat_density2d(aes(x = length, y = density))
-
+  stat_density2d(aes(x = length, y = density)) 
 
 
 png(filename = out_png_name, width = 17, height = 15, units = "cm", res = 1000)
-ggdraw() +
-  draw_plot(histo_mges_length, x = 0, y = .5, width = .5, height = .5) +
-  draw_plot(histo_mges, x = .5, y = .5, width = .5, height = .5) +
-  draw_plot(compo_dot_plot_log_mges, x = 0, y = 0, width = 1, height = 0.5) +
-  draw_plot_label(label = c("A", "B", "C"), size = 15,
-                  x = c(0, 0.5, 0), y = c(1, 1, 0.5))
+# ggdraw() +
+#   draw_plot(histo_mges_length, x = 0, y = .5, width = .5, height = .5) +
+#   draw_plot(histo_mges, x = .5, y = .5, width = .5, height = .5) +
+#   draw_plot(compo_dot_plot_log_mges, x = 0, y = 0, width = 1, height = 0.5) +
+#   draw_plot_label(label = c("A", "B", "C"), size = 15,
+#                   x = c(0, 0.5, 0), y = c(1, 1, 0.5))
+ggarrange(compo_dot_plot_log_mges,
+          ggarrange(histo_mges, histo_mges_length, ncol = 2, labels = c("B", "C")),
+          nrow = 2, labels = "A", common.legend = TRUE, legend = "bottom") 
 
 dev.off()
 
