@@ -262,20 +262,33 @@ sum_up_by_MGE <- ggarrange(histo_mges_length, histo_mges, compo_dot_plot_log_mge
                            ncol = 1, nrow = 3, align = "hv")
 
 
-ggdraw() +
-  draw_plot(histo_mges_length, x = 0, y = .5, width = .5, height = .5) +
-  draw_plot(histo_mges, x = .5, y = .5, width = .5, height = .5) +
-  draw_plot(compo_dot_plot_log_mges, x = 0, y = 0, width = 1, height = 0.5) +
-  draw_plot_label(label = c("A", "B", "C"), size = 15,
-                  x = c(0, 0.5, 0), y = c(1, 1, 0.5))
-
 pdf(file = out_pdf_file, paper = "a4r", width = 11, height = 7)
 print(compo_dot_plot_log_mges)
 print(sum_up_by_MGE)
 
 dev.off()
 
-png(filename = out_png_name, width = 17, height = 18, units = "cm", res = 1000)
+histo_mges <- ggplot(data = tot_csv) + geom_histogram(aes(tot_csv$density,
+                                                          fill = MGE), alpha  = 1,
+                                                      colour = "black") +
+  scale_x_log10(limits = c(0.0001, 1)) + scale_y_log10()+
+  labs(y = "Count", x = "Density")
+
+histo_mges_length <- ggplot(data = tot_csv) + geom_histogram(aes(tot_csv$length,
+                                                                 fill = MGE), alpha = 1,
+                                                             colour = "black") +
+  scale_x_log10(limits = c(1, 1e5)) + scale_y_log10() +
+  labs( y = "Count", x = "Bases")
+
+compo_dot_plot_mges <- ggplot(data = tot_csv) + geom_point(aes(x = length, y = density, colour = MGE, alpha = MGE))
+
+compo_dot_plot_log_mges <- compo_dot_plot_mges + scale_x_log10(limits = c(1,1e5)) + scale_y_log10(limits = c(0.001, 1)) +
+  labs( y = "Density", x = "Bases") + 
+  stat_density2d(aes(x = length, y = density))
+
+
+
+png(filename = out_png_name, width = 17, height = 15, units = "cm", res = 1000)
 ggdraw() +
   draw_plot(histo_mges_length, x = 0, y = .5, width = .5, height = .5) +
   draw_plot(histo_mges, x = .5, y = .5, width = .5, height = .5) +
