@@ -272,7 +272,7 @@ histo_mges <- ggplot(data = tot_csv) + geom_histogram(aes(tot_csv$density,
                                                           fill = MGE), alpha  = 1,
                                                       colour = "black") +
   scale_x_log10(limits = c(0.0001, 1)) + scale_y_log10()+
-  labs(y = "Count", x = "Density")
+  labs(y = "Count", x = "Density") + theme(legend.position = "none")
 
 histo_mges_length <- ggplot(data = tot_csv) + geom_histogram(aes(tot_csv$length,
                                                                  fill = MGE), alpha = 1,
