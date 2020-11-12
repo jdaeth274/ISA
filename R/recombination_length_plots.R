@@ -158,6 +158,7 @@ mge_name <- input_args[3]
 out_name <- input_args[4]#"~/Dropbox/phd/insertion_site_analysis/pmen_mega_lib_updated_flanks/pmen_mega_recombination_length.pdf"
 
 out_pdf_file <- paste(out_name, ".pdf", sep = "")
+out_png_name <- paste(out_name, ".png", sep = "")
 out_csv_name <- paste(out_name, ".csv", sep = "")
 
 ## If input args one is just a directory run through the hits with the 
@@ -264,6 +265,10 @@ pdf(file = out_pdf_file, paper = "a4r", width = 11, height = 7)
 print(compo_dot_plot_log_mges)
 print(sum_up_by_MGE)
 
+dev.off()
+
+png(filename = out_png_name, width = 17, height = 18, units = "cm")
+print(sum_up_by_MGE)
 dev.off()
 
 

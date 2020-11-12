@@ -20,7 +20,6 @@ graph_getter <- function(dir_to_files,graph_name){
   summary_csv <- paste(dir_to_files, summo_csv_file,sep = "")
 
   summo_csv <- read.csv(summary_csv, stringsAsFactors = FALSE)
-  
   blast_results <- list.files(dir_to_files, pattern = "*list*.csv")
   
   counted_summo <- plyr::count(summo_csv$insertion_point)  
@@ -170,6 +169,7 @@ series_display <- function(list_of_results, prefix, flanks_vector, cluster, regi
   colnames(graph_df) <- c("weighted_bit","ranked_pneumo","bit_pneumo","cluster","flank",
                           "region","sd_1","sd_2", "sd_3")
   
+  graph_df2 <- NULL
   ## for references flank has to be repped 6 times before input. 
   graph_df$flank <- rep(flanks_vector, each = 2)
   graph_df$cluster <- rep(cluster, nrow(graph_df))
@@ -195,7 +195,9 @@ series_display <- function(list_of_results, prefix, flanks_vector, cluster, regi
     current_res <- list_of_results[[k]]
     if(cluster == "total"){
       data_set <- current_res$total
+      data_set2 <- current_res$by_insertion
       ref_ids <- grep("!", data_set$isolate)
+      ref_ids2 <- grep("!", data_set2$isolate)
       
       
       graph_df$weighted_bit[current_k] <- mean(data_set$weighted_bit[-ref_ids])
@@ -211,6 +213,11 @@ series_display <- function(list_of_results, prefix, flanks_vector, cluster, regi
       graph_df$sd_2[current_k+ 1] <- stats::sd(data_set$ranked_pneumo[ref_ids])
       graph_df$bit_pneumo[current_k+ 1] <- mean(data_set$bit_pneumo[ref_ids])
       graph_df$sd_3[current_k+ 1] <- stats::sd(data_set$bit_pneumo[ref_ids])
+      
+      graphing_rows <- data_set2[,c("isolate","bit_pneumo", "insertion_loci")]
+      graphing_rows$control <- "Actual"
+      graphing_rows$control[ref_ids2] <- "Control"
+      graph_df2 <- bind_rows(graph_df2, graphing_rows)
       
       
     }else{
@@ -270,7 +277,7 @@ series_display <- function(list_of_results, prefix, flanks_vector, cluster, regi
   }
   
   return(list(graph_data = graph_df, weighted_plot = compo_plot_weighted,
-              ranked_plot = compo_plot_ranked, pneumo_plot = compo_plot_pneumo))
+              ranked_plot = compo_plot_ranked, pneumo_plot = compo_plot_pneumo, total_df = graph_df2))
   
   
 }
@@ -288,8 +295,8 @@ folder_to_res <- function(results_folder, graph_name){
   ## whole blast res 
   tic("Running whole flanks sum up")
   pmen3_list <- list()
-  flanks_veccy <- sub("_blast_results","",basename(whole_blast_res))
-
+  flanks_veccy <- as.integer(sub("_blast_results","",basename(whole_blast_res)))
+  
   for(k in whole_blast_res){
     #next
     current_graphed_res <- graph_getter(k, graph_name)
@@ -302,7 +309,7 @@ folder_to_res <- function(results_folder, graph_name){
   ## before blast res 
   tic("Before flanks sum up")
   pmen3_list_bef <- list()
-  flanks_veccy <- sub("_before_flank_blast_res","",basename(whole_blast_res))
+  flanks_veccy <- as.integer(sub("_before_flank_blast_res","",basename(before_blast_res)))
   for(k in before_blast_res){
     #next
     current_graphed_res <- graph_getter(k, graph_name)
@@ -317,7 +324,7 @@ folder_to_res <- function(results_folder, graph_name){
   ## after blast res 
   tic("After flanks sum up")
   pmen3_list_aft <- list()
-  flanks_veccy <- sub("_after_flank_blast_res","",basename(whole_blast_res))
+  flanks_veccy <- as.integer(sub("_after_flank_blast_res","",basename(after_blast_res)))
   for(k in after_blast_res){
     
     current_graphed_res <- graph_getter(k, graph_name)
@@ -359,6 +366,12 @@ graph_name <- input_args[1]
 
 pmen_mega_res <- folder_to_res(results_folder = input_args[2],
                                graph_name = graph_name)
+
+
+whole_df <- pmen_mega_res$whole_res$total_df
+
+boxplot_whole <- ggplot(data = whole_df,aes(x = control, y = bit_pneumo)) + geom_boxplot() 
+
 
 pdf(file = input_args[3], paper = "a4r", width = 12, height = 7)
 
