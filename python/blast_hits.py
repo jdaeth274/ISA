@@ -804,6 +804,7 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
         end_node_to_reccy = current_row['end_nodes']
         ref_insert_start = current_row['start_insert']
         ref_insert_end = current_row['end_insert']
+        current_insert_name = current_row['insert_name']
 
         ref_insert_list = [ref_insert_start, ref_insert_end]
 
@@ -822,13 +823,18 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
             august_isolate = nodes_from_insertion[l]
             if pyt_csv['id'].isin([august_isolate]).any():
                 pyt_row = pyt_csv[pyt_csv['id'] == august_isolate]
-                starts = pyt_row[['before_sstart', 'before_send']]
-                ends = pyt_row[['after_sstart', 'after_send']]
-                starts_span = abs(starts.iloc[0, 1] - starts.iloc[0, 0])
-                ends_span = abs(ends.iloc[0, 1] - ends.iloc[0, 0])
-                total_span = starts_span + ends_span
-                expansio.append(total_span)
-                mge_isolates.append(august_isolate)
+
+                if pyt_row['insert_name'].isin([current_insert_name]).any():
+                    starts = pyt_row[['before_sstart', 'before_send']]
+                    ends = pyt_row[['after_sstart', 'after_send']]
+                    starts_span = abs(starts.iloc[0, 1] - starts.iloc[0, 0])
+                    ends_span = abs(ends.iloc[0, 1] - ends.iloc[0, 0])
+                    total_span = starts_span + ends_span
+                    expansio.append(total_span)
+                    mge_isolates.append(august_isolate)
+                else:
+                    
+                    expansio.append(1)
 
             else:
                 expansio.append(1)
