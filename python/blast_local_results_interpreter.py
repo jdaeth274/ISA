@@ -81,8 +81,11 @@ if __name__ == '__main__':
         species.append(spec)
 
     bassy_name = os.path.basename(input_args.results_csv)
-    bassy_name = re.split("_",bassy_name, maxsplit=2)[:2]
-    bassy_name = bassy_name[0] + "_" + bassy_name[1]
+    if bassy_name.__contains__("!"):
+        bassy_name = re.split("_control",bassy_name, maxsplit=2)[:1]
+    else:
+        bassy_name = re.split("_",bassy_name, maxsplit=2)[:2]
+        bassy_name = bassy_name[0] + "_" + bassy_name[1]
 
 
     output_df = pandas.DataFrame()
