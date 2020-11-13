@@ -833,7 +833,7 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
                     expansio.append(total_span)
                     mge_isolates.append(august_isolate)
                 else:
-                    
+
                     expansio.append(1)
 
             else:
@@ -1285,8 +1285,8 @@ def extracting_flanks(out_df, out_dir, ref_name, fasta_directory, regions_bef, r
 
 
         if sum(out_df['isolate_id'].str.count(current_id)) > 1:
-            current_id = current_id + "_NUM_" + posdnuos
-            current_control_id = current_control_id + "_NUM_" + posdnuos
+            current_id = current_id + "_NUM_" + str(posdnuos)
+            current_control_id = current_control_id + "_NUM_" + str(posdnuos)
 
 
         new_blast_file = out_dir + "/" + current_id + "_whole_blast_seq.fasta"
