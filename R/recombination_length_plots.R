@@ -268,16 +268,19 @@ print(sum_up_by_MGE)
 
 dev.off()
 
+tot_csv <- read.csv("~/Dropbox/phd/insertion_site_analysis/data/gps_run_data/gps_recombination_lengths.csv",
+                    stringsAsFactors = FALSE)
+
 histo_mges <- ggplot(data = tot_csv) + geom_histogram(aes(tot_csv$density,
                                                           fill = MGE), alpha  = 1,
                                                       colour = "black") +
-  scale_x_log10(limits = c(0.0001, 1)) + scale_y_log10()+
+  scale_x_log10(limits = c(0.0001, 0.1)) + scale_y_log10()+
   labs(y = "Count", x = "Density") + theme(legend.position = "none")
 
 histo_mges_length <- ggplot(data = tot_csv) + geom_histogram(aes(tot_csv$length,
                                                                  fill = MGE), alpha = 1,
                                                              colour = "black") +
-  scale_x_log10(limits = c(1, 1e5)) + scale_y_log10() +
+  scale_x_log10(limits = c(10, 1e6)) + scale_y_log10() +
   labs( y = "Count", x = "Bases") + scale_fill_discrete(breaks = c("Yes","No")) + theme(legend.position = "none")
 
 compo_dot_plot_mges <- ggplot(data = tot_csv) + geom_point(aes(x = length, y = density, colour = MGE, alpha = MGE, fill = MGE)) + 
@@ -285,7 +288,7 @@ compo_dot_plot_mges <- ggplot(data = tot_csv) + geom_point(aes(x = length, y = d
   scale_fill_discrete(breaks = c("Yes","No"))
 
 
-compo_dot_plot_log_mges <- compo_dot_plot_mges + scale_x_log10(limits = c(1,1e5)) + scale_y_log10(limits = c(0.0001, 1)) +
+compo_dot_plot_log_mges <- compo_dot_plot_mges + scale_x_log10(limits = c(10,1e6)) + scale_y_log10(limits = c(0.0001, 0.1)) +
   labs( y = "Density", x = "Bases") + 
   stat_density2d(aes(x = length, y = density)) 
 

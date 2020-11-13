@@ -884,10 +884,28 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
                 branch_muts += mut_changes
                 total_life_forever.append(reccy_muts + branch_muts)
 
+
+
         mge_seq_to_look_at = total_life_forever.index(min(total_life_forever))
         snp_count_indiv = min(total_life_forever)
         mge_id = mge_isolates[mge_seq_to_look_at]
+        orig_mge_id = mge_id
+        orig_snp_count = snp_count_indiv
+        while mge_id in isolate_id:
+            total_life_forever.remove(snp_count_indiv)
+            mge_isolates.remove(mge_id)
+            if len(mge_isolates) == 0:
+                mge_id = orig_mge_id
+                snp_count_indiv = orig_snp_count
+                break
+            mge_seq_to_look_at = total_life_forever.index(min(total_life_forever))
+            snp_count_indiv = min(total_life_forever)
+            mge_id = mge_isolates[mge_seq_to_look_at]
+
+
+
         mge_deets = pyt_csv[pyt_csv['id'] == mge_id]
+
 
         ## Check if reference among the tips for this node insertion.
 
@@ -1260,7 +1278,9 @@ def extracting_flanks(out_df, out_dir, ref_name, fasta_directory, regions_bef, r
                         sys.exit("No DNA file for this control isolate:")
 
 
-
+        if sum(out_df['isolate_id'].str.count(current_id)) > 1:
+            current_id = current_id + "_NUM_" + posdnuos
+            current_control_id = current_control_id + "_NUM_" + posdnuos
 
 
         new_blast_file = out_dir + "/" + current_id + "_whole_blast_seq.fasta"

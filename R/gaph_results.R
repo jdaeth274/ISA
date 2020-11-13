@@ -6,6 +6,7 @@ require(ggplot2, quietly = TRUE)
 require(stringr, quietly = TRUE)
 require(ggpubr, quietly = TRUE)
 require(tictoc, quietly = TRUE)
+require(dplyr, quietly = TRUE)
 
 graph_getter <- function(dir_to_files,graph_name){
   
@@ -31,9 +32,10 @@ graph_getter <- function(dir_to_files,graph_name){
   #############################################################################
   
   for(k in 1:nrow(counted_summo)){
+    #browser()
     current_insertion <- as.character(counted_summo[k, 1])
     subsetted_data <- summo_csv[summo_csv$insertion_point == current_insertion,]
-    
+    print(current_insertion)
     if(k == 1){
       results_df <- bitscore_res(subsetted_data, blast_results,
                                  current_insertion, dir_to_files)
@@ -83,7 +85,7 @@ graph_getter <- function(dir_to_files,graph_name){
 
 bitscore_res <- function(data_subset, blast_res_list, insertion_loci, dir_to_files){
   
-  
+  #browser()
   isolate_file <- paste(data_subset$isolate, "_species_list.csv",sep = "")
   files_to_open <- blast_res_list[which(blast_res_list %in% isolate_file)]
   files_to_open <- paste(dir_to_files, files_to_open, sep = "")
@@ -282,7 +284,7 @@ series_display <- function(list_of_results, prefix, flanks_vector, cluster, regi
   
 }
 
-folder_to_res <- function(results_folder, graph_name){
+folder_to_res <- function(results_folder, graph_name, insert_name){
   ## Function to take in the output from the flanks_only_search and output the over flanks graphs 
   ## Results folder should be the main run folder, flanks veccy the main 
 
@@ -304,7 +306,7 @@ folder_to_res <- function(results_folder, graph_name){
     
   }
   
-  pmen3_mega_total <- series_display(pmen3_list, graph_name, flanks_veccy, "total")
+  pmen3_mega_total <- series_display(pmen3_list, graph_name, flanks_veccy, insert_name)
   toc()
   ## before blast res 
   tic("Before flanks sum up")
@@ -318,7 +320,7 @@ folder_to_res <- function(results_folder, graph_name){
   }
   
   before_name <- paste(graph_name, "before flanks")
-  pmen3_mega_before <- series_display(pmen3_list_bef, before_name, flanks_veccy, "total")
+  pmen3_mega_before <- series_display(pmen3_list_bef, before_name, flanks_veccy, insert_name)
   toc()
   
   ## after blast res 
@@ -333,7 +335,7 @@ folder_to_res <- function(results_folder, graph_name){
   }
   
   after_name <- paste(graph_name, "after flanks")
-  pmen3_mega_after <- series_display(pmen3_list_aft, after_name, flanks_veccy, "total")
+  pmen3_mega_after <- series_display(pmen3_list_aft, after_name, flanks_veccy, insert_name)
   toc()
   return(list(whole_res = pmen3_mega_total, before_res = pmen3_mega_before, after_res = pmen3_mega_after))
   
@@ -365,12 +367,17 @@ input_args <- parse_args()
 graph_name <- input_args[1]
 
 pmen_mega_res <- folder_to_res(results_folder = input_args[2],
-                               graph_name = graph_name)
+                               graph_name = graph_name,
+                               insert_name = "total")
 
 
 whole_df <- pmen_mega_res$whole_res$total_df
 
 boxplot_whole <- ggplot(data = whole_df,aes(x = control, y = bit_pneumo)) + geom_boxplot() 
+
+#violin_plot_whole <- 
+
+
 
 
 pdf(file = input_args[3], paper = "a4r", width = 12, height = 7)
