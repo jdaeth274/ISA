@@ -118,8 +118,7 @@ else
         blastn -db $db_loc -query $coffee -out "$4/${current_flanks}_blast_results/$namo".csv \
         -outfmt "10 qesqid sseqid qstart qend sstart send pident length evalue bitscore"
 
-        python "${pythondir}blast_local_results_interpreter.py" \
-        --results_csv "$4/${current_flanks}_blast_results/$namo".csv --out_dir "$4/${current_flanks}_blast_results/"
+
 
 
       done < $el_nuevo_fazza
@@ -133,8 +132,7 @@ else
         blastn -db $db_loc -query $coffee -out "$4/${current_flanks}_before_flank_blast_res/$namo".csv \
         -outfmt "10 qesqid sseqid qstart qend sstart send pident length evalue bitscore"
 
-        python "${pythondir}blast_local_results_interpreter.py" \
-        --results_csv "$4/${current_flanks}_before_flank_blast_res/$namo".csv --out_dir "$4/${current_flanks}_before_flank_blast_res/"
+
 
 
       done < $before_flanks_fazza
@@ -149,12 +147,21 @@ else
         blastn -db $db_loc -query $coffee -out "$4/${current_flanks}_after_flank_blast_res/$namo".csv \
         -outfmt "10 qesqid sseqid qstart qend sstart send pident length evalue bitscore"
 
-        python "${pythondir}blast_local_results_interpreter.py" \
-        --results_csv "$4/${current_flanks}_after_flank_blast_res/$namo".csv --out_dir "$4/${current_flanks}_after_flank_blast_res/"
+
 
 
       done < $after_flanks_fazza
 
+    ls -d "$PWD/$4/${current_flanks}_blast_results/"*_whole_blast_seq.fasta.csv > "$4/${current_flanks}_whole_run_through"
+    ls -d "$PWD/$4/${current_flanks}_before_flank_blast_res/"*_before_flank.fasta.csv > "$4/${current_flanks}_before_run_through"
+    ls -d "$PWD/$4/${current_flanks}_after_flank_blast_res/"*_after_flank.fasta.csv > "$4/${current_flanks}_after_run_through"
+
+    python "${pythondir}blast_local_results_interpreter.py" \
+    --results_list "$4/${current_flanks}_whole_run_through" --out_dir "$4/${current_flanks}_blast_results/"
+    python "${pythondir}blast_local_results_interpreter.py" \
+    --results_list "$4/${current_flanks}_before_run_through" --out_dir "$4/${current_flanks}_before_flank_blast_res/"
+    python "${pythondir}blast_local_results_interpreter.py" \
+    --results_list "$4/${current_flanks}_after_run_through" --out_dir "$4/${current_flanks}_after_flank_blast_res/"
 
     ls -d "$PWD/$4/${current_flanks}_blast_results/"*_species_list.csv > "$4/${current_flanks}_blast_results/$5_species_list_list"
     ls -d "$PWD/$4/${current_flanks}_before_flank_blast_res/"*_species_list.csv > "$4/${current_flanks}_before_flank_blast_res/$5_species_list_before"
