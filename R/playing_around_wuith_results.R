@@ -37,6 +37,8 @@ count(gps_tn916_assigned, insert_name) %>% arrange(desc(n)) %>% head()
 gps_tn916_assigned %>% filter(cluster_name == "gpsc.1") %>% count(insert_name) %>% arrange(desc(n)) %>% head()
 gps_tn916_assigned %>% filter(insert_name == 106) %>% count(cluster_name) %>% arrange(desc(n)) %>% head()
 
+nrow(gps_tn916_tot)
+
 
 ###############################
 ## gps mega summaries 
@@ -145,6 +147,56 @@ pmen9_epi_csv <- left_join(x = pmen9_epi_csv,y = pmen_mega_narrow, by = "id") %>
   mutate(insert_name_mega = ifelse(is.na(insert_name_mega), 0, insert_name_mega)) %>% rename(insert_name_mega__autocolour = insert_name_mega) %>% left_join(y = pmen_tn916_narrow, by = "id") %>% 
   mutate(insert_name_tn916 = ifelse(is.na(insert_name_tn916), 0, insert_name_tn916)) %>% rename(insert_name_tn916__autocolour = insert_name_tn916) %>%
   left_join(pmen_sulfa, by = "id") %>% mutate(sulfa__autocolour = ifelse(is.na(sulfa__autocolour), "ND", sulfa__autocolour))
+
+
+
+################################################################################
+## Merging the hits dfs ########################################################
+################################################################################
+
+gps_tn916_tot <- gps_tn916_tot %>% mutate(Tn916 = "Tn916")
+gps_mega_tot <- gps_mega_tot %>% mutate(Mega = "Mega")
+
+binded_rows <- bind_rows(gps_tn916_tot, gps_mega_tot)
+
+merged_insertions_tot <- full_join(gps_tn916_tot, gps_mega_tot, by = "id") %>% mutate(Tn916 = ifelse(is.na(Tn916),"",Tn916)) %>%
+  mutate(Mega = ifelse(is.na(Mega),"",Mega)) %>% mutate(element = paste(Mega, Tn916, sep = "#"))
+
+count(merged_insertions_tot, id) %>% nrow()
+
+dual_inserts <- merged_insertions_tot %>% group_by(id) %>% mutate(element = paste(Mega, Tn916, sep = "#"))
+
+
+cluster_fasta_gps <- read.csv("~/Dropbox/phd/insertion_site_analysis/data/gps_run_data/gps_reference_isolate_gff.csv",
+                              stringsAsFactors = FALSE)
+
+cluster_fasta_gps$one <- 1
+cluster_fasta_nums <- aggregate(one ~ cluster_name, cluster_fasta_gps, FUN = sum)
+
+gps_tn916_count <- count(gps_tn916_tot, cluster_name)
+
+tn916_prev <- NULL
+for(cluster in gps_tn916_count$cluster_name){
+  prevalence <- gps_tn916_count[gps_tn916_count$cluster_name == cluster,2] /
+    cluster_fasta_nums[cluster_fasta_nums$cluster_name == cluster,2]
+  tn916_prev <- append(tn916_prev, prevalence)
+  
+}
+
+gps_mega_count <- count(gps_mega_tot, cluster_name)
+
+mega_prev <- NULL
+for(cluster in gps_mega_count$cluster_name){
+  prevalence <- gps_mega_count[gps_mega_count$cluster_name == cluster,2] /
+    cluster_fasta_nums[cluster_fasta_nums$cluster_name == cluster,2]
+  mega_prev <- append(mega_prev, prevalence)
+  
+}
+
+##rlmcd
+nrow(gps_mega_hits[gps_mega_hits$insert_name %in% c(7,8,12,18,22,30,32),])
+
+
 
 
 

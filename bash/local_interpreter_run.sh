@@ -4,7 +4,7 @@ echo "This is the flanks length file: $1"
 echo "This is the outfolder: $2"
 echo "This is the prefix: $3"
 hit_csv="$2/$3_hits_df.csv"
-echo "Thi is the hit_csv"
+echo "Thi is the hit_csv ${hit_csv}"
 
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
@@ -37,9 +37,9 @@ else
     before_flanks_fazza="$2/$3_${current_flanks}_before_flanks_list"
     after_flanks_fazza="$2/$3_${current_flanks}_after_flanks_list"
 
-    ls -d "$PWD/$2/${current_flanks}_blast_results/"*_whole_blast_seq.fasta.csv > "$2/${current_flanks}_whole_run_through"
-    ls -d "$PWD/$2/${current_flanks}_before_flank_blast_res/"*_before_flank.fasta.csv > "$2/${current_flanks}_before_run_through"
-    ls -d "$PWD/$2/${current_flanks}_after_flank_blast_res/"*_after_flank.fasta.csv > "$2/${current_flanks}_after_run_through"
+    ls -d "$PWD/$2/${current_flanks}_blast_results/"*_whole_blast_seq.fasta* > "$2/${current_flanks}_whole_run_through"
+    ls -d "$PWD/$2/${current_flanks}_before_flank_blast_res/"*_before_flank.fasta* > "$2/${current_flanks}_before_run_through"
+    ls -d "$PWD/$2/${current_flanks}_after_flank_blast_res/"*_after_flank.fasta* > "$2/${current_flanks}_after_run_through"
 
     rm -f "$2/${current_flanks}_blast_results"/*species_list.csv
     rm -f "$2/${current_flanks}_before_flank_blast_res"/*species_list.csv
@@ -76,3 +76,4 @@ else
   done
   echo "::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
 fi
+

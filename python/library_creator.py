@@ -2048,7 +2048,7 @@ def before_and_after_check(hit_to_check, mge_locs, compo_table, hit_loc, other_h
                 poss_hits = compo_table[(compo_table['qend'] < (mge_locs[0] + 50)) &\
                                         (compo_table['qend'] > hit_check_query[0]) &\
                                         (compo_table['send'] > hit_check_subject[1]) &\
-                                        (compo_table['sstart'] < other_hit_subject[1])]
+                                        (compo_table['sstart'] < (other_hit_subject[0]))]
                 poss_hits = poss_hits.sort_values(by=['qstart'], ascending=True)
                 if not poss_hits.empty:
                     hit_orig = pandas.DataFrame(hit_to_check).transpose()
@@ -2624,7 +2624,7 @@ if __name__ == '__main__':
 
         if all_one_tig and contig_bef_ref == contig_aft_ref and overlap == "No":
 
-
+            print(hit_after)
             hit_before_check = before_and_after_check(hit_before, hitters, compo_table, "before", hit_after, isolate_id)
             hit_after_check = before_and_after_check(hit_after, hitters, compo_table, "after", hit_before, isolate_id)
 

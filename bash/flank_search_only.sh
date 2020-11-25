@@ -152,9 +152,9 @@ else
 
       done < $after_flanks_fazza
 
-    ls -d "$PWD/$4/${current_flanks}_blast_results/"*_whole_blast_seq.fasta.csv > "$4/${current_flanks}_whole_run_through"
-    ls -d "$PWD/$4/${current_flanks}_before_flank_blast_res/"*_before_flank.fasta.csv > "$4/${current_flanks}_before_run_through"
-    ls -d "$PWD/$4/${current_flanks}_after_flank_blast_res/"*_after_flank.fasta.csv > "$4/${current_flanks}_after_run_through"
+    ls -d "$PWD/$4/${current_flanks}_blast_results/"*_whole_blast_seq.fasta* > "$4/${current_flanks}_whole_run_through"
+    ls -d "$PWD/$4/${current_flanks}_before_flank_blast_res/"*_before_flank.fasta* > "$4/${current_flanks}_before_run_through"
+    ls -d "$PWD/$4/${current_flanks}_after_flank_blast_res/"*_after_flank.fasta* > "$4/${current_flanks}_after_run_through"
 
     python "${pythondir}blast_local_results_interpreter.py" \
     --results_list "$4/${current_flanks}_whole_run_through" --out_dir "$4/${current_flanks}_blast_results/"
