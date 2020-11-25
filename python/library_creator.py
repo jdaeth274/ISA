@@ -2042,6 +2042,7 @@ def before_and_after_check(hit_to_check, mge_locs, compo_table, hit_loc, other_h
     print("~~~~~~~~~~~~~~~~~~ check values ~~~~~~~~~~~~~~~~~~~")
     print(hit_loc, mge_ori, check_ori)
 
+
     if hit_loc == "before":
         if mge_ori == "forward":
             if check_ori == "forward":
@@ -2194,6 +2195,11 @@ def before_and_after_check(hit_to_check, mge_locs, compo_table, hit_loc, other_h
                                         (compo_table['qend'] > hit_check_query[0]) & \
                                         (compo_table['send'] < hit_check_subject[1]) &\
                                         (compo_table['sstart'] > other_hit_subject[1])]
+                print("~~~~~~~~~~~~~~~~~~~~~~~~~~~ in AFTER REVERSE REVSERSE ~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+                print(poss_hits)
+                print(hit_check_subject)
+                print(other_hit_subject)
+                print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
                 poss_hits = poss_hits.sort_values(by=['qend'], ascending=True)
                 if not poss_hits.empty:
                     hit_orig = pandas.DataFrame(hit_to_check).transpose()
@@ -2645,6 +2651,7 @@ if __name__ == '__main__':
 
         all_one_tig_5k = hit_before_length >= 5000 and hit_after_length >= 5000 and all_one_tig
 
+        print(all_one_tig_5k)
         ref_contigs = [contig_bef_ref, contig_aft_ref]
 
 
