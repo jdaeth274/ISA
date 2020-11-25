@@ -2039,8 +2039,8 @@ def before_and_after_check(hit_to_check, mge_locs, compo_table, hit_loc, other_h
         check_ori = "reverse"
 
     added_hits = pandas.DataFrame()
-
-
+    print("~~~~~~~~~~~~~~~~~~ check values ~~~~~~~~~~~~~~~~~~~")
+    print(hit_loc, mge_ori, check_ori)
 
     if hit_loc == "before":
         if mge_ori == "forward":
@@ -2639,6 +2639,9 @@ if __name__ == '__main__':
                 hit_after = multi_hit_merger(hit_after_check)
                 hit_after_loc = hit_after.iloc[[6,7]]
                 hit_after_length = abs(hit_after_loc[1] - hit_after_loc[0])
+
+            print(hit_after)
+
 
         all_one_tig_5k = hit_before_length >= 5000 and hit_after_length >= 5000 and all_one_tig
 
