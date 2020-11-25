@@ -2049,7 +2049,7 @@ def before_and_after_check(hit_to_check, mge_locs, compo_table, hit_loc, other_h
                 poss_hits = compo_table[(compo_table['qend'] < (mge_locs[0] + 50)) &\
                                         (compo_table['qend'] > hit_check_query[0]) &\
                                         (compo_table['send'] > hit_check_subject[1]) &\
-                                        (compo_table['sstart'] < (other_hit_subject[0]))]
+                                        (compo_table['sstart'] < (other_hit_subject[0] + 500))]
                 poss_hits = poss_hits.sort_values(by=['qstart'], ascending=True)
                 if not poss_hits.empty:
                     hit_orig = pandas.DataFrame(hit_to_check).transpose()
@@ -2070,7 +2070,7 @@ def before_and_after_check(hit_to_check, mge_locs, compo_table, hit_loc, other_h
                 poss_hits = compo_table[(compo_table['qend'] < (mge_locs[0] + 50)) & \
                                         (compo_table['qend'] > hit_check_query[0]) & \
                                         (compo_table['send'] < hit_check_subject[1]) &\
-                                        (compo_table['sstart'] > other_hit_subject[0])]
+                                        (compo_table['sstart'] > (other_hit_subject[0] - 500))]
                 poss_hits = poss_hits.sort_values(by=['qend'], ascending=True)
                 if not poss_hits.empty:
                     hit_orig = pandas.DataFrame(hit_to_check).transpose()
@@ -2091,7 +2091,7 @@ def before_and_after_check(hit_to_check, mge_locs, compo_table, hit_loc, other_h
                 poss_hits = compo_table[(compo_table['qstart'] > (mge_locs[1] - 50)) & \
                                         (compo_table['qstart'] < hit_check_query[1]) & \
                                         (compo_table['sstart'] < hit_check_subject[0]) & \
-                                        (compo_table['send'] > other_hit_subject[0])]
+                                        (compo_table['send'] > (other_hit_subject[1] - 500))]
                 poss_hits = poss_hits.sort_values(by=['qstart'], ascending=False)
 
 
@@ -2113,7 +2113,7 @@ def before_and_after_check(hit_to_check, mge_locs, compo_table, hit_loc, other_h
                 poss_hits = compo_table[(compo_table['qstart'] > (mge_locs[1] - 50)) & \
                                         (compo_table['qstart'] < hit_check_query[1]) & \
                                         (compo_table['sstart'] > hit_check_subject[0]) &\
-                                        (compo_table['send'] < other_hit_subject[0])]
+                                        (compo_table['send'] < (other_hit_subject[1] + 500))]
                 poss_hits = poss_hits.sort_values(by=['qstart'], ascending=False)
                 if not poss_hits.empty:
                     hit_orig = pandas.DataFrame(hit_to_check).transpose()
@@ -2134,7 +2134,7 @@ def before_and_after_check(hit_to_check, mge_locs, compo_table, hit_loc, other_h
                 poss_hits = compo_table[(compo_table['qstart'] > (mge_locs[1] - 50)) & \
                                         (compo_table['qstart'] < hit_check_query[1]) & \
                                         (compo_table['sstart'] < hit_check_subject[0])&\
-                                        (compo_table['send'] > other_hit_subject[0])]
+                                        (compo_table['send'] > (other_hit_subject[1] - 500))]
                 poss_hits = poss_hits.sort_values(by=['qstart'], ascending=False)
                 if not poss_hits.empty:
                     hit_orig = pandas.DataFrame(hit_to_check).transpose()
@@ -2154,7 +2154,7 @@ def before_and_after_check(hit_to_check, mge_locs, compo_table, hit_loc, other_h
                 poss_hits = compo_table[(compo_table['qstart'] > (mge_locs[1] - 50)) & \
                                         (compo_table['qstart'] < hit_check_query[1]) & \
                                         (compo_table['sstart'] > hit_check_subject[0]) &\
-                                        (compo_table['send'] < other_hit_subject[0])]
+                                        (compo_table['send'] < (other_hit_subject[1] + 500))]
                 poss_hits = poss_hits.sort_values(by=['qstart'], ascending=False)
                 if not poss_hits.empty:
                     hit_orig = pandas.DataFrame(hit_to_check).transpose()
@@ -2174,7 +2174,7 @@ def before_and_after_check(hit_to_check, mge_locs, compo_table, hit_loc, other_h
                 poss_hits = compo_table[(compo_table['qend'] < (mge_locs[0] + 50)) & \
                                         (compo_table['qend'] > hit_check_query[0]) & \
                                         (compo_table['send'] > hit_check_subject[1]) &\
-                                        (compo_table['sstart'] < other_hit_subject[1])]
+                                        (compo_table['sstart'] < (other_hit_subject[0] + 500))]
                 poss_hits = poss_hits.sort_values(by=['qend'], ascending=True)
                 if not poss_hits.empty:
                     hit_orig = pandas.DataFrame(hit_to_check).transpose()
@@ -2194,7 +2194,7 @@ def before_and_after_check(hit_to_check, mge_locs, compo_table, hit_loc, other_h
                 poss_hits = compo_table[(compo_table['qend'] < (mge_locs[0] + 50)) & \
                                         (compo_table['qend'] > hit_check_query[0]) & \
                                         (compo_table['send'] < hit_check_subject[1]) &\
-                                        (compo_table['sstart'] > other_hit_subject[1])]
+                                        (compo_table['sstart'] > (other_hit_subject[0] - 500))]
                 print("~~~~~~~~~~~~~~~~~~~~~~~~~~~ in AFTER REVERSE REVSERSE ~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
                 print(poss_hits)
                 print(hit_check_subject)
