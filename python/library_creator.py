@@ -2039,8 +2039,7 @@ def before_and_after_check(hit_to_check, mge_locs, compo_table, hit_loc, other_h
         check_ori = "reverse"
 
     added_hits = pandas.DataFrame()
-    print("~~~~~~~~~~~~~~~~~~ check values ~~~~~~~~~~~~~~~~~~~")
-    print(hit_loc, mge_ori, check_ori)
+
 
 
     if hit_loc == "before":
@@ -2195,11 +2194,7 @@ def before_and_after_check(hit_to_check, mge_locs, compo_table, hit_loc, other_h
                                         (compo_table['qend'] > hit_check_query[0]) & \
                                         (compo_table['send'] < hit_check_subject[1]) &\
                                         (compo_table['sstart'] > (other_hit_subject[0] - 500))]
-                print("~~~~~~~~~~~~~~~~~~~~~~~~~~~ in AFTER REVERSE REVSERSE ~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-                print(poss_hits)
-                print(hit_check_subject)
-                print(other_hit_subject)
-                print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+
                 poss_hits = poss_hits.sort_values(by=['qend'], ascending=True)
                 if not poss_hits.empty:
                     hit_orig = pandas.DataFrame(hit_to_check).transpose()
@@ -2630,7 +2625,7 @@ if __name__ == '__main__':
 
         if all_one_tig and contig_bef_ref == contig_aft_ref and overlap == "No":
 
-            print(hit_after)
+
             hit_before_check = before_and_after_check(hit_before, hitters, compo_table, "before", hit_after, isolate_id)
             hit_after_check = before_and_after_check(hit_after, hitters, compo_table, "after", hit_before, isolate_id)
 
@@ -2646,12 +2641,12 @@ if __name__ == '__main__':
                 hit_after_loc = hit_after.iloc[[6,7]]
                 hit_after_length = abs(hit_after_loc[1] - hit_after_loc[0])
 
-            print(hit_after)
+
 
 
         all_one_tig_5k = hit_before_length >= 5000 and hit_after_length >= 5000 and all_one_tig
 
-        print(all_one_tig_5k)
+
         ref_contigs = [contig_bef_ref, contig_aft_ref]
 
 
@@ -2666,9 +2661,6 @@ if __name__ == '__main__':
             #   hit_before, hit_after, all_one_tig_5k = final_acceptor(hit_before, hit_after, isolate_id, mge_bounds, mge_ori)
             #   hit_before_loc = hit_before.iloc[[6, 7]]
             #   hit_after_loc = hit_after.iloc[[6, 7]]
-        if isolate_id in ["14723_3#14","14723_3#22","14723_3#26","5749_6#10","5901_2#4","5901_3#12"]:
-            print("Missing iso all one tig")
-            print(all_one_tig_5k)
 
 
         if all_one_tig_5k:
