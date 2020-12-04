@@ -56,7 +56,7 @@ def get_species(results_csv, out_dir):
     start_subset = time.perf_counter()
     blast_results_csv = blast_results_csv.sort_values('bitscore', ascending=False)
     top_bitscore = blast_results_csv.iloc[0, 8]
-    top_5_percent = top_bitscore - (top_bitscore)
+    top_5_percent = top_bitscore - (top_bitscore )
 
     blast_results_csv = blast_results_csv[blast_results_csv['bitscore'] >= top_5_percent]
     end_file_check = time.perf_counter()
@@ -85,20 +85,24 @@ def get_species(results_csv, out_dir):
 
     bassy_name = os.path.basename(results_csv)
     if bassy_name.__contains__("!"):
+        gene_name = "pbp" + re.split("_",re.split("_pbp",bassy_name,maxsplit=2)[1], maxsplit = 2)[0]
         bassy_name = re.split("_control",bassy_name, maxsplit=2)[:1]
         bassy_name = bassy_name[0]
     else:
+        gene_name = "pbp" + re.split("_",re.split("_pbp",bassy_name,maxsplit=2)[1], maxsplit = 2)[0]
         bassy_name = re.split("_",bassy_name, maxsplit=2)[:2]
         bassy_name = bassy_name[0] + "_" + bassy_name[1]
 
 
     output_df = pandas.DataFrame()
     isolates = numpy.repeat(bassy_name, len(species))
+    genes = numpy.repeat(gene_name, len(species))
     output_df['isolate_id'] = pandas.Series(data=isolates)
     output_df['species'] = pandas.Series(data=species, index=output_df.index)
     output_df['bitscore'] = pandas.Series(data= bitscore, index = output_df.index)
+    output_df['genes'] = pandas.Series(data= genes, index=output_df.index)
 
-    out_name = out_dir + bassy_name + "_species_list.csv"
+    out_name = out_dir + bassy_name + "_" + gene_name + "_species_list.csv"
 
 
     output_df.to_csv(out_name,

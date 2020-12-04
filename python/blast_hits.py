@@ -40,10 +40,6 @@ def get_options():
 def progress_bar():
     print("Narrowing down the isolates for blast searching", end="", flush=True)
 
-
-
-
-
 def leaf_tips(tree, example_id, current_node):
     tip_node = tree.find_node_with_taxon_label(label=example_id)
     parent_node = tip_node.parent_node
@@ -95,6 +91,7 @@ def reference_present(insertion_node, tree, reference, isolate_examp):
         present = "Yes"
 
     return  present
+
 def all_presence_checker(id_list, series_ids):
     ## Function to check whether the total list of ids is within the blast csv
     ## Input: id_list: List of ids to check for presence all must be within the series ids
@@ -229,9 +226,6 @@ def outside_control(insertion_node, tree, example_id, act_comp_dir, ref_insertio
 
     return outside_iso, isolate_before_end, isolate_after_start
 
-
-
-
 def compo_transformer(comps_tab):
     for k in range(len(comps_tab.index)):
         current_sstart = comps_tab.iloc[k, 8]
@@ -242,8 +236,6 @@ def compo_transformer(comps_tab):
 
 
     return comps_tab
-
-
 
 def act_bounds(python_row):
     before_regions = python_row[['before_sstart','before_send']]
@@ -306,7 +298,6 @@ def chains_of_isolates_plus_one(tree, example_id, end_node):
 
     return poss_nodes, ultimate_node.label
 
-
 def Leaf_nodes_to_list(node_list):
     node_names = []
     for klose in node_list:
@@ -330,7 +321,6 @@ def largest_reccombination_block(before_row, after_row):
         end_return = after_row.iloc[0, 7]
 
     return start_return, end_return
-
 
 def compo_enlarger(start_act, ori, pos, act_compo, target_length, debug_id, pre_length):
     current_length = abs(start_act.iloc[0,6] - start_act.iloc[0, 7])
@@ -755,7 +745,6 @@ def bounds_of_contig(contig_tab, contig_mge):
     contig_bounds = contig_tab.iloc[contig_mge - 1]
 
     return contig_bounds
-
 
 def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, reference_id, flanking_length, contig_loc, nice_ids_tot):
     ## Function to take in the reccy hits csv for a paticular cluster. Then work through the
@@ -1354,8 +1343,6 @@ def extracting_flanks(out_df, out_dir, ref_name, fasta_directory, regions_bef, r
                 SeqIO.write(output_sequence, new_blast_file_control, "fasta")
                 SeqIO.write(output_before, new_blast_bef_control, "fasta")
                 SeqIO.write(output_after, new_blast_aft_control, "fasta")
-
-
 
 ###############################################################################
 ## So now we'll run through the detected gubbins transformation events to try #
