@@ -2,9 +2,12 @@
 ## PBP recombination pmen results #############################################
 ###############################################################################
 
+require(dplyr)
+require(ggpubr)
+
 graph_getter_pbp <- function(dir_to_files,graph_name){
   
-#  browser()
+  #browser()
   last_character <- base::substr(dir_to_files,
                                  nchar(dir_to_files),
                                  nchar(dir_to_files))
@@ -16,7 +19,9 @@ graph_getter_pbp <- function(dir_to_files,graph_name){
   
   summo_csv <- read.csv(summary_csv, stringsAsFactors = FALSE)
   blast_results <- list.files(dir_to_files, pattern = "*list*.csv")
-  
+
+  summo_csv <- summo_csv %>% mutate(pre_resistance = ifelse(pre_resistance == "reference","ref",pre_resistance)) %>%
+    mutate(resistance = ifelse(resistance == "reference", "ref",resistance))
   summo_csv$insertion_point <- paste(summo_csv$pre_resistance, summo_csv$resistance, summo_csv$gene_name, sep = "-")
   
   counted_summo <- plyr::count(summo_csv$insertion_point)  
@@ -69,7 +74,9 @@ graph_getter_pbp <- function(dir_to_files,graph_name){
     labs(title = paste(graph_name, "ranked pneumo"))
   bit_ranked <- ggplot(data = results_df) + geom_violin(aes(x = insertion_loci,
                                                              y = bit_pneumo)) +
-    labs(title = paste(graph_name, "bitscore pneumo"))
+    labs(title = paste(graph_name, "bitscore pneumo")) + geom_point(aes(x = insertion_loci,
+                                                                        y = bit_pneumo, color = insertion_loci),
+                                                                    position = position_jitter(width = 0.1, height = 0))
   
   
   
@@ -82,7 +89,8 @@ graph_getter_pbp <- function(dir_to_files,graph_name){
 bitscore_res <- function(data_subset, blast_res_list, insertion_loci, dir_to_files){
   
   #browser()
-  isolate_file <- paste(data_subset$isolate, "_species_list.csv",sep = "")
+  isolate_file <- paste(data_subset$isolate,"_",data_subset$gene_name, "_species_list.csv",sep = "")
+  
   files_to_open <- blast_res_list[which(blast_res_list %in% isolate_file)]
   files_to_open <- paste(dir_to_files, files_to_open, sep = "")
   
@@ -91,7 +99,7 @@ bitscore_res <- function(data_subset, blast_res_list, insertion_loci, dir_to_fil
   ## through these and get the weight by bitscores, rank of top_pneumo, and ###
   ## bitscore of top pneumo/top hit for each of the files #####################
   #############################################################################
-  
+  #browser()
   output_data <- data.frame(data = matrix(NA, nrow = length(files_to_open),
                                           ncol = 5))
   colnames(output_data) <- c("isolate","insertion_loci","weighted_bit","ranked_pneumo",
@@ -169,7 +177,14 @@ pbp_res <- graph_getter_pbp("~/Dropbox/phd/insertion_site_analysis/data/pmen_run
                         graph_name = "PBP genes")
 pbp_res$ranked_bit
 
+results_df <- pbp_res$by_insertion %>% filter(insertion_loci %in% c("S-R-pbp1A","S-R-pbp2X","S-R-pbp2B")) %>% mutate(Gene = insertion_loci)
 
 
 
-
+bit_ranked <- ggplot(data = results_df) + geom_violin(aes(x = Gene,
+                                                          y = bit_pneumo)) + geom_point(aes(x = insertion_loci,
+                                                                      y = bit_pneumo, color = Gene),
+                                                                  position = position_jitter(width = 0.1, height = 0)) +
+  labs(y = "Score",title = "PMEN collection pbp gene origin") 
+  
+bit_ranked

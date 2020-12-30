@@ -460,9 +460,6 @@ def compo_enlarger(start_act, ori, pos, act_compo, target_length, debug_id, pre_
         act_ori = "reverse"
     #if direction == "downstream":
 
-    print(starting_act)
-
-
 
     gap_list = [starting_gap]
 
@@ -470,19 +467,26 @@ def compo_enlarger(start_act, ori, pos, act_compo, target_length, debug_id, pre_
         if direction == "downstream":
             if act_ori == "forward":
                 ## This catches any reverse hits
-                next_act_event_send = act_compo[act_compo['send'] > starting_act['send']]
+                next_act_event_send = act_compo[act_compo['send'] > (starting_act['send'] - 500)]
                 next_act_event_send = next_act_event_send.sort_values(by = ['send'], ascending=True)
                 next_act_event_send_row = next_act_event_send.iloc[0]
 
-                ref_start_send = next_act_event_send_row.iloc[9]
-
-
                 ## This for forward hits
-                next_act_event_sstart = act_compo[act_compo['sstart'] > starting_act['send']]
+                next_act_event_sstart = act_compo[act_compo['sstart'] > (starting_act['send'] - 500)]
                 next_act_event_sstart = next_act_event_sstart.sort_values(by = ['sstart'], ascending=True)
                 next_act_event_sstart_row = next_act_event_sstart.iloc[0]
 
-                ref_start_sstart = next_act_event_sstart_row.iloc[8]
+                if next_act_event_send_row['send'] < starting_act['send']:
+                    ref_start_send = next_act_event_send_row['sstart'] - starting_act['send']
+                else:
+                    ref_start_send = starting_act['send'] - next_act_event_send_row['send']
+
+                if next_act_event_sstart_row['sstart'] < starting_act['send']:
+                    ref_start_sstart = next_act_event_sstart_row['send'] - starting_act['send']
+                else:
+                    ref_start_sstart = starting_act['send'] - next_act_event_sstart_row['sstart']
+
+
 
                 if ref_start_sstart == ref_start_send:
                     alignos = [next_act_event_sstart_row.iloc[3], next_act_event_send_row.iloc[3]]
@@ -516,19 +520,28 @@ def compo_enlarger(start_act, ori, pos, act_compo, target_length, debug_id, pre_
                         gap_list.append(gappers)
                         starting_act = next_act_event_sstart_row
             elif act_ori == "reverse":
-                ## This catches any reverse hits
-                next_act_event_send = act_compo[act_compo['send'] < starting_act['send']]
+                ## This catches any forward hits
+                next_act_event_send = act_compo[act_compo['send'] < (starting_act['send'] + 500)]
                 next_act_event_send = next_act_event_send.sort_values(by=['send'], ascending=False)
                 next_act_event_send_row = next_act_event_send.iloc[0]
 
-                ref_start_send = next_act_event_send_row.iloc[9]
-
-                ## This for forward hits
-                next_act_event_sstart = act_compo[act_compo['sstart'] < starting_act['send']]
+                ## This for reverse hits
+                next_act_event_sstart = act_compo[act_compo['sstart'] < (starting_act['send'] + 500)]
                 next_act_event_sstart = next_act_event_sstart.sort_values(by=['sstart'], ascending=False)
                 next_act_event_sstart_row = next_act_event_sstart.iloc[0]
 
-                ref_start_sstart = next_act_event_sstart_row.iloc[8]
+                if next_act_event_send_row['send'] > starting_act['send']:
+                    ref_start_send = starting_act['send'] - next_act_event_send_row['sstart']
+                else:
+                    ref_start_send = next_act_event_send_row['send'] - starting_act['send']
+
+                if next_act_event_sstart_row['sstart'] > starting_act['send']:
+                    ref_start_sstart = starting_act['send'] - next_act_event_sstart_row['send']
+                else:
+                    ref_start_sstart = next_act_event_sstart_row['sstart'] - starting_act['send']
+
+
+
 
                 if ref_start_sstart == ref_start_send:
                     alignos = [next_act_event_sstart_row.iloc[3], next_act_event_send_row.iloc[3]]
@@ -554,7 +567,7 @@ def compo_enlarger(start_act, ori, pos, act_compo, target_length, debug_id, pre_
                     distance_hits = abs(next_act_event_sstart_row.iloc[7] - next_act_event_sstart_row.iloc[6])
                     current_length = current_length + distance_hits
                     if current_length >= target_length:
-                        gappers = [next_act_event_send_row.iloc[6] , next_act_event_send_row.iloc[7] - (current_length - target_length)]
+                        gappers = [next_act_event_sstart_row.iloc[6] , next_act_event_sstart_row.iloc[7] - (current_length - target_length)]
                         gap_list.append(gappers)
                     else:
                         gappers = [next_act_event_sstart_row.iloc[6], next_act_event_sstart_row.iloc[7]]
@@ -567,18 +580,34 @@ def compo_enlarger(start_act, ori, pos, act_compo, target_length, debug_id, pre_
             if act_ori == "forward":
                 print(current_length)
                 ## This catches any forward hits
-                next_act_event_send = act_compo[act_compo['send'] < starting_act['sstart']]
+                next_act_event_send = act_compo[act_compo['send'] < (starting_act['sstart'] + 500)]
                 next_act_event_send = next_act_event_send.sort_values(by=['send'], ascending=False)
                 next_act_event_send_row = next_act_event_send.iloc[0]
+                if (next_act_event_send_row['sstart'] == starting_act['sstart']) and (next_act_event_send_row['send'] == starting_act['send']):
+                    next_act_event_send_row = next_act_event_send.iloc[1]
 
                 ref_start_send = next_act_event_send_row.iloc[9]
 
                 ## This for reverse hits
-                next_act_event_sstart = act_compo[act_compo['sstart'] < starting_act['sstart']]
+                next_act_event_sstart = act_compo[act_compo['sstart'] < (starting_act['sstart'] + 500)]
                 next_act_event_sstart = next_act_event_sstart.sort_values(by=['sstart'], ascending=False)
                 next_act_event_sstart_row = next_act_event_sstart.iloc[0]
+                if (next_act_event_sstart_row['sstart'] == starting_act['sstart']) and (next_act_event_sstart_row['send'] == starting_act['send']):
+                    next_act_event_sstart_row = next_act_event_sstart.iloc[1]
 
                 ref_start_sstart = next_act_event_sstart_row.iloc[8]
+
+                ## Define hits with longest stretch post gene
+                if next_act_event_send_row['send'] > starting_act['sstart']:
+                    ref_start_send = starting_act['sstart'] - next_act_event_send_row['sstart']
+                else:
+                    ref_start_send = next_act_event_send_row['send'] - starting_act['sstart']
+
+                if next_act_event_sstart_row['sstart'] > starting_act['sstart']:
+                    ref_start_sstart = starting_act['sstart'] - next_act_event_sstart_row['send']
+                else:
+                    ref_start_sstart = next_act_event_sstart_row['sstart'] - starting_act['sstart']
+
 
                 if ref_start_sstart == ref_start_send:
                     alignos = [next_act_event_sstart_row.iloc[3], next_act_event_send_row.iloc[3]]
@@ -590,8 +619,9 @@ def compo_enlarger(start_act, ori, pos, act_compo, target_length, debug_id, pre_
                     else:
                         ref_start_send += 1
 
-                print(next_act_event_sstart_row )
+                print(next_act_event_sstart_row)
                 print(next_act_event_send_row)
+                print(ref_start_sstart, ref_start_send)
                 if ref_start_send >= ref_start_sstart:
                     distance_hits = abs(next_act_event_send_row.iloc[7] - next_act_event_send_row.iloc[6])
                     current_length = current_length + distance_hits
@@ -606,7 +636,7 @@ def compo_enlarger(start_act, ori, pos, act_compo, target_length, debug_id, pre_
                     distance_hits = abs(next_act_event_sstart_row.iloc[7] - next_act_event_sstart_row.iloc[6])
                     current_length = current_length + distance_hits
                     if current_length >= target_length:
-                        gappers = [next_act_event_send_row.iloc[6] +  (current_length - target_length) , next_act_event_send_row.iloc[7]]
+                        gappers = [next_act_event_sstart_row.iloc[6] +  (current_length - target_length) , next_act_event_sstart_row.iloc[7]]
                         gap_list.append(gappers)
                     else:
                         gappers = [next_act_event_sstart_row.iloc[6], next_act_event_sstart_row.iloc[7]]
@@ -614,18 +644,27 @@ def compo_enlarger(start_act, ori, pos, act_compo, target_length, debug_id, pre_
                         starting_act = next_act_event_sstart_row
             elif act_ori == "reverse":
                 ## This catches any reverse hits
-                next_act_event_send = act_compo[act_compo['send'] > starting_act['sstart']]
+                next_act_event_send = act_compo[act_compo['send'] > (starting_act['sstart'] - 500)]
                 next_act_event_send = next_act_event_send.sort_values(by=['send'], ascending=True)
                 next_act_event_send_row = next_act_event_send.iloc[0]
 
-                ref_start_send = next_act_event_send_row.iloc[9]
-
                 ## This for forward hits
-                next_act_event_sstart = act_compo[act_compo['sstart'] > starting_act['sstart']]
+                next_act_event_sstart = act_compo[act_compo['sstart'] > (starting_act['sstart'] - 500)]
                 next_act_event_sstart = next_act_event_sstart.sort_values(by=['sstart'], ascending=True)
                 next_act_event_sstart_row = next_act_event_sstart.iloc[0]
 
-                ref_start_sstart = next_act_event_sstart_row.iloc[8]
+                if next_act_event_send_row['send'] < starting_act['sstart']:
+                    ref_start_send = next_act_event_send_row['sstart'] - starting_act['sstart']
+                else:
+                    ref_start_send = starting_act['sstart'] - next_act_event_send_row['send']
+
+                if next_act_event_sstart_row['sstart'] > starting_act['sstart']:
+                    ref_start_sstart = next_act_event_sstart_row['send'] - starting_act['sstart']
+                else:
+                    ref_start_sstart = starting_act['sstart'] - next_act_event_sstart_row['sstart']
+
+
+
 
                 if ref_start_sstart == ref_start_send:
                     alignos = [next_act_event_sstart_row.iloc[3], next_act_event_send_row.iloc[3]]
@@ -651,7 +690,7 @@ def compo_enlarger(start_act, ori, pos, act_compo, target_length, debug_id, pre_
                     distance_hits = abs(next_act_event_sstart_row.iloc[7] - next_act_event_sstart_row.iloc[6])
                     current_length = current_length + distance_hits
                     if current_length >= target_length:
-                        gappers = [next_act_event_send_row.iloc[6] +  (current_length - target_length) , next_act_event_send_row.iloc[7]]
+                        gappers = [next_act_event_sstart_row.iloc[6] +  (current_length - target_length) , next_act_event_sstart_row.iloc[7]]
                         gap_list.append(gappers)
                     else:
                         gappers = [next_act_event_sstart_row.iloc[6], next_act_event_sstart_row.iloc[7]]
@@ -982,15 +1021,7 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
         cluster.append(current_cluster)
         node_tips.append(num_tips)
 
-        if res_id == "11511_7#11":
-            print("@~@~@~@~~@~@~@~@~@~@~@~@~@~@~@~@~@~~@~@~@~@~@~@~~@~@~@~@~@~@~@~@~@~@~@~@~@~@~@~@~@~@~@~@")
-            print("PBP before: ", pbp_start)
-            print("PBP after: ", pbp_end)
-            print("Before start:", pbp_bef_start)
-            print("Before end:", pbp_bef_end)
-            print("After start:", pbp_aft_start)
-            print("After end:", pbp_aft_end)
-            print("@~@~@~@~~@~@~@~@~@~@~@~@~@~@~@~@~@~~@~@~@~@~@~@~~@~@~@~@~@~@~@~@~@~@~@~@~@~@~@~@~@~@~@~@")
+
 
     if len(isolate_id) == 0:
         return "no", "no", "no"
@@ -1052,12 +1083,10 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
 
         if bef_contig == 0:
             current_contig_bounds = bounds_of_contig(contig_file,contig_checker(contig_file, mge_hits))
-            print(rec_end_bef)
-            print(current_contig_bounds)
             current_length = rec_end_bef - current_contig_bounds.values[0]
             print("Need to expand before, currently have %s, need %s" % (current_length, flanking_length))
-            bef_regions = [bef_hits.tolist()]
-            #bef_regions = compo_enlarger(mge_hits, pbp_ori,"bef",compo_table, flanking_length, current_isolate, current_length)
+            #bef_regions = [bef_hits.tolist()]
+            bef_regions = compo_enlarger(mge_hits, pbp_ori,"bef",compo_table, flanking_length, current_isolate, current_length)
 
         else:
 
@@ -1066,23 +1095,12 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
         if aft_contig == 0:
             current_contig_bounds = bounds_of_contig(contig_file, contig_checker(contig_file, mge_hits))
             current_length = min((current_contig_bounds[1] - mge_hits[1]), (mge_hits[1] - current_contig_bounds[0]))
-            print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-            print(current_isolate)
-            print(current_contig_bounds)
-            print(mge_hits)
-            print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
             print("Need to expand after, currently have %s, need %s" % (current_length, flanking_length))
-            aft_regions = [aft_hits.tolist()]
-            #aft_regions = compo_enlarger(mge_hits, pbp_ori,"aft", compo_table, flanking_length, current_isolate, current_length)
-            print(aft_regions)
+            #aft_regions = [aft_hits.tolist()]
+            aft_regions = compo_enlarger(mge_hits, pbp_ori,"aft", compo_table, flanking_length, current_isolate, current_length)
+
         else:
             aft_regions = [aft_hits.tolist()]
-
-        if current_isolate == "11511_7#11":
-            print("@~@~@~@~~@~@~@~@~@~@~@~@~@~@~@~@~@~~@~@~@~@~@~@~~@~@~@~@~@~@~@~@~@~@~@~@~@~@~@~@~@~@~@~@")
-            print("PBP gappers: ", aft_regions)
-            print("@~@~@~@~~@~@~@~@~@~@~@~@~@~@~@~@~@~~@~@~@~@~@~@~~@~@~@~@~@~@~@~@~@~@~@~@~@~@~@~@~@~@~@~@")
-            #sys.exit(1)
 
         reccy_starts_bef.append(rec_start_bef)
         reccy_ends_bef.append(rec_end_bef)

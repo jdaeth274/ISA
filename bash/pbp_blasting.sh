@@ -2,6 +2,16 @@
 
 set -e
 
+if [[ $# == 0 ]]
+then
+  echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+  echo "Missing files check the usage below"
+  echo "Requires: [-p|--pbp_csv] [-d|--dna_dir] [-a|--act_compos] [-o|--out_dir] [-pr|--prefix] [-f|--flanks_file] [-g|--gubbins_res] [-r|--reference_db] [-c|--contig_bounds] [-gff|--gff_loc_csv]"
+  echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+  exit
+fi
+
+
 POSITIONAL=()
 while [[ $# -gt 0 ]]
 do
