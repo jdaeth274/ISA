@@ -133,7 +133,7 @@ def node_reconstruct(tree_loc, hit_csv):
 
     return tree
 
-def branch_mutations(tree, hit_csv, embl_csv, embl_reccy):
+def branch_mutations(tree, embl_csv, embl_reccy):
     ## Function to work out all the mutations and their positions along a branch.
     ## The embl csv gives you total mutations, both in and outside recombinations, so we first
     ## calculate the total, then to get just the base substitutions we check if any recombinations
@@ -503,8 +503,11 @@ if __name__ == '__main__':
         ## the tree to get the nodes labelled with the inserts. Then we'll run through the
         ## branches and get the summary of the mutations present
 
-        tree = node_reconstruct(tree_loc, current_dat)
-        branches_csv = branch_mutations(tree,current_dat,embl_csv, embl_reccy_csv)
+        #tree = node_reconstruct(tree_loc, current_dat)
+        tree = dendropy.Tree.get(path=tree_loc,
+                                 schema="newick", preserve_underscores=True)
+
+        branches_csv = branch_mutations(tree,embl_csv, embl_reccy_csv)
 
         branches_csv['cluster_name'] = cluster
 
