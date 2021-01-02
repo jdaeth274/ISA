@@ -137,7 +137,7 @@ def node_reconstruct(tree_loc, hit_csv):
             multi_hit_name = current_name_string + "_1"
             indy_2 = search_function_2(multi_hit_name, cluster_csv, 'isolate')
             if isinstance(indy_2, str):
-                cluster_num_col.append("ND")
+                cluster_num_col.append("")
             else:
                 cluster_val = cluster_csv.iloc[indy_2, cluster_csv.columns.get_loc("profile")]
                 cluster_num_col.append(cluster_val)

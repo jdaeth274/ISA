@@ -619,9 +619,7 @@ def compo_enlarger(start_act, ori, pos, act_compo, target_length, debug_id, pre_
                     else:
                         ref_start_send += 1
 
-                print(next_act_event_sstart_row)
-                print(next_act_event_send_row)
-                print(ref_start_sstart, ref_start_send)
+
                 if ref_start_send >= ref_start_sstart:
                     distance_hits = abs(next_act_event_send_row.iloc[7] - next_act_event_send_row.iloc[6])
                     current_length = current_length + distance_hits
@@ -698,7 +696,7 @@ def compo_enlarger(start_act, ori, pos, act_compo, target_length, debug_id, pre_
                         starting_act = next_act_event_sstart_row
 
 
-    return gap_list
+    return gap_list, current_length
 
 def contig_checker(contig_csv, hit_to_check):
     ## This is a function to check what contig a BLAST hit appears on
@@ -1086,8 +1084,8 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
             current_length = rec_end_bef - current_contig_bounds.values[0]
             print("Need to expand before, currently have %s, need %s" % (current_length, flanking_length))
             #bef_regions = [bef_hits.tolist()]
-            bef_regions = compo_enlarger(mge_hits, pbp_ori,"bef",compo_table, flanking_length, current_isolate, current_length)
-
+            bef_regions, current_length = compo_enlarger(mge_hits, pbp_ori,"bef",compo_table, flanking_length, current_isolate, current_length)
+            print("Need to expand before, currently have %s, need %s" % (current_length, flanking_length))
         else:
 
             bef_regions = [bef_hits.tolist()]
@@ -1097,8 +1095,8 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
             current_length = min((current_contig_bounds[1] - mge_hits[1]), (mge_hits[1] - current_contig_bounds[0]))
             print("Need to expand after, currently have %s, need %s" % (current_length, flanking_length))
             #aft_regions = [aft_hits.tolist()]
-            aft_regions = compo_enlarger(mge_hits, pbp_ori,"aft", compo_table, flanking_length, current_isolate, current_length)
-
+            aft_regions, current_length = compo_enlarger(mge_hits, pbp_ori,"aft", compo_table, flanking_length, current_isolate, current_length)
+            print("Need to expand after, currently have %s, need %s" % (current_length, flanking_length))
         else:
             aft_regions = [aft_hits.tolist()]
 

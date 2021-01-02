@@ -37,7 +37,7 @@ count(gps_tn916_assigned, insert_name) %>% arrange(desc(n)) %>% head()
 gps_tn916_assigned %>% filter(cluster_name == "gpsc.1") %>% count(insert_name) %>% arrange(desc(n)) %>% head()
 gps_tn916_assigned %>% filter(insert_name == 106) %>% count(cluster_name) %>% arrange(desc(n)) %>% head()
 
-nrow(gps_tn916_tot)
+
 
 
 ###############################
@@ -160,9 +160,40 @@ gps_mega_tot <- gps_mega_tot %>% mutate(Mega = "Mega")
 binded_rows <- bind_rows(gps_tn916_tot, gps_mega_tot)
 
 merged_insertions_tot <- full_join(gps_tn916_tot, gps_mega_tot, by = "id") %>% mutate(Tn916 = ifelse(is.na(Tn916),"",Tn916)) %>%
-  mutate(Mega = ifelse(is.na(Mega),"",Mega)) %>% mutate(element = paste(Mega, Tn916, sep = "#"))
+  mutate(Mega = ifelse(is.na(Mega),"",Mega)) %>% mutate(element = paste(Mega, Tn916, sep = "#")) %>%
+  mutate(Cluster_name = ifelse(is.na(cluster_name.x),cluster_name.y, cluster_name.x))
 
 count(merged_insertions_tot, id) %>% nrow()
+
+count(merged_insertions_tot, element)
+
+
+
+###############################################################################
+## Cluster prevalences ########################################################
+###############################################################################
+
+cluster_list <- read.csv("~/Dropbox/phd/insertion_site_analysis/data/gps_run_data/gps_reference_isolate_gff.csv",
+                         stringsAsFactors = FALSE)
+
+cluster_sizes <- count(cluster_list, cluster_name) %>% rename(size = n)
+
+## Mega prevalences 
+
+mega_cluster_nums <- count(gps_mega_tot, cluster_name) %>% rename(mega = n)
+
+mega_bound <- left_join(mega_cluster_nums, cluster_sizes, by = "cluster_name") %>% mutate(prev = mega/size)
+
+mean(mega_bound$prev)
+
+## tn916 prevalences 
+
+tn916_cluster_nums <- count(gps_tn916_tot, cluster_name) %>% rename(Tn916 = n)
+
+tn916_bound <- left_join(tn916_cluster_nums, cluster_sizes, by = "cluster_name") %>% mutate(prev = Tn916/size)
+
+mean(tn916_bound$prev)
+
 
 dual_inserts <- merged_insertions_tot %>% group_by(id) %>% mutate(element = paste(Mega, Tn916, sep = "#"))
 
