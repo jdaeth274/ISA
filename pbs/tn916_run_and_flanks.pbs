@@ -1,5 +1,5 @@
 #PBS -l select=1:ncpus=1:mem=12gb
-#PBS -l walltime=12:00:00
+#PBS -l walltime=16:00:00
 
 start=$SECONDS
 
@@ -14,6 +14,11 @@ cd /rds/general/project/bacterial_evo_genomics/live/gps_annotations_4_2_2020/gps
 bash ./ISA/bash/isa_pipeline.sh ./gps_run_data/gps ./gps_run_data/tn916.fasta \
 7000 gps_tn916_run_free gps_tn916 ./ 500 ./act_compos/ no \
 /rds/general/project/bacterial_evo_genomics/live/gps_annotations_4_2_2020/strep_reference_fasta/strep_ref_database
+
+cd ./gps_tn916_run_free
+
+bash ../ISA/bash/flank_search_only.sh ../gps_tn916_run_free/gps_tn916 ../tmp_dna_dir/ ../act_compos/referoo.fasta \
+../gps_tn916_run_free gps_tn916 ../flank_lengths.txt ../ ../../strep_reference_fasta/strep_ref_database
 
 duration=$(( SECONDS - start ))
 
