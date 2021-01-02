@@ -233,6 +233,7 @@ def outside_control(insertion_node, tree, example_id, act_comp_dir, ref_insertio
     outside_iso = 0
     isolate_before_end = False
     isolate_after_start = False
+    strand = False
     for ref in length_dict_sorted:
         if ref in nice_ids_tot and ref not in nice_ids_prev:
             continue
