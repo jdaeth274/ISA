@@ -1215,7 +1215,7 @@ if __name__ == '__main__':
                                              'attributes'],
                                       header=None)
         if len(ref_contig.index) > 1:
-            current_gff = gff_to_dna(ref_gff, ref_contig, ref_name, input_k=k)
+            current_gff = gff_to_dna(ref_gff, ref_contig, ref_name, input_k=1)
             if isinstance(current_gff, str):
                 continue
         ## pbp 1a
