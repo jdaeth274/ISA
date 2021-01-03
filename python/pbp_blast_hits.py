@@ -253,11 +253,7 @@ def outside_control(insertion_node, tree, example_id, act_comp_dir, ref_insertio
         if len(iso_contig.index) > 1:
             current_gff = gff_to_dna(current_gff, iso_contig, outside_iso, input_k=k)
             if isinstance(current_gff, str):
-                print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-                print(current_gene, ref)
                 outside_iso = 0
-                print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-
                 continue
 
         if current_gene == "pbp1A":
@@ -272,7 +268,7 @@ def outside_control(insertion_node, tree, example_id, act_comp_dir, ref_insertio
             correct_length, pbp_row = search_for_gene(current_gff, ['pbp2X', 'pbpX'], 2252,
                                                       100, False, None)
 
-        print(pbp_row)
+
         if pbp_row.iloc[0,6] == "+":
             isolate_before_end = pbp_row.iloc[0,3]
             isolate_after_start = pbp_row.iloc[0,4]
@@ -978,7 +974,7 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
                                                         ref_insert_list, pyt_csv, current_resistance, current_prev_res,
                                                         current_gene, gff_csv, contig_loc)
         if isinstance(cont_id, int):
-            print("Can't extract control for this isolate, skipping: %s" % res_id)
+            print("Can't extract control for this isolate, skipping: %s - %s" % (res_id, current_gene))
             continue
 
         csv_ref_name = cont_id + "!" + res_id
@@ -1361,8 +1357,6 @@ if __name__ == '__main__':
         print("Narrowing isolates:")
         narrow_start = time.perf_counter()
 
-        if cluster != "gpsc.22":
-            continue
 
         flanks_csv, regions_bef, regions_aft = isolate_narrow(current_dat, current_pyt, tree, embl_reccy_csv,
                                                               branch_mutations, current_ref_name, flanking_length,
