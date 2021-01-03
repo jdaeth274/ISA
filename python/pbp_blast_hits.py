@@ -1356,7 +1356,7 @@ if __name__ == '__main__':
         print("Narrowing isolates:")
         narrow_start = time.perf_counter()
 
-        if cluster != "gpsc.136":
+        if cluster != "gpsc.138":
             continue
 
         print(current_dat)
