@@ -255,7 +255,9 @@ def outside_control(insertion_node, tree, example_id, act_comp_dir, ref_insertio
             if isinstance(current_gff, str):
                 print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
                 print(current_gene, ref)
+                outside_iso = 0
                 print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+
                 continue
 
         if current_gene == "pbp1A":
