@@ -253,6 +253,9 @@ def outside_control(insertion_node, tree, example_id, act_comp_dir, ref_insertio
         if len(iso_contig.index) > 1:
             current_gff = gff_to_dna(current_gff, iso_contig, outside_iso, input_k=k)
             if isinstance(current_gff, str):
+                print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+                print(current_gene, ref)
+                print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
                 continue
 
         if current_gene == "pbp1A":
