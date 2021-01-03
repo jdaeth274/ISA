@@ -267,7 +267,7 @@ def outside_control(insertion_node, tree, example_id, act_comp_dir, ref_insertio
             correct_length, pbp_row = search_for_gene(current_gff, ['pbp2X', 'pbpX'], 2252,
                                                       100, False, None)
 
-
+        print(pbp_row)
         if pbp_row.iloc[0,6] == "+":
             isolate_before_end = pbp_row.iloc[0,3]
             isolate_after_start = pbp_row.iloc[0,4]
@@ -1355,6 +1355,9 @@ if __name__ == '__main__':
         embl_reccy_csv = pandas.read_csv(embl_rec_loc)
         print("Narrowing isolates:")
         narrow_start = time.perf_counter()
+
+        if cluster != "gpsc.22":
+            continue
 
         flanks_csv, regions_bef, regions_aft = isolate_narrow(current_dat, current_pyt, tree, embl_reccy_csv,
                                                               branch_mutations, current_ref_name, flanking_length,
