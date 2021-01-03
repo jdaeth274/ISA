@@ -1361,8 +1361,8 @@ if __name__ == '__main__':
         embl_reccy_csv = pandas.read_csv(embl_rec_loc)
         print("Narrowing isolates:")
         narrow_start = time.perf_counter()
-        if cluster != "gpsc.136":
-            continue
+        # if cluster != "gpsc.136":
+        #     continue
 
 
         flanks_csv, regions_bef, regions_aft = isolate_narrow(current_dat, current_pyt, tree, embl_reccy_csv,
