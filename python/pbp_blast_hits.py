@@ -973,7 +973,7 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
                                                         ref_insert_list, pyt_csv, current_resistance, current_prev_res,
                                                         current_gene, gff_csv, contig_loc)
         if isinstance(cont_id, int):
-            print("Can't extract control for this isolate, skipping: %s" % mge_id)
+            print("Can't extract control for this isolate, skipping: %s" % res_id)
             continue
 
         csv_ref_name = cont_id + "!" + res_id
