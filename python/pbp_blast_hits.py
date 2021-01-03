@@ -200,7 +200,7 @@ def gff_to_dna(gff_csv, contig_csv, isolate_id, input_k):
     return out_gff_csv
 
 def outside_control(insertion_node, tree, example_id, act_comp_dir, ref_insertion, pyt_csv,
-                    current_res, prev_res, current_gene, gff_csv, contig_loc):
+                    current_res, prev_res, current_gene, gff_csv, contig_loc, flanking_length):
     ## This function identifies control isolates outside of insertion node and the regions
     ## to look at
     res_pyt = pyt_csv[pyt_csv['profile'] == current_res]
@@ -273,11 +273,16 @@ def outside_control(insertion_node, tree, example_id, act_comp_dir, ref_insertio
             isolate_before_end = pbp_row.iloc[0,3]
             isolate_after_start = pbp_row.iloc[0,4]
             strand = "forward"
+            if (isolate_before_end - flanking_length) < 0:
+                continue
+
             break
         elif pbp_row.iloc[0,6] == "-":
             isolate_before_end = pbp_row.iloc[0, 3]
             isolate_after_start = pbp_row.iloc[0, 4]
             strand = "reverse"
+            if (isolate_before_end - flanking_length) < 0:
+                continue
             break
 
     return outside_iso, isolate_before_end, isolate_after_start, strand
@@ -972,7 +977,7 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
 
         cont_id, cont_start, cont_end, cont_strand = outside_control(insertion_node, tree, isolate_row, act_compos,
                                                         ref_insert_list, pyt_csv, current_resistance, current_prev_res,
-                                                        current_gene, gff_csv, contig_loc)
+                                                        current_gene, gff_csv, contig_loc, flanking_length)
         if isinstance(cont_id, int):
             print("Can't extract control for this isolate, skipping: %s - %s" % (res_id, current_gene))
             continue
