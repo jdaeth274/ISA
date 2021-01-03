@@ -1356,11 +1356,6 @@ if __name__ == '__main__':
         print("Narrowing isolates:")
         narrow_start = time.perf_counter()
 
-        if cluster != "gpsc.138":
-            continue
-
-        print(current_dat)
-
         flanks_csv, regions_bef, regions_aft = isolate_narrow(current_dat, current_pyt, tree, embl_reccy_csv,
                                                               branch_mutations, current_ref_name, flanking_length,
                                                               contig_bounds, current_gff_rows)
