@@ -1382,8 +1382,7 @@ if __name__ == '__main__':
         print("On cluster: %s, %s of %s" % (cluster, seq_clus, len(unique_clusters)))
         tic_cluster = time.perf_counter()
 
-        if cluster != "gpsc.156":
-            continue
+
         current_dat = reccy_hits[reccy_hits['cluster_name'] == cluster]
         current_pyt = pyt_csv[pyt_csv['cluster_name'] == cluster]
         current_ref_name = current_pyt['ref_name'].iloc[0]
