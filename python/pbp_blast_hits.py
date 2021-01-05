@@ -960,7 +960,7 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
                                                            100, False, None)
 
 
-        
+
         ## Get the locs of the pbps
         if pbp_row.iloc[0,6] == "+":
             pbp_start = pbp_row.iloc[0, 3]
