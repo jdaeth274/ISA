@@ -948,15 +948,15 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
                 continue
 
         if current_gene == "pbp1A":
-            correct_length, pbp_row = search_for_gene(current_gff, ['pbp1A', 'ponA'], 2159,
+            correct_length, pbp_row = search_for_gene(current_gff, ['pbp1A', 'ponA', 'pbp1a'], 2159,
                                                            100, False, None)
 
         elif current_gene == "pbp2B":    ## pbp 2b
-            correct_length, pbp_row = search_for_gene(current_gff, ['pbp2B', 'penA'], 2042,
+            correct_length, pbp_row = search_for_gene(current_gff, ['pbp2B', 'penA', 'pbp2b'], 2042,
                                                            100, False, None)
         ## pbp 2x
         elif current_gene == "pbp2X":
-            correct_length, pbp_row = search_for_gene(current_gff, ['pbp2X', 'pbpX'], 2252,
+            correct_length, pbp_row = search_for_gene(current_gff, ['pbp2X', 'pbpX', 'pbp2x'], 2252,
                                                            100, False, None)
 
 
