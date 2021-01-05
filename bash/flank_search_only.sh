@@ -45,6 +45,10 @@ else
   mkdir $4
   fi
 
+  python "${pythondir}reccy_detector.py" --gubbins_res $7 --hit_locs_csv $hit_csv \
+      --out_name $1 --contig_bounds $9
+
+
   less $6 | while read line; do \
     current_flanks=$line
 
