@@ -962,7 +962,7 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
 
 
         print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-        print(pbp_row, current_gff_loc.iloc[0])
+        print(current_gene, pbp_row, current_gff_loc.iloc[0])
         print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
         ## Get the locs of the pbps
         if pbp_row.iloc[0,6] == "+":
