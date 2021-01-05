@@ -771,8 +771,7 @@ def search_for_gene(ref_in,name,gene_length,tol,correct_length,gene_rower):
                     correct_length = True
                 else:
                     sys.stderr.write('Found gene' + gene + ' but wrong length: ' + str(gene_len[0]) + ', expected: ' + str(gene_length) + '\n')
-            else:
-                return False, False
+
 
     return correct_length,gene_rower
 
