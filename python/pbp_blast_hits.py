@@ -771,6 +771,8 @@ def search_for_gene(ref_in,name,gene_length,tol,correct_length,gene_rower):
                     correct_length = True
                 else:
                     sys.stderr.write('Found gene' + gene + ' but wrong length: ' + str(gene_len[0]) + ', expected: ' + str(gene_length) + '\n')
+            else:
+                return False, False
 
     return correct_length,gene_rower
 
@@ -958,6 +960,10 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
             correct_length, pbp_row = search_for_gene(current_gff, ['pbp2X', 'pbpX'], 2252,
                                                            100, False, None)
 
+
+        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+        print(pbp_row, current_gff_loc.iloc[0])
+        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
         ## Get the locs of the pbps
         if pbp_row.iloc[0,6] == "+":
             pbp_start = pbp_row.iloc[0, 3]
