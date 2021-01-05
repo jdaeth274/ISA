@@ -18,6 +18,7 @@ from Bio.Seq import Seq
 import math
 import time
 from pastml.acr import pastml_pipeline
+from pastml.ml import JOINT
 
 ###############################################################################
 ## Load up the files ##########################################################
@@ -169,7 +170,7 @@ def node_reconstruct(tree_loc, hit_csv):
     pastml_pipeline(data=data_file, columns=columns, name_column='mega',
                     tree=tree_loc, verbose=False,
                     out_data="./states_res.txt",
-                    work_dir="./")
+                    work_dir="./", prediction_method=JOINT)
     toc_ml = time.perf_counter()
 
     print("ML recon took this long: %s (seconds)" % (round(toc_ml - tic_ml)))
@@ -1057,6 +1058,9 @@ if __name__ == '__main__':
     for cluster in unique_clusters:
         print("On cluster: %s, %s of %s" % (cluster, seq_clus, len(unique_clusters)))
         tic_cluster = time.perf_counter()
+        if cluster != "gpsc.156":
+            continue
+
         current_dat = hit_csv[hit_csv['cluster_name'] == cluster]
         current_ref_name = current_dat['ref_name'].iloc[0]
         contig_suffix = "#contig_bounds.csv"

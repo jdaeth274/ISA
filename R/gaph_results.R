@@ -8,7 +8,7 @@ require(ggpubr, quietly = TRUE)
 require(tictoc, quietly = TRUE)
 require(dplyr, quietly = TRUE)
 
-graph_getter <- function(dir_to_files,graph_name){
+graph_getter <- function(dir_to_files,graph_name, current_flanks, insert_name){
   
 
   last_character <- base::substr(dir_to_files,
@@ -22,8 +22,16 @@ graph_getter <- function(dir_to_files,graph_name){
 
   summo_csv <- read.csv(summary_csv, stringsAsFactors = FALSE)
   blast_results <- list.files(dir_to_files, pattern = "*list*.csv")
-  
+  browser()
   counted_summo <- plyr::count(summo_csv$insertion_point)  
+  
+  if(insert_name != "total"){
+    counted_summo <- counted_summo[counted_summo$x %in% c(insert_name, "reference"),]
+    narrowed_refs <- summo_csv[summo_csv$insertion_point == insert_name, 1]
+    refs_to_use <- paste(narrowed_refs, "$",sep = "")
+    summo_refs <- summo_csv[grepl(paste(refs_to_use, collapse = "|"), summo_csv[,1]),]
+  }
+  
   
   #############################################################################
   ## Ok, so now we've got the summary_csv, lets go through each of the ########
@@ -33,16 +41,19 @@ graph_getter <- function(dir_to_files,graph_name){
   
   for(k in 1:nrow(counted_summo)){
     #browser()
+    tic(paste(as.character(k),"row done"))
     current_insertion <- as.character(counted_summo[k, 1])
     subsetted_data <- summo_csv[summo_csv$insertion_point == current_insertion,]
     
     if(k == 1){
       results_df <- bitscore_res(subsetted_data, blast_results,
-                                 current_insertion, dir_to_files)
+                                 current_insertion, dir_to_files, current_flanks)
+      toc()
     }else{
       new_df <- bitscore_res(subsetted_data, blast_results,
-                             current_insertion, dir_to_files)
+                             current_insertion, dir_to_files, current_flanks)
       results_df <- rbind.data.frame(results_df, new_df)
+      toc()
     }
     
   }
@@ -83,9 +94,10 @@ graph_getter <- function(dir_to_files,graph_name){
               weighted_hist = hist_weighted, ranked_hist = hist_ranked, ranked_bit = bit_ranked))
 }
 
-bitscore_res <- function(data_subset, blast_res_list, insertion_loci, dir_to_files){
-  
-  #browser()
+bitscore_res <- function(data_subset, blast_res_list, insertion_loci, dir_to_files, current_flanks){
+  if((data_subset$insertion_point == "28") & (current_flanks == "500")){
+    browser()
+  }
   isolate_file <- paste(data_subset$isolate, "_species_list.csv",sep = "")
   files_to_open <- blast_res_list[which(blast_res_list %in% isolate_file)]
   files_to_open <- paste(dir_to_files, files_to_open, sep = "")
@@ -198,6 +210,7 @@ series_display <- function(list_of_results, prefix, flanks_vector, cluster, regi
     current_k <- k_vec[k]
     current_res <- list_of_results[[k]]
     if(cluster == "total"){
+
       data_set <- current_res$total
       data_set2 <- current_res$by_insertion
       ref_ids <- grep("!", data_set$isolate)
@@ -225,6 +238,7 @@ series_display <- function(list_of_results, prefix, flanks_vector, cluster, regi
       
       
     }else{
+
       reference_db <-  current_res$total
       ref_ids <- grep("!", reference_db$isolate)
       reference_db <-  reference_db[ref_ids,]
@@ -275,7 +289,7 @@ series_display <- function(list_of_results, prefix, flanks_vector, cluster, regi
       labs(x = "Flank length", y = "ranked pneumo", title = paste(prefix,  "bit pneumo")) + 
       geom_pointrange(aes(ymin = (bit_pneumo - sd_3), ymax = (bit_pneumo + sd_3)))
   }else{
-    
+    browser()
     compo_plot_weighted <- ggplot(data = graph_df, aes(x = flank, y = weighted_bit, colour = region)) + geom_point(size = 2) +
       labs(x = "Flank length", y = "Weighted bit score") + theme(legend.position = "none")#, title = paste(prefix,  "weighted bit"))
     
@@ -297,7 +311,7 @@ series_display <- function(list_of_results, prefix, flanks_vector, cluster, regi
 folder_to_res <- function(results_folder, graph_name, insert_name){
   ## Function to take in the output from the flanks_only_search and output the over flanks graphs 
   ## Results folder should be the main run folder, flanks veccy the main 
-
+  
   folders <- list.files(results_folder, full.names = TRUE, include.dirs = TRUE)
   folders <- sub("//","/",folders)
   whole_blast_res <- folders[grep("_blast_results", folders)]
@@ -308,14 +322,19 @@ folder_to_res <- function(results_folder, graph_name, insert_name){
   tic("Running whole flanks sum up")
   pmen3_list <- list()
   flanks_veccy <- as.integer(sub("_blast_results","",basename(whole_blast_res)))
-  
+  current_iter <- 1
   for(k in whole_blast_res){
     #next
-    current_graphed_res <- graph_getter(k, graph_name)
+    if(flanks_veccy[current_iter] != "500"){
+      current_iter <- current_iter + 1
+      next
+    }
+    browser()
+    current_graphed_res <- graph_getter(k, graph_name, flanks_veccy[current_iter], insert_name)
     pmen3_list[[length(pmen3_list) + 1]] <- current_graphed_res
-    
+    current_iter <- current_iter + 1
   }
-  
+
   pmen3_mega_total <- series_display(pmen3_list, graph_name, flanks_veccy, insert_name, region = "whole")
   toc()
   ## before blast res 
@@ -376,19 +395,80 @@ parse_args <- function(){
 input_args <- parse_args()
 
 graph_name <- input_args[1]
-
+graph_name <- "GPS MEGA"
 
 input_args[2] <- "~/Dropbox/phd/insertion_site_analysis/data/gps_run_data/mega_res/gps_mega_run4/"
 
-pmen_mega_res <- folder_to_res(results_folder = input_args[2],
+pmen_mega_res_total <- folder_to_res(results_folder = input_args[2],
                                graph_name = graph_name,
-                               insert_name = "28")
+                               insert_name = "total")
 
+## Get some info out from the gamma scores 
+mega_whole_res <- pmen_mega_res_total$whole_res$total_df
 
-whole_df <- bind_rows(pmen_mega_res$whole_res$total_df , bind_rows(pmen_mega_res$before_res$total_df, pmen_mega_res$after_res$total_df))
+## MGE insert sites 
+inserts_whole <- mega_whole_res[mega_whole_res$control == "Actual",]
+mean(inserts_whole$bit_pneumo)
+reference_whole <- mega_whole_res[mega_whole_res$control == "Control",]
+mean(reference_whole$bit_pneumo)
+
+wilcox.test(inserts_whole$bit_pneumo, reference_whole$bit_pneumo)
+t.test(inserts_whole$bit_pneumo, reference_whole$bit_pneumo)
+
+ggplot(data = mega_whole_res, aes(x = control, y = bit_pneumo, fill = control, colour = control)) +
+  geom_violin()
+
+whole_df <- bind_rows(pmen_mega_res_total$whole_res$total_df , bind_rows(pmen_mega_res_total$before_res$total_df, pmen_mega_res_total$after_res$total_df))
 
 whole_df_insert <- whole_df[whole_df$control == "Actual",]
 whole_df_ref <- whole_df[whole_df$control == "Control",]
+wilcox.test(whole_df_insert$bit_pneumo, whole_df_ref$bit_pneumo)
+median(whole_df_insert$bit_pneumo)
+median(whole_df_ref$bit_pneumo)
+
+boxplot_whole <- ggplot(data = whole_df,aes(x = control, y = bit_pneumo)) + geom_boxplot() 
+boxplot_whole
+
+wilcox.test()
+
+whole_df <- whole_df %>% mutate(control = ifelse(control == "Actual", "Tag","Control"))
+whole_df$control <- factor(whole_df$control, levels = c("Tag","Control"))
+
+violin_plot_whole <- ggplot(data = whole_df, aes(x = control, y = bit_pneumo)) + geom_violin(aes(fill = control)) +
+  labs(x = "Isolate", y = "Score") + scale_fill_discrete(breaks = c("Actual","Control")) + 
+  guides(fill = guide_legend(title = "Isolate"))
+
+violin_plot_whole
+
+whole_plot <- pmen_mega_res$whole_res$pneumo_plot
+
+###############################################################################
+## Run it through for Tn916 ###################################################
+###############################################################################
+
+pmen_tn916_res_total <- folder_to_res(results_folder = "~/Dropbox/phd/insertion_site_analysis/data/gps_run_data/tn916_res/gps_tn916_run_free/",
+                                     graph_name = graph_name,
+                                     insert_name = "total")
+
+gps_tn916_total <- pmen_tn916_res_total$whole_res$total_df
+inserts_whole <- gps_tn916_total[gps_tn916_total$control == "Actual",]
+mean(inserts_whole$bit_pneumo)
+reference_whole <- gps_tn916_total[gps_tn916_total$control == "Control",]
+mean(reference_whole$bit_pneumo)
+
+wilcox.test(inserts_whole$bit_pneumo, reference_whole$bit_pneumo)
+
+t.test(inserts_whole$bit_pneumo, reference_whole$bit_pneumo)
+
+
+whole_df <- bind_rows(pmen_tn916_res_total$whole_res$total_df , bind_rows(pmen_tn916_res_total$before_res$total_df, pmen_tn916_res_total$after_res$total_df))
+
+whole_df_insert <- whole_df[whole_df$control == "Actual",]
+whole_df_ref <- whole_df[whole_df$control == "Control",]
+
+## Lets pair it up 
+pairing_df <- whole_df %>% mutate(iso = ifelse(grepl("!",isolate),sub(".*!","",isolate), isolate))
+
 wilcox.test(whole_df_insert$bit_pneumo, whole_df_ref$bit_pneumo)
 mean(whole_df_insert$bit_pneumo)
 mean(whole_df_ref$bit_pneumo)
@@ -402,17 +482,36 @@ whole_df <- whole_df %>% mutate(control = ifelse(control == "Actual", "Tag","Con
 whole_df$control <- factor(whole_df$control, levels = c("Tag","Control"))
 
 violin_plot_whole <- ggplot(data = whole_df, aes(x = control, y = bit_pneumo)) + geom_violin(aes(fill = control)) +
-  labs(x = "Isolate", y = "Score") + scale_fill_discrete(breaks = c("Tag","Control")) + 
+  labs(x = "Isolate", y = "Score") + scale_fill_discrete(breaks = c("Actual","Control")) + 
   guides(fill = guide_legend(title = "Isolate"))
 
 violin_plot_whole
 
 whole_plot <- pmen_mega_res$whole_res$pneumo_plot
 
+###############################################################################
+
+pmen_mega_res_tag <- folder_to_res(results_folder = input_args[2],
+                                     graph_name = "GPS Tn1207.1",
+                                     insert_name = "28")
+
+whole_df <- bind_rows(pmen_mega_res_tag$whole_res$total_df , bind_rows(pmen_mega_res_tag$before_res$total_df, pmen_mega_res_tag$after_res$total_df))
+whole_df <- whole_df %>% mutate(control = ifelse(control == "Actual", "Tag","Control"))
+whole_df$control <- factor(whole_df$control, levels = c("Tag","Control"))
+
+violin_plot_whole <- ggplot(data = whole_df, aes(x = control, y = bit_pneumo)) + geom_violin(aes(fill = control)) +
+  labs(x = "Isolate", y = "Score") + scale_fill_discrete(breaks = c("Actual","Control")) + 
+  guides(fill = guide_legend(title = "Isolate"))
+
+violin_plot_whole
+
+whole_plot <- pmen_mega_res$whole_res$pneumo_plot
+
+
 mean_40_60 <- ggdraw()  +
-  draw_plot(pmen_mega_res$whole_res$pneumo_plot, x = 0, y = 0.6, width = .5, height = .3) +
-  draw_plot(pmen_mega_res$before_res$pneumo_plot, x = 0, y = 0.3, width = .5, height = .3) +
-  draw_plot(pmen_mega_res$after_res$pneumo_plot, x = 0, y = 0, width = 0.5, height = 0.3) +
+  draw_plot(pmen_mega_res_tag$whole_res$pneumo_plot, x = 0, y = 0.6, width = .5, height = .3) +
+  draw_plot(pmen_mega_res_tag$before_res$pneumo_plot, x = 0, y = 0.3, width = .5, height = .3) +
+  draw_plot(pmen_mega_res_tag$after_res$pneumo_plot, x = 0, y = 0, width = 0.5, height = 0.3) +
   draw_plot(violin_plot_whole, x = 0.5, y = 0, width = 0.5, height = 0.9) +
   draw_plot_label(label = c("A", "B", "C", "D"), size = 15,
                   x = c(0, 0, 0, 0.5), y = c(0.9, 0.6, 0.3, 0.9)) + draw_plot_label("Mean score, 40-60 range", size = 15,
@@ -491,5 +590,8 @@ dev.off()
 
 
 
+pmen_mega_res_tag <- folder_to_res(results_folder = input_args[2],
+                                   graph_name = "GPS Tn1207.1",
+                                   insert_name = "28")
 
 

@@ -813,7 +813,7 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
             if pyt_csv['id'].isin([august_isolate]).any():
                 pyt_row = pyt_csv[pyt_csv['id'] == august_isolate]
 
-                if pyt_row['insert_name'].isin([current_insert_name]).any():
+                if (pyt_row['insert_name'].isin([current_insert_name]).any()) & (pyt_row['insertion_node'].isin([insertion_node]).any()):
                     starts = pyt_row[['before_sstart', 'before_send']]
                     ends = pyt_row[['after_sstart', 'after_send']]
                     starts_span = abs(starts.iloc[0, 1] - starts.iloc[0, 0])
@@ -1381,6 +1381,9 @@ if __name__ == '__main__':
     for cluster in unique_clusters:
         print("On cluster: %s, %s of %s" % (cluster, seq_clus, len(unique_clusters)))
         tic_cluster = time.perf_counter()
+
+        if cluster != "gpsc.156":
+            continue
         current_dat = reccy_hits[reccy_hits['cluster_name'] == cluster]
         current_pyt = pyt_csv[pyt_csv['cluster_name'] == cluster]
         current_ref_name = current_pyt['ref_name'].iloc[0]
