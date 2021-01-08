@@ -22,14 +22,14 @@ graph_getter <- function(dir_to_files,graph_name, current_flanks, insert_name){
 
   summo_csv <- read.csv(summary_csv, stringsAsFactors = FALSE)
   blast_results <- list.files(dir_to_files, pattern = "*list*.csv")
-  browser()
+
   counted_summo <- plyr::count(summo_csv$insertion_point)  
   
   if(insert_name != "total"){
     counted_summo <- counted_summo[counted_summo$x %in% c(insert_name, "reference"),]
     narrowed_refs <- summo_csv[summo_csv$insertion_point == insert_name, 1]
     refs_to_use <- paste(narrowed_refs, "$",sep = "")
-    summo_refs <- summo_csv[grepl(paste(refs_to_use, collapse = "|"), summo_csv[,1]),]
+    summo_csv <- summo_csv[grepl(paste(refs_to_use, collapse = "|"), summo_csv[,1]),]
   }
   
   
@@ -59,7 +59,7 @@ graph_getter <- function(dir_to_files,graph_name, current_flanks, insert_name){
   }
   
   total_run_through <- bitscore_res(summo_csv, blast_results,
-                                    "total", dir_to_files)
+                                    "total", dir_to_files, current_flanks)
   
   #browser()
   total_hist_weighted <- ggplot(data = total_run_through) + geom_boxplot(aes(x = insertion_loci, 
@@ -95,9 +95,7 @@ graph_getter <- function(dir_to_files,graph_name, current_flanks, insert_name){
 }
 
 bitscore_res <- function(data_subset, blast_res_list, insertion_loci, dir_to_files, current_flanks){
-  if((data_subset$insertion_point == "28") & (current_flanks == "500")){
-    browser()
-  }
+  
   isolate_file <- paste(data_subset$isolate, "_species_list.csv",sep = "")
   files_to_open <- blast_res_list[which(blast_res_list %in% isolate_file)]
   files_to_open <- paste(dir_to_files, files_to_open, sep = "")
@@ -221,14 +219,14 @@ series_display <- function(list_of_results, prefix, flanks_vector, cluster, regi
       graph_df$lqr[current_k] <- quantile(data_set$bit_pneumo[-ref_ids], probs = 0.05)
       graph_df$ranked_pneumo[current_k] <- mean(data_set$ranked_pneumo[-ref_ids])
       graph_df$uqr[current_k] <- quantile(data_set$bit_pneumo[-ref_ids], probs = 0.95)
-      graph_df$bit_pneumo[current_k] <- mean(data_set$bit_pneumo[-ref_ids])
+      graph_df$bit_pneumo[current_k] <- median(data_set$bit_pneumo[-ref_ids])
       graph_df$sd_3[current_k] <- stats::sd(data_set$bit_pneumo[-ref_ids])
       
       graph_df$weighted_bit[current_k + 1] <- mean(data_set$weighted_bit[ref_ids])
       graph_df$lqr[current_k + 1] <- quantile(data_set$bit_pneumo[ref_ids], probs = 0.05)
       graph_df$ranked_pneumo[current_k+ 1] <- mean(data_set$ranked_pneumo[ref_ids])
       graph_df$uqr[current_k+ 1] <- quantile(data_set$bit_pneumo[ref_ids], probs = 0.95)
-      graph_df$bit_pneumo[current_k+ 1] <- mean(data_set$bit_pneumo[ref_ids])
+      graph_df$bit_pneumo[current_k+ 1] <- median(data_set$bit_pneumo[ref_ids])
       graph_df$sd_3[current_k+ 1] <- stats::sd(data_set$bit_pneumo[ref_ids])
       
       graphing_rows <- data_set2[,c("isolate","bit_pneumo", "insertion_loci")]
@@ -252,19 +250,19 @@ series_display <- function(list_of_results, prefix, flanks_vector, cluster, regi
       reference_db$insertion_loci <- cluster
       data_set2 <- bind_rows(data_set, reference_db)
       ref_ids2 <- grep("!",data_set2$isolate)
-      
+#      browser()
       graph_df$weighted_bit[current_k] <- mean(data_set$weighted_bit)
-      graph_df$lqr[current_k] <- quantile(data_set$bit_pneumo, probs = 0.5)[1]
+      graph_df$lqr[current_k] <- quantile(data_set$bit_pneumo, probs = 0.25)[1]
       graph_df$ranked_pneumo[current_k] <- mean(data_set$ranked_pneumo)
-      graph_df$uqr[current_k] <- quantile(data_set$bit_pneumo, probs = 0.55)[1]
-      graph_df$bit_pneumo[current_k] <- mean(data_set$bit_pneumo)
+      graph_df$uqr[current_k] <- quantile(data_set$bit_pneumo, probs = 0.75)[1]
+      graph_df$bit_pneumo[current_k] <- median(data_set$bit_pneumo)
       graph_df$sd_3[current_k] <- stats::sd(data_set$bit_pneumo)
       
       graph_df$weighted_bit[current_k + 1] <- mean(reference_db$weighted_bit)
-      graph_df$lqr[current_k + 1] <- quantile(reference_db$bit_pneumo, probs = 0.50)
+      graph_df$lqr[current_k + 1] <- quantile(reference_db$bit_pneumo, probs = 0.25)
       graph_df$ranked_pneumo[current_k+ 1] <- mean(reference_db$ranked_pneumo)
-      graph_df$uqr[current_k+ 1] <- quantile(reference_db$bit_pneumo, probs = 0.60)
-      graph_df$bit_pneumo[current_k+ 1] <- mean(reference_db$bit_pneumo)
+      graph_df$uqr[current_k+ 1] <- quantile(reference_db$bit_pneumo, probs = 0.75)
+      graph_df$bit_pneumo[current_k+ 1] <- median(reference_db$bit_pneumo)
       graph_df$sd_3[current_k+ 1] <- stats::sd(reference_db$bit_pneumo)
       
       
@@ -289,7 +287,7 @@ series_display <- function(list_of_results, prefix, flanks_vector, cluster, regi
       labs(x = "Flank length", y = "ranked pneumo", title = paste(prefix,  "bit pneumo")) + 
       geom_pointrange(aes(ymin = (bit_pneumo - sd_3), ymax = (bit_pneumo + sd_3)))
   }else{
-    browser()
+
     compo_plot_weighted <- ggplot(data = graph_df, aes(x = flank, y = weighted_bit, colour = region)) + geom_point(size = 2) +
       labs(x = "Flank length", y = "Weighted bit score") + theme(legend.position = "none")#, title = paste(prefix,  "weighted bit"))
     
@@ -298,7 +296,7 @@ series_display <- function(list_of_results, prefix, flanks_vector, cluster, regi
     
     compo_plot_pneumo <- ggplot(data = graph_df, aes(x = flank, y = bit_pneumo, colour = region)) + geom_point(size = 2) +
       geom_line() + geom_ribbon(aes(ymin = lqr, ymax = uqr, fill = region), colour = NA, alpha = 0.25) +
-      labs(x = "Flank length", y = "Score") + theme(legend.position = "none") + geom_line(aes(x = flank, y = lqr), colour = "black")
+      labs(x = "Flank length", y = "Score") + theme(legend.position = "none") 
       
   }
   
@@ -325,11 +323,6 @@ folder_to_res <- function(results_folder, graph_name, insert_name){
   current_iter <- 1
   for(k in whole_blast_res){
     #next
-    if(flanks_veccy[current_iter] != "500"){
-      current_iter <- current_iter + 1
-      next
-    }
-    browser()
     current_graphed_res <- graph_getter(k, graph_name, flanks_veccy[current_iter], insert_name)
     pmen3_list[[length(pmen3_list) + 1]] <- current_graphed_res
     current_iter <- current_iter + 1
@@ -341,12 +334,13 @@ folder_to_res <- function(results_folder, graph_name, insert_name){
   tic("Before flanks sum up")
   pmen3_list_bef <- list()
   flanks_veccy <- as.integer(sub("_before_flank_blast_res","",basename(before_blast_res)))
+  current_iter <- 1
   for(k in before_blast_res){
     #next
     
-    current_graphed_res <- graph_getter(k, graph_name)
+    current_graphed_res <- graph_getter(k, graph_name, flanks_veccy[current_iter], insert_name)
     pmen3_list_bef[[length(pmen3_list_bef) + 1]] <- current_graphed_res
-    
+    current_iter <- current_iter + 1
   }
   
   before_name <- paste(graph_name, "before flanks")
@@ -357,11 +351,12 @@ folder_to_res <- function(results_folder, graph_name, insert_name){
   tic("After flanks sum up")
   pmen3_list_aft <- list()
   flanks_veccy <- as.integer(sub("_after_flank_blast_res","",basename(after_blast_res)))
+  current_iter <- 1
   for(k in after_blast_res){
     
-    current_graphed_res <- graph_getter(k, graph_name)
+    current_graphed_res <- graph_getter(k, graph_name, flanks_veccy[current_iter], insert_name)
     pmen3_list_aft[[length(pmen3_list_aft) + 1]] <- current_graphed_res
-    
+    current_iter <- current_iter + 1
   }
   
   after_name <- paste(graph_name, "after flanks")
@@ -470,8 +465,8 @@ whole_df_ref <- whole_df[whole_df$control == "Control",]
 pairing_df <- whole_df %>% mutate(iso = ifelse(grepl("!",isolate),sub(".*!","",isolate), isolate))
 
 wilcox.test(whole_df_insert$bit_pneumo, whole_df_ref$bit_pneumo)
-mean(whole_df_insert$bit_pneumo)
-mean(whole_df_ref$bit_pneumo)
+median(whole_df_insert$bit_pneumo)
+median(whole_df_ref$bit_pneumo)
 
 boxplot_whole <- ggplot(data = whole_df,aes(x = control, y = bit_pneumo)) + geom_boxplot() 
 boxplot_whole
@@ -500,7 +495,7 @@ whole_df <- whole_df %>% mutate(control = ifelse(control == "Actual", "Tag","Con
 whole_df$control <- factor(whole_df$control, levels = c("Tag","Control"))
 
 violin_plot_whole <- ggplot(data = whole_df, aes(x = control, y = bit_pneumo)) + geom_violin(aes(fill = control)) +
-  labs(x = "Isolate", y = "Score") + scale_fill_discrete(breaks = c("Actual","Control")) + 
+  labs(x = "Isolate", y = "Score") + scale_fill_discrete(breaks = c("Tag","Control")) + 
   guides(fill = guide_legend(title = "Isolate"))
 
 violin_plot_whole
@@ -509,16 +504,15 @@ whole_plot <- pmen_mega_res$whole_res$pneumo_plot
 
 
 mean_40_60 <- ggdraw()  +
-  draw_plot(pmen_mega_res_tag$whole_res$pneumo_plot, x = 0, y = 0.6, width = .5, height = .3) +
-  draw_plot(pmen_mega_res_tag$before_res$pneumo_plot, x = 0, y = 0.3, width = .5, height = .3) +
-  draw_plot(pmen_mega_res_tag$after_res$pneumo_plot, x = 0, y = 0, width = 0.5, height = 0.3) +
-  draw_plot(violin_plot_whole, x = 0.5, y = 0, width = 0.5, height = 0.9) +
+  draw_plot(pmen_mega_res_tag$before_res$pneumo_plot + labs(x = NULL), x = 0, y = 0.65, width = .5, height = .32) +
+  draw_plot(pmen_mega_res_tag$after_res$pneumo_plot  + labs(x = NULL), x = 0, y = 0.33, width = 0.5, height = 0.32) +
+  draw_plot(pmen_mega_res_tag$whole_res$pneumo_plot, x = 0, y = 0, width = .5, height = .33) +
+  draw_plot(violin_plot_whole, x = 0.5, y = 0, width = 0.5, height = 0.97) +
   draw_plot_label(label = c("A", "B", "C", "D"), size = 15,
-                  x = c(0, 0, 0, 0.5), y = c(0.9, 0.6, 0.3, 0.9)) + draw_plot_label("Mean score, 40-60 range", size = 15,
-                                                                                    x = 0.2, y = 1)
+                  x = c(0, 0, 0, 0.5), y = c(0.95, 0.65, 0.33, 0.95)) 
 
 mean_40_60
-mean_95 <- ggdraw()  +
+  mean_95 <- ggdraw()  +
   draw_plot(pmen_mega_res$whole_res$pneumo_plot, x = 0, y = 0.6, width = .5, height = .3) +
   draw_plot(pmen_mega_res$before_res$pneumo_plot, x = 0, y = 0.3, width = .5, height = .3) +
   draw_plot(pmen_mega_res$after_res$pneumo_plot, x = 0, y = 0, width = 0.5, height = 0.3) +

@@ -240,6 +240,7 @@ def node_reconstruct(tree_loc, hit_csv):
             exit()
 
         taxon_state = state_finder(tree_id, tree_states)
+        start_state = taxon_state
 
         parent_node = tree_node.parent_node
         init_run = 0
@@ -289,26 +290,22 @@ def node_reconstruct(tree_loc, hit_csv):
                         previous_state.append(parent_state)
 
         if newer_parent.label not in node_nums or current_clust_name not in cluster_name:
-            node_nums.append(newer_parent.label)
-            init_isolate.append(current_id)
-            cluster_name.append(current_clust_name)
-            node_balance.append(children / tot_children)
-            MGE.append(children)
-            non_MGE.append(tot_children)
-            stat_val = (abs(children - non_children) / tot_children)
-            objective_balance.append(stat_val)
-
-    out_balance_csv = pandas.DataFrame({'isolate_id': init_isolate,
-                                        'hit_loc': cluster_name,
-                                        'node_balance': node_balance,
-                                        'MGE_isolates': MGE,
-                                        'total_isolates': non_MGE,
-                                        'test_stat': objective_balance,
-                                        'node_id': node_nums})
+            if start_state != previous_state:
+                node_nums.append(newer_parent.label)
+                init_isolate.append(current_id)
+                cluster_name.append(current_clust_name)
+                node_balance.append(children / tot_children)
+                MGE.append(children)
+                non_MGE.append(tot_children)
+                stat_val = (abs(children - non_children) / tot_children)
+                objective_balance.append(stat_val)
 
     cluster_csv['insertion_node'] = pandas.Series(node_home, index=cluster_csv.index)
     cluster_csv['node_rec'] = pandas.Series(reccy_on_node, index=cluster_csv.index)
     cluster_csv['previous_state'] = pandas.Series(previous_state, index=cluster_csv.index)
+
+    cluster_csv = cluster_csv[cluster_csv['previous_state'] != cluster_csv['profile']]
+    cluster_csv = cluster_csv.reset_index(drop=True)
 
     return cluster_csv
 

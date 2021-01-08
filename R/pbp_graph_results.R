@@ -168,12 +168,12 @@ pneumo_finder <- function(data_set){
 }
 
 
-pbps_only <- read.csv("~/Dropbox/phd/insertion_site_analysis/data/pmen_run/pmen_pbps/500_pbp_seqs_res/pmen_pbp_reccies_species_compo_pbp.csv",
+pbps_only <- read.csv("~/Dropbox/phd/insertion_site_analysis/data/gps_run_data/pbp_res/gps_pbp_extraction/500_pbp_seqs_res/gps_pbp_species_compo_pbp.csv",
                       stringsAsFactors = FALSE)
-flanks_extracted <- read.csv("~/Dropbox/phd/insertion_site_analysis/data/pmen_run/pmen_pbps/pmen_pbp_reccies_500_flanks_extracted.csv",
+flanks_extracted <- read.csv("~/Dropbox/phd/insertion_site_analysis/data/gps_run_data/pbp_res/gps_pbp_extraction/gps_pbp_500_flanks_extracted.csv",
                              stringsAsFactors = FALSE)
 
-pbp_res <- graph_getter_pbp("~/Dropbox/phd/insertion_site_analysis/data/pmen_run/pmen_pbps/500_pbp_seqs_res/",
+pbp_res <- graph_getter_pbp("~/Dropbox/phd/insertion_site_analysis/data/gps_run_data/pbp_res/gps_pbp_extraction/500_pbp_seqs_res/",
                         graph_name = "PBP genes")
 pbp_res$ranked_bit
 
@@ -185,6 +185,29 @@ bit_ranked <- ggplot(data = results_df) + geom_violin(aes(x = Gene,
                                                           y = bit_pneumo)) + geom_point(aes(x = insertion_loci,
                                                                       y = bit_pneumo, color = Gene),
                                                                   position = position_jitter(width = 0.1, height = 0)) +
-  labs(y = "Score",title = "PMEN collection pbp gene origin") 
+  labs(y = "Score") 
   
 bit_ranked
+
+## Work out the mean bit_pneumo scores for each of the genes 
+
+bit_df <- results_df[,c(2,5)]
+
+bit_df <- aggregate(bit_pneumo ~ insertion_loci, bit_df, FUN = median)
+bit_df
+
+## Plot out the R-S changes too 
+
+results_df <- pbp_res$by_insertion %>% filter(insertion_loci %in% c("R-S-pbp1A","R-S-pbp2X","R-S-pbp2B")) %>% mutate(Gene = insertion_loci)
+
+bit_ranked <- ggplot(data = results_df) + geom_violin(aes(x = Gene,
+                                                          y = bit_pneumo)) + geom_point(aes(x = insertion_loci,
+                                                                                            y = bit_pneumo, color = Gene),
+                                                                                        position = position_jitter(width = 0.1, height = 0)) +
+  labs(y = "Score") 
+
+bit_ranked
+
+
+
+

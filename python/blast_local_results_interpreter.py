@@ -56,7 +56,7 @@ def get_species(results_csv, out_dir):
     start_subset = time.perf_counter()
     blast_results_csv = blast_results_csv.sort_values('bitscore', ascending=False)
     top_bitscore = blast_results_csv.iloc[0, 8]
-    top_5_percent = top_bitscore - (top_bitscore)
+    top_5_percent = top_bitscore - (top_bitscore * 1)
 
     blast_results_csv = blast_results_csv[blast_results_csv['bitscore'] >= top_5_percent]
     end_file_check = time.perf_counter()
