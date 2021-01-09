@@ -826,6 +826,7 @@ def reccy_main(tree_loc, ref_gff_tsv, hit_csv, gene_row, gene_name, ):
     non_inny_insert_name = []
     non_inny_prev_res = []
 
+
     for k in range(len(node_count)):
         # print(k)
         node_label = node_count.index[k]
@@ -833,9 +834,9 @@ def reccy_main(tree_loc, ref_gff_tsv, hit_csv, gene_row, gene_name, ):
 
 
         check_if_same_insertion_loci = noders['cluster'].value_counts()
-
-
+        
         if len(check_if_same_insertion_loci) == 1:
+
             noders_row = noders.iloc[0]
             before_locs = gene_row.iloc[0,3]
             after_locs = gene_row.iloc[0, 4]
@@ -850,7 +851,10 @@ def reccy_main(tree_loc, ref_gff_tsv, hit_csv, gene_row, gene_name, ):
                 new_row, add_row = reccy_finder(ref_gff_tsv, closest_vals, node_label, example_id,
                                                 "Yes", tree)
 
+
+
                 if add_row == True:
+
                     start_inserts.append(new_row.iloc[0, 0])
                     end_inserts.append(new_row.iloc[0, 1])
                     start_nodes.append(new_row.iloc[0, 2])
@@ -870,6 +874,7 @@ def reccy_main(tree_loc, ref_gff_tsv, hit_csv, gene_row, gene_name, ):
 
 
                 else:
+
                     non_start_insert.append(new_row.iloc[0, 0])
                     non_end_insert.append(new_row.iloc[0, 1])
                     non_example_isolate.append(new_row.iloc[0, 2])
@@ -914,14 +919,14 @@ def reccy_main(tree_loc, ref_gff_tsv, hit_csv, gene_row, gene_name, ):
             before_loc_list = before_locs.tolist()
             after_loc_list = after_locs.tolist()
 
-            closest_vals = sorted(closest_vals)
-            non_start_insert.append(closest_vals[0])
-            non_end_insert.append(closest_vals[1])
-            non_example_isolate.append(example_id)
-            non_insertion_node.append(node_label)
-            non_inny_node_tips.append(leaf_tip_nums(tree, example_id, current_node=non_insertion_node[-1]))
-            non_inny_insert_name.append(noders.iloc[0, noders.columns.get_loc('profile')])
-            non_inny_prev_res.append(previous_state)
+            # closest_vals = sorted(closest_vals)
+            # non_start_insert.append(closest_vals[0])
+            # non_end_insert.append(closest_vals[1])
+            # non_example_isolate.append(example_id)
+            # non_insertion_node.append(node_label)
+            # non_inny_node_tips.append(leaf_tip_nums(tree, example_id, current_node=non_insertion_node[-1]))
+            # non_inny_insert_name.append(noders.iloc[0, noders.columns.get_loc('profile')])
+            # non_inny_prev_res.append(previous_state)
             ## new row here
 
         else:
@@ -943,6 +948,7 @@ def reccy_main(tree_loc, ref_gff_tsv, hit_csv, gene_row, gene_name, ):
                     new_row, add_row = reccy_finder(ref_gff_tsv, closest_vals, node_label, example_id,
                                                     "Yes", tree)
                     if add_row == True:
+
                         start_inserts.append(new_row.iloc[0, 0])
                         end_inserts.append(new_row.iloc[0, 1])
                         start_nodes.append(new_row.iloc[0, 2])
@@ -963,6 +969,7 @@ def reccy_main(tree_loc, ref_gff_tsv, hit_csv, gene_row, gene_name, ):
 
 
                     else:
+
                         non_start_insert.append(new_row.iloc[0, 0])
                         non_end_insert.append(new_row.iloc[0, 1])
                         non_example_isolate.append(new_row.iloc[0, 2])
@@ -1034,6 +1041,8 @@ def reccy_main(tree_loc, ref_gff_tsv, hit_csv, gene_row, gene_name, ):
         non_reccy_df['resistance'] = pandas.Series(data=non_inny_insert_name, index=non_reccy_df.index)
         non_reccy_df['gene'] = gene_name
         non_reccy_df['previous_resistance'] = pandas.Series(data=non_inny_prev_res, index=non_reccy_df.index)
+
+
 
     return reccy_df, non_reccy_df
 
