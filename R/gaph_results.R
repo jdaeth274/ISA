@@ -9,7 +9,7 @@ require(tictoc, quietly = TRUE)
 require(dplyr, quietly = TRUE)
 
 graph_getter <- function(dir_to_files,graph_name, current_flanks, insert_name){
-  
+  browser()  
 
   last_character <- base::substr(dir_to_files,
                                  nchar(dir_to_files),
@@ -489,27 +489,33 @@ whole_plot <- pmen_mega_res$whole_res$pneumo_plot
 pmen_mega_res_tag <- folder_to_res(results_folder = input_args[2],
                                      graph_name = "GPS Tn1207.1",
                                      insert_name = "28")
+## Get some info on the insertions 
+## Look into the top species hits for tag at 500bp upstream. 
 
-whole_df <- bind_rows(pmen_mega_res_tag$whole_res$total_df , bind_rows(pmen_mega_res_tag$before_res$total_df, pmen_mega_res_tag$after_res$total_df))
+
+pmen_mega_res_tag$whole_res$graph_data
+whole_df <- bind_rows(pmen_mega_res_tag$before_res$total_df, pmen_mega_res_tag$after_res$total_df)
 whole_df <- whole_df %>% mutate(control = ifelse(control == "Actual", "Tag","Control"))
 whole_df$control <- factor(whole_df$control, levels = c("Tag","Control"))
 
 violin_plot_whole <- ggplot(data = whole_df, aes(x = control, y = bit_pneumo)) + geom_violin(aes(fill = control)) +
   labs(x = "Isolate", y = "Score") + scale_fill_discrete(breaks = c("Tag","Control")) + 
-  guides(fill = guide_legend(title = "Isolate"))
+  guides(fill = guide_legend(title = "Isolate")) + geom_point(aes(x = control, y = bit_pneumo, color = control),
+                                                              position = position_jitter(width = 0.45, height = 0),
+                                                              size = 0.25) +
+  scale_color_discrete(breaks = c("Tag","Control"), name = "Isolate")
 
 violin_plot_whole
 
-whole_plot <- pmen_mega_res$whole_res$pneumo_plot
+#whole_plot <- pmen_mega_res$whole_res$pneumo_plot
 
 
 mean_40_60 <- ggdraw()  +
-  draw_plot(pmen_mega_res_tag$before_res$pneumo_plot + labs(x = NULL), x = 0, y = 0.65, width = .5, height = .32) +
-  draw_plot(pmen_mega_res_tag$after_res$pneumo_plot  + labs(x = NULL), x = 0, y = 0.33, width = 0.5, height = 0.32) +
-  draw_plot(pmen_mega_res_tag$whole_res$pneumo_plot, x = 0, y = 0, width = .5, height = .33) +
-  draw_plot(violin_plot_whole, x = 0.5, y = 0, width = 0.5, height = 0.97) +
-  draw_plot_label(label = c("A", "B", "C", "D"), size = 15,
-                  x = c(0, 0, 0, 0.5), y = c(0.95, 0.65, 0.33, 0.95)) 
+  draw_plot(pmen_mega_res_tag$before_res$pneumo_plot + labs(x = NULL), x = 0, y = 0.5, width = .4, height = .5) +
+  draw_plot(pmen_mega_res_tag$after_res$pneumo_plot  + labs(x = "Score"), x = 0, y = 0, width = 0.4, height = 0.5) +
+  draw_plot(violin_plot_whole, x = 0.4, y = 0, width = 0.6, height = 1) +
+  draw_plot_label(label = c("A", "B", "C"), size = 15,
+                  x = c(0, 0, 0.4), y = c(0.95, 0.45, 0.95)) 
 
 mean_40_60
   mean_95 <- ggdraw()  +
@@ -589,3 +595,5 @@ pmen_mega_res_tag <- folder_to_res(results_folder = input_args[2],
                                    insert_name = "28")
 
 
+tag_res <- graph_getter(dir_to_files = "~/Dropbox/phd/insertion_site_analysis/data/gps_run_data/mega_res/gps_mega_run4/500_before_flank_blast_res/",
+                        graph_name = "before_tag", insert_name = "28",current_flanks = "500")

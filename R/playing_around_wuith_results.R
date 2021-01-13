@@ -17,19 +17,20 @@ gps_tn916_assigned <- read.csv("~/Dropbox/phd/insertion_site_analysis/data/gps_r
                                stringsAsFactors = FALSE)
 
 gps_tn916_reccy <- read.csv("~/Dropbox/phd/insertion_site_analysis/data/gps_run_data/tn916_res/gps_tn916_run_free/gps_tn916_reccy_hits.csv",
-                            stringsAsFactors = FALSE)
-gps_tn916_reccy <- gps_tn916_reccy %>% rename(isolate_id = isolate_example)
+                            stringsAsFactors = FALSE) %>% mutate(reccy = "Yes") %>% rename(isolate_id = isolate_example)
 gps_tn916_reccy_miss <- read.csv("~/Dropbox/phd/insertion_site_analysis/data/gps_run_data/tn916_res/gps_tn916_run_free/gps_tn916_non_reccy_hits.csv",
-                            stringsAsFactors = FALSE)
+                            stringsAsFactors = FALSE) %>% mutate(reccy = "No")
 
 gps_tn916_assigned <- gps_tn916_assigned %>% mutate(insert_node = paste(cluster_name, insertion_node, sep = "-")) 
 
 gps_tn916_assigned %>% count(insert_node) %>% nrow()  
+gps_tn916_assigned %>% count(cluster_name) %>% nrow()
 
 
-merged_916_insertions <-bind_rows(gps_tn916_reccy, gps_tn916_reccy_miss)
+merged_916_insertions <- bind_rows(gps_tn916_reccy, gps_tn916_reccy_miss)
 merged_916_insertions %>% count(cluster_name) %>% nrow()
 merged_916_insertions %>% count(insert_name) %>% arrange(desc(n)) %>% head()
+merged_916_insertions %>% count(reccy)
 merged_916_insertions[which.max(merged_916_insertions$insertion_node_tip_nums),]
 count(gps_tn916_missing, reason)
 
@@ -48,15 +49,14 @@ gps_mega_hits <- read.csv("~/Dropbox/phd/insertion_site_analysis/data/gps_run_da
 gps_mega_misses <- read.csv("~/Dropbox/phd/insertion_site_analysis/data/gps_run_data/mega_res/gps_mega_run4/gps_mega_missing_df.csv",
                             stringsAsFactors = FALSE)
 gps_mega_reccy_hits <- read.csv("~/Dropbox/phd/insertion_site_analysis/data/gps_run_data/mega_res/gps_mega_run4/gps_mega_reccy_hits.csv",
-                                stringsAsFactors = FALSE)
-gps_mega_reccy_hits <- gps_mega_reccy_hits %>% rename(isolate_id = isolate_example)
+                                stringsAsFactors = FALSE) %>% mutate(reccy = "Yes") %>% rename(isolate_id = isolate_example)
 gps_mega_reccy_misses <- read.csv("~/Dropbox/phd/insertion_site_analysis/data/gps_run_data/mega_res/gps_mega_run4/gps_mega_non_reccy_hits.csv",
-                                stringsAsFactors = FALSE)
+                                stringsAsFactors = FALSE) %>% mutate(reccy = "No")
 
 
 merged_insertions <- bind_rows(gps_mega_reccy_hits, gps_mega_reccy_misses)
 count(merged_insertions, insert_name) %>% arrange(desc(n)) %>% head()
-
+count(merged_insertions, reccy)
 
 count(gps_mega_misses, reason)
 count(gps_mega_hits, insert_name) %>% arrange(desc(n)) %>% head()

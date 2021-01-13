@@ -834,7 +834,7 @@ def reccy_main(tree_loc, ref_gff_tsv, hit_csv, gene_row, gene_name, ):
 
 
         check_if_same_insertion_loci = noders['cluster'].value_counts()
-        
+
         if len(check_if_same_insertion_loci) == 1:
 
             noders_row = noders.iloc[0]

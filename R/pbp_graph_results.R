@@ -193,8 +193,13 @@ bit_ranked
 
 bit_df <- results_df[,c(2,5)]
 
-bit_df <- aggregate(bit_pneumo ~ insertion_loci, bit_df, FUN = median)
+bit_df <- aggregate(bit_pneumo ~ insertion_loci, bit_df, FUN = mean)
 bit_df
+
+## Numbers of events with below 1 scores 
+
+results_df_non_pneumo <- results_df %>% mutate(non_pneumo = ifelse(bit_pneumo < 1, "Yes","No"))
+count(results_df_non_pneumo, Gene)
 
 ## Plot out the R-S changes too 
 
@@ -209,5 +214,54 @@ bit_ranked <- ggplot(data = results_df) + geom_violin(aes(x = Gene,
 bit_ranked
 
 
+
+###############################################################################
+## pbp resistance levels across the gps collection ############################
+###############################################################################
+
+pbp_res_gps <- read.csv("~/Dropbox/phd/elife_paper/data/gps_pbp_profiles.csv", stringsAsFactors = FALSE)
+
+pbp_in_reccies <- read.csv("~/Dropbox/phd/insertion_site_analysis/data/gps_run_data/pbp_res/gps_pbp_extraction/gps_pbp_reccy_hits.csv",
+                           stringsAsFactors = FALSE) %>% rename(isolate_id = isolate_example) %>% distinct() %>% mutate(reccy = 1)
+pbp_out_reccies <- read.csv("~/Dropbox/phd/insertion_site_analysis/data/gps_run_data/pbp_res/gps_pbp_extraction/gps_pbp_non_reccy_hits.csv",
+                            stringsAsFactors = FALSE) %>% distinct() %>% mutate(reccy = 0)
+gpsc1_micro <- read.csv("~/Dropbox/phd/insertion_site_analysis/data/gpsc.1_run_data/gpsc1_micro_csv.csv",
+                        stringsAsFactors = FALSE)
+gpsc1_micro <- gpsc1_micro %>% left_join(pbp_res_gps, by = c("id" = "id")) %>% rename(pen__autocolour = penicillin_cat) %>%
+  write.csv(file = "~/Dropbox/phd/insertion_site_analysis/data/gpsc.1_run_data/gpsc1_micro_csv.csv",
+            row.names = FALSE)
+
+
+pbp_total_changes <- bind_rows(pbp_in_reccies, pbp_out_reccies) %>% mutate(switcheroo = paste(previous_resistance, resistance, sep = "-"))
+
+change_counts <- count(pbp_total_changes, switcheroo) %>% mutate(prop = (n/sum(n))*100)
+
+## No that's the changes across 3 pbp genes, we need to group by insertion_node and cluster and switcheroo 
+
+insertion_df <- pbp_total_changes[,c("isolate_id","insertion_node","switcheroo","cluster_name","reccy")]
+
+
+insertions <- aggregate(reccy ~ insertion_node + switcheroo + cluster_name, insertion_df, sum)
+
+change_counts <- count(insertions, switcheroo) %>% mutate(prop = (n/sum(n))*100)
+
+reccy_counts <- count(insertions, reccy) %>% mutate(prop = (n/sum(n))*100)
+
+
+
+###############################################################################
+## Looking into the trim_sulfa resistance levels in the collection ############
+###############################################################################
+
+trim_res <- read.csv("~/Dropbox/phd/elife_paper/data/gps_trim_profiles.csv",
+                     stringsAsFactors = FALSE) %>% rename(trim = Resistance)
+sulfa_res <- read.csv("~/Dropbox/phd/elife_paper/data/gps_sulfa_profiles.csv",
+                      stringsAsFactors = FALSE) %>% rename(sulfa = Resistance)
+co_trim <- left_join(trim_res, sulfa_res, by = c("isolate_id" = "isolate_id","cluster_name" = "cluster_name")) %>%
+  mutate(co_trim = paste(trim, sulfa, sep = "-")) %>% select(isolate_id, trim, sulfa, co_trim, cluster_name)
+
+count(co_trim, co_trim)
+
+count
 
 
