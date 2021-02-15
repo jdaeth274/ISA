@@ -38,7 +38,15 @@ count(gps_tn916_assigned, insert_name) %>% arrange(desc(n)) %>% head()
 gps_tn916_assigned %>% filter(cluster_name == "gpsc.1") %>% count(insert_name) %>% arrange(desc(n)) %>% head()
 gps_tn916_assigned %>% filter(insert_name == 106) %>% count(cluster_name) %>% arrange(desc(n)) %>% head()
 
+gps_tn916_library <- read.csv("~/Dropbox/phd/insertion_site_analysis/data/gps_run_data/tn916_res/gps_tn916_run_free/gps_tn916_library.csv",
+                              stringsAsFactors = FALSE)
 
+gps_tn916_assigned[gps_tn916_assigned$insert_name == "121",]
+
+ggplot(data = gps_tn916_assigned) +
+  geom_histogram(aes(x = insert_length), binwidth = 5000) 
+  
+  
 
 
 ###############################
@@ -75,7 +83,7 @@ gps_mega_misses <- mutate(gps_mega_misses, assigned = "No")
 
 gps_mega_tot <- bind_rows(gps_mega_hits, gps_mega_misses)
 
-
+gps_tag <- gps_mega_hits %>% filter(insert_name == 25) %>% count(cluster_name) %>% nrow()
 
 
 ################################
@@ -226,6 +234,31 @@ for(cluster in gps_mega_count$cluster_name){
 
 ##rlmcd
 nrow(gps_mega_hits[gps_mega_hits$insert_name %in% c(7,8,12,18,22,30,32),])
+
+
+
+
+
+###############################################################################
+## Check distribution of pen and MEGA #########################################
+###############################################################################
+
+gps_pbp_profs <- read.csv("~/Dropbox/phd/elife_paper/data/gps_pbp_profiles.csv",
+                          stringsAsFactors = FALSE)
+
+gps_mega_tot$mega <- "Yes"
+
+gps_mega_binding <- gps_mega_tot[,c("id","mega")]
+
+gps_mega_pen <- left_join(gps_pbp_profs, gps_mega_binding, by = c("id" = "id")) %>%
+  mutate(mega = ifelse(is.na(mega), "No","Yes"))
+
+gps_mega_pen_yes <- gps_mega_pen[gps_mega_pen$mega == "Yes",]
+
+
+
+
+
 
 
 

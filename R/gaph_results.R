@@ -9,7 +9,7 @@ require(tictoc, quietly = TRUE)
 require(dplyr, quietly = TRUE)
 
 graph_getter <- function(dir_to_files,graph_name, current_flanks, insert_name){
-  browser()  
+  #browser()  
 
   last_character <- base::substr(dir_to_files,
                                  nchar(dir_to_files),
@@ -499,11 +499,14 @@ whole_df <- whole_df %>% mutate(control = ifelse(control == "Actual", "Tag","Con
 whole_df$control <- factor(whole_df$control, levels = c("Tag","Control"))
 
 violin_plot_whole <- ggplot(data = whole_df, aes(x = control, y = bit_pneumo)) + geom_violin(aes(fill = control)) +
-  labs(x = "Isolate", y = "Score") + scale_fill_discrete(breaks = c("Tag","Control")) + 
+  labs(x = "Isolate", y = "Score") + scale_fill_discrete(labels = c(expression(paste(italic("tag"), " insertion",sep = "")),"Unmodified Locus")) + 
   guides(fill = guide_legend(title = "Isolate")) + geom_point(aes(x = control, y = bit_pneumo, color = control),
                                                               position = position_jitter(width = 0.45, height = 0),
                                                               size = 0.25) +
-  scale_color_discrete(breaks = c("Tag","Control"), name = "Isolate")
+  scale_color_discrete(labels = c(expression(paste(italic("tag"), " insertion",sep = "")),"Unmodified Locus"), name = "Isolate") + 
+  theme(legend.text.align = 0) +
+  scale_x_discrete(labels = c(expression(paste(italic("tag"), " insertion",sep = "")),"Unmodified Locus")) +
+  theme_bw()
 
 violin_plot_whole
 
@@ -511,9 +514,9 @@ violin_plot_whole
 
 
 mean_40_60 <- ggdraw()  +
-  draw_plot(pmen_mega_res_tag$before_res$pneumo_plot + labs(x = NULL), x = 0, y = 0.5, width = .4, height = .5) +
-  draw_plot(pmen_mega_res_tag$after_res$pneumo_plot  + labs(x = "Score"), x = 0, y = 0, width = 0.4, height = 0.5) +
-  draw_plot(violin_plot_whole, x = 0.4, y = 0, width = 0.6, height = 1) +
+  draw_plot(pmen_mega_res_tag$before_res$pneumo_plot + labs(x = NULL) + theme_bw() + theme(legend.position = "none"), x = 0, y = 0.5, width = .4, height = .5) +
+  draw_plot(pmen_mega_res_tag$after_res$pneumo_plot  + labs(x = "Flank Length (bp)")  + theme_bw() + theme(legend.position = "none"), x = 0, y = 0, width = 0.4, height = 0.5) +
+  draw_plot(violin_plot_whole + theme(legend.text.align = 0), x = 0.4, y = 0, width = 0.6, height = 1) +
   draw_plot_label(label = c("A", "B", "C"), size = 15,
                   x = c(0, 0, 0.4), y = c(0.95, 0.45, 0.95)) 
 
@@ -597,3 +600,30 @@ pmen_mega_res_tag <- folder_to_res(results_folder = input_args[2],
 
 tag_res <- graph_getter(dir_to_files = "~/Dropbox/phd/insertion_site_analysis/data/gps_run_data/mega_res/gps_mega_run4/500_before_flank_blast_res/",
                         graph_name = "before_tag", insert_name = "28",current_flanks = "500")
+
+
+###############################################################################
+## Check for Tn916 ############################################################
+###############################################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -183,17 +183,31 @@ results_df <- pbp_res$by_insertion %>% filter(insertion_loci %in% c("S-R-pbp1A",
 
 bit_ranked <- ggplot(data = results_df) + geom_violin(aes(x = Gene,
                                                           y = bit_pneumo)) + geom_point(aes(x = insertion_loci,
-                                                                      y = bit_pneumo, color = Gene),
+                                                                      y = bit_pneumo),
                                                                   position = position_jitter(width = 0.1, height = 0)) +
-  labs(y = "Score") 
+  labs(y = "Score") + theme_bw() + 
+  scale_x_discrete(name = "Gene", breaks = c("S-R-pbp1A","S-R-pbp2B","S-R-pbp2X"), 
+                   labels = c(bquote(atop(italic("pbp1a"), "Sensitive to Resistant")),
+                              bquote(atop(italic("pbp2b"), "Sensitive to Resistant")),
+                              bquote(atop(italic("pbp2x"), "Sensitive to Resistant")))
+  )
   
 bit_ranked
 
+labels = c(expression(paste(italic("pbp1a"),"  ", "\nSensitive to Resistant")),
+           expression(paste(italic("pbp2x"),"  ", "\nSensitive to Resistant")),
+           expression(paste(italic("pbp2b"),"  ", "\nSensitive to Resistant")))
+labels = c("pbp1a\nSensitive to Resistant",
+           "pbp2b\nSensitive to Resistant",
+           "pbp2x\nSensitive to Resistant")
+labels = c(bquote(atop(italic("pbp1a"), "Sensitive to Resistant")),
+           bquote(atop(italic("pbp2b"), "Sensitive to Resistant")),
+           bquote(atop(italic("pbp2x"), "Sensitive to Resistant")))
 ## Work out the mean bit_pneumo scores for each of the genes 
 
 bit_df <- results_df[,c(2,5)]
 
-bit_df <- aggregate(bit_pneumo ~ insertion_loci, bit_df, FUN = mean)
+bit_df <- aggregate(bit_pneumo ~ insertion_loci, bit_df, FUN = median)
 bit_df
 
 ## Numbers of events with below 1 scores 
@@ -220,6 +234,8 @@ bit_ranked
 ###############################################################################
 
 pbp_res_gps <- read.csv("~/Dropbox/phd/elife_paper/data/gps_pbp_profiles.csv", stringsAsFactors = FALSE)
+
+
 
 pbp_in_reccies <- read.csv("~/Dropbox/phd/insertion_site_analysis/data/gps_run_data/pbp_res/gps_pbp_extraction/gps_pbp_reccy_hits.csv",
                            stringsAsFactors = FALSE) %>% rename(isolate_id = isolate_example) %>% distinct() %>% mutate(reccy = 1)
@@ -262,6 +278,88 @@ co_trim <- left_join(trim_res, sulfa_res, by = c("isolate_id" = "isolate_id","cl
 
 count(co_trim, co_trim)
 
-count
+count(co_trim, trim)
+count(co_trim, sulfa)
+
+
+###############################################################################
+## PMEN pbp changes ###########################################################
+###############################################################################
+
+
+pmen_pbp_reccy <- read.csv("~/Dropbox/phd/insertion_site_analysis/data/pmen_run/pmen_pbps/pmen_pbp_no_stasis_reccy_hits.csv",
+                           stringsAsFactors = FALSE) %>% rename(isolate_id = isolate_example) %>%
+  mutate(reccy = 1)
+
+pmen_pbp_reccy_miss <- read.csv("~/Dropbox/phd/insertion_site_analysis/data/pmen_run/pmen_pbps/pmen_pbp_no_stasis_non_reccy_hits.csv",
+                                stringsAsFactors = FALSE) %>%
+  mutate(reccy = 0)
+
+
+pmen_pbp_tot <- bind_rows(pmen_pbp_reccy, pmen_pbp_reccy_miss) %>%
+  mutate(switcheroo = paste(previous_resistance, resistance, sep = "-"))
+
+insertion_df <- pmen_pbp_tot[,c("isolate_id","insertion_node","switcheroo","cluster_name","reccy")]
+
+
+insertions <- aggregate(reccy ~ insertion_node + switcheroo + cluster_name, insertion_df, sum)
+
+change_counts <- count(insertions, switcheroo) %>% mutate(prop = (n/sum(n))*100)
+
+reccy_counts <- count(insertions, reccy) %>% mutate(prop = (n/sum(n))*100)
+
+## reccy counts insertions 
+
+pbps_only <- read.csv("~/Dropbox/phd/insertion_site_analysis/data/pmen_run/pmen_pbps/500_pbp_seqs_res/pmen_pbp_no_stasis_species_compo_pbp.csv",
+                      stringsAsFactors = FALSE)
+pbp_res <- graph_getter_pbp("~/Dropbox/phd/insertion_site_analysis/data/pmen_run/pmen_pbps/500_pbp_seqs_res/",
+                            graph_name = "PBP genes")
+pbp_res$ranked_bit
+
+
+
+results_df <- pbp_res$by_insertion %>% filter(insertion_loci %in% c("S-R-pbp1A","S-R-pbp2X","S-R-pbp2B")) %>% mutate(Gene = insertion_loci)
+
+
+
+bit_ranked <- ggplot(data = results_df) + geom_violin(aes(x = Gene,
+                                                          y = bit_pneumo)) + geom_point(aes(x = insertion_loci,
+                                                                                            y = bit_pneumo, color = Gene),
+                                                                                        position = position_jitter(width = 0.1, height = 0)) +
+  labs(y = "Score") 
+
+bit_ranked
+
+## Work out the mean bit_pneumo scores for each of the genes 
+
+bit_df <- results_df[,c(2,5)]
+
+bit_df <- aggregate(bit_pneumo ~ insertion_loci, bit_df, FUN = median)
+bit_df
+
+## Numbers of events with below 1 scores 
+
+results_df_non_pneumo <- results_df %>% mutate(non_pneumo = ifelse(bit_pneumo < 1, "Yes","No"))
+count(results_df_non_pneumo, Gene)
+
+## Plot out the R-S changes too 
+
+results_df <- pbp_res$by_insertion %>% filter(insertion_loci %in% c("R-S-pbp1A","R-S-pbp2X","R-S-pbp2B")) %>% mutate(Gene = insertion_loci)
+
+bit_ranked <- ggplot(data = results_df) + geom_violin(aes(x = Gene,
+                                                          y = bit_pneumo)) + geom_point(aes(x = insertion_loci,
+                                                                                            y = bit_pneumo, color = Gene),
+                                                                                        position = position_jitter(width = 0.1, height = 0)) +
+  labs(y = "Score") 
+
+bit_ranked
+bit_df <- results_df[,c(2,5)]
+
+bit_df <- aggregate(bit_pneumo ~ insertion_loci, bit_df, FUN = median)
+bit_df
+
+
+
+
 
 

@@ -73,21 +73,38 @@ def contig_checker(contig_csv, hit_to_check):
     ##        hit_to_check: Start and end of a BLAST hit
     ## Output: Contig number of BLAST hit.
     hit_contig = 0
-    for j in range(len(contig_csv.index)):
-        c_start_and_end = contig_csv.iloc[j]
-        if j == 0:
-            overhang_before = 0
-            overhang_after = 10
-        else:
-            overhang_before = 15
-            overhang_after = 15
-        start_hit = hit_to_check[0] >= (c_start_and_end[0] - overhang_before) and \
-                    hit_to_check[0] <= (c_start_and_end[1] + overhang_after)
-        end_hit = hit_to_check[1] >= (c_start_and_end[0] - overhang_before) and \
-                  hit_to_check[1] <= (c_start_and_end[1] + overhang_after)
 
-        if start_hit == True and end_hit == True:
-            hit_contig = j + 1
+    if len(hit_to_check) == 1:
+        for j in range(len(contig_csv.index)):
+            c_start_and_end = contig_csv.iloc[j]
+            if j == 0:
+                overhang_before = 0
+                overhang_after = 10
+            else:
+                overhang_before = 15
+                overhang_after = 15
+            start_hit = hit_to_check[0] >= (c_start_and_end[0] - overhang_before) and \
+                        hit_to_check[0] <= (c_start_and_end[1] + overhang_after)
+
+            if start_hit == True:
+                hit_contig = j + 1
+    else:
+
+        for j in range(len(contig_csv.index)):
+            c_start_and_end = contig_csv.iloc[j]
+            if j == 0:
+                overhang_before = 0
+                overhang_after = 10
+            else:
+                overhang_before = 15
+                overhang_after = 15
+            start_hit = hit_to_check[0] >= (c_start_and_end[0] - overhang_before) and \
+                        hit_to_check[0] <= (c_start_and_end[1] + overhang_after)
+            end_hit = hit_to_check[1] >= (c_start_and_end[0] - overhang_before) and \
+                      hit_to_check[1] <= (c_start_and_end[1] + overhang_after)
+
+            if start_hit == True and end_hit == True:
+                hit_contig = j + 1
 
     return hit_contig
 
@@ -291,6 +308,7 @@ def row_merger(narrowed_rows):
             merged_row = first_row
             merged_locs = [[first_row['sstart'], first_row['ssend']]]
             merged_row['align'] = abs(merged_locs[0][1] - merged_locs[0][0])
+            merged_row['ori_start'] = first_row['ori_start']
             merged_indexers = [merged_row.loc['merged_index']]
             added_start_indexes = []
 
@@ -329,8 +347,9 @@ def row_merger(narrowed_rows):
                                 merged_row.loc['align'] = new_align
                                 merged_row.loc['qend'] = new_qend
                                 merged_row.loc['ssend'] = new_send
+                                merged_row.loc['ori_end'] = start_nones.iloc[0,11]
                                 merged_locs.append([first_start.iloc[5],first_start.iloc[6]])
-                                merged_indexers.append(first_start.iloc[10])
+                                merged_indexers.append(first_start.iloc[12])
                                 added_start_indexes.append(first_start_index)
                                 first_start_index += 1
                                 if first_start_index <= (len(start_rows.index) - 1):
@@ -351,8 +370,9 @@ def row_merger(narrowed_rows):
                                 merged_row.loc['align'] = new_align
                                 merged_row.loc['qend'] = new_qend
                                 merged_row.loc['ssend'] = new_send
+                                merged_row.loc['ori_end'] = start_nones.loc[lowest_sstart_index,'ori_end']
                                 merged_locs.append([start_nones.iloc[lowest_sstart_index,5], start_nones.iloc[lowest_sstart_index, 6]])
-                                merged_indexers.append(start_nones.iloc[lowest_sstart_index, 10])
+                                merged_indexers.append(start_nones.iloc[lowest_sstart_index, 12])
                                 added_start_indexes.append(start_nones.index)
                                 first_start_index += 1
                                 if first_start_index <= (len(start_rows.index) - 1):
@@ -366,8 +386,9 @@ def row_merger(narrowed_rows):
                             merged_row.loc['align'] = new_align
                             merged_row.loc['qend'] = new_qend
                             merged_row.loc['ssend'] = new_send
+                            merged_row.loc['ori_end'] = first_start['ori_end']
                             merged_locs.append([first_start.iloc[5], first_start.iloc[6]])
-                            merged_indexers.append(first_start.iloc[10])
+                            merged_indexers.append(first_start.iloc[12])
                             added_start_indexes.append(first_start_index)
                             first_start_index += 1
                             if first_start_index <= (len(start_rows.index) - 1):
@@ -384,6 +405,9 @@ def row_merger(narrowed_rows):
 def merged_contig_checker(merged_csv, contig_file_abs_path, act_path):
     multi_rows = []
 
+    merged_csv['ori_start'] = merged_csv['orientation']
+    merged_csv['ori_end'] = merged_csv['orientation']
+
     for k in range(len(merged_csv.index)):
         current_id = merged_csv.iloc[k, 0]  # .values.to_string()
         underscore_count = current_id.count("_")
@@ -396,6 +420,7 @@ def merged_contig_checker(merged_csv, contig_file_abs_path, act_path):
 
 
     multi_row_db = merged_csv.iloc[multi_rows].copy()
+
     #print(multi_row_db['file_loc'])
     file_locs = set(multi_row_db.iloc[:,8].copy().to_list())
     file_locs = list(file_locs)
@@ -429,7 +454,6 @@ def merged_contig_checker(merged_csv, contig_file_abs_path, act_path):
             position = contig_end_checker(current_hitters, contig_tab, act_path, contig_isolate)
             positions.append(position)
 
-        orig_positions = positions
 
         isolate_rows['contig_pos'] = pandas.Series(positions, index=isolate_rows.index)
 
@@ -443,6 +467,8 @@ def merged_contig_checker(merged_csv, contig_file_abs_path, act_path):
         if len(isolate_rows_narrow.index) < 10 and len(isolate_rows_narrow.index) > 1:
             isolate_rows_narrow = isolate_rows_narrow.sort_values(by = 'qstart', ascending=True)
             isolate_rows_narrow = isolate_rows_narrow.reset_index(drop=True)
+            if file_locs[k] == "6569_4_15":
+                print(isolate_rows_narrow)
             merged_row, merged_row_to_drop, merged_loc = row_merger(isolate_rows_narrow)
             if len(merged_row_to_drop) > 0:
                 merged_rows_to_add = merged_rows_to_add.append(merged_row, sort=False, ignore_index=True)
@@ -454,6 +480,7 @@ def merged_contig_checker(merged_csv, contig_file_abs_path, act_path):
         print("Completed %s of %s rows. Just finished: %s" % (iter_val, len(file_locs), isolate_id), end="\r",flush=True)
 
     ## Now we'll remove the merged rows from the df
+
     merged_csv = merged_csv.drop(merged_rows_to_drop)
     merged_csv['merged_index'] = numpy.NAN
     merged_csv['merged'] = pandas.Series(list(numpy.repeat("No", len(merged_csv.index))), index=merged_csv.index)
@@ -1806,10 +1833,13 @@ def hit_mover(hit_before, hit_after, compo_csv, isolate_id, mge_bounds, mge_ori,
                 before_process = "no"
 
         elif mge_ori == "reverse":
+
             poss_hit_before = compo_csv[(compo_csv['qstart'] >= (hit_before['qend'] - 50)) & \
                                         (compo_csv['qend'] <= (mge_bounds[1] + 10)) ]
             poss_hit_before = poss_hit_before.sort_values(by='qstart', ascending=True)
 
+            if isolate_id == "6569_4#15":
+                print(poss_hit_before)
             new_align = hit_before_length
             if not poss_hit_before.empty:
                 current_hit = poss_hit_before[poss_hit_before['qstart'] <= (hit_new_bef.iloc[7] + 1000)]
@@ -2524,10 +2554,16 @@ if __name__ == '__main__':
 
         current_row = narrowed_prop.iloc[[k]]
         hitters = (list(current_row.iloc[0, [5, 6]]))
-        if hitters[0] < hitters[1]:
-            mge_ori = "forward"
-        elif hitters[0] > hitters[1]:
+        mge_oris = list(current_row.iloc[0,[10,11]])
+
+        if mge_oris[0] == mge_oris[1]:
+            mge_ori = mge_oris[0]
+            mge_bef = mge_oris[0]
+            mge_aft = mge_oris[0]
+        elif mge_oris[0] != mge_oris[1]:
             mge_ori = "reverse"
+            mge_bef = mge_oris[0]
+            mge_aft = mge_oris[1]
 
         ## Now we'll go into the tab files and get the compo files
         isolate_id_z = narrowed_prop.iloc[k, 0]
@@ -2549,7 +2585,10 @@ if __name__ == '__main__':
 
         # if isolate_id not in cluster_2:
         #    continue
+        # if isolate_id != "6569_4#15":
+        #     continue
 
+        print(current_row)
         current_gff_loc, ref_loc, cluster_name = gff_finder(isolate_ref_gff, isolate_id, True)
         ref_name = os.path.basename(ref_loc.iloc[0])
         ref_name = re.sub("\..*[a-zA-Z]*$", "", ref_name)
@@ -2669,9 +2708,15 @@ if __name__ == '__main__':
         contig_tab = pandas.read_csv(contig_file_path)
         ref_contig_tab = pandas.read_csv(ref_contig_file)
 
+
         contig_mge = contig_checker(contig_tab, hitters)
+        contig_mge_bef = contig_checker(contig_tab, [hitters[0]])
+        contig_mge_aft = contig_checker(contig_tab, [hitters[1]])
+
 
         mge_bounds = bounds_of_contig(contig_tab, contig_mge)
+        mge_bounds_bef = bounds_of_contig(contig_tab, contig_mge_bef)
+        mge_bounds_aft = bounds_of_contig(contig_tab, contig_mge_aft)
 
         ###########################################################################
         ## Now we'll do a check on the reference to see if it has the same ########
@@ -2759,9 +2804,12 @@ if __name__ == '__main__':
                 hit_before_loc = hit_before.iloc[[6, 7]]
                 hit_after_loc = hit_after.iloc[[6, 7]]
 
-        if isolate_id in ["14723_3#14","14723_3#22","14723_3#26","5749_6#10","5901_2#4","5901_3#12"]:
-            print("Missing iso all one tig")
+        if isolate_id in ["6569_4#15", "6570_2#5"]:
+            print(hit_before, hit_after)
             print(all_one_tig_5k)
+            print(all_one_tig)
+
+
 
 
 
