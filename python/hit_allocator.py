@@ -110,7 +110,10 @@ def contig_checker(contig_csv, hit_to_check):
 
 def bounds_of_contig(contig_tab, contig_mge):
     ## Function to get bounds of a contig
-    contig_bounds = contig_tab.iloc[contig_mge - 1]
+    if contig_mge != 0:
+        contig_bounds = contig_tab.iloc[contig_mge - 1]
+    else:
+        contig_bounds = [0,0]
 
     return contig_bounds
 
@@ -523,7 +526,7 @@ def ref_contains_hit(compo_table, hitters, mge_bounds, isolate_id):
 
             if hits_bef.empty:
                 hit_bef_length = 0
-                hit_bef = before_and_after_hits(hitters, compo_table, mge_bounds, "before")
+                hit_bef = before_and_after_hits(hitters, compo_table, mge_bounds, "before","for","for")
                 if isinstance(hit_bef.iloc[0], int):
                     hit_bef = "No"
             else:
@@ -537,7 +540,7 @@ def ref_contains_hit(compo_table, hitters, mge_bounds, isolate_id):
             hits_aft = hits_aft.sort_values(by=['qend'], ascending=True)
             if hits_aft.empty:
                 hit_aft_length = 0
-                hit_aft = before_and_after_hits(hitters, compo_table, mge_bounds, "after")
+                hit_aft = before_and_after_hits(hitters, compo_table, mge_bounds, "after","for","for")
                 if isinstance(hit_aft.iloc[0], int):
                     hit_aft = "No"
             else:
@@ -596,7 +599,7 @@ def ref_contains_hit(compo_table, hitters, mge_bounds, isolate_id):
 
                 if hits_bef.empty:
                     hit_bef_length = 0
-                    hit_bef = before_and_after_hits(hitters, compo_table, mge_bounds, "before")
+                    hit_bef = before_and_after_hits(hitters, compo_table, mge_bounds, "before","rev","rev")
                     if isinstance(hit_bef.iloc[0], int):
                         hit_bef = "No"
                 else:
@@ -608,7 +611,7 @@ def ref_contains_hit(compo_table, hitters, mge_bounds, isolate_id):
                 hits_aft = hits_aft.sort_values(by=['qend'], ascending=False)
                 if hits_aft.empty:
                     hit_aft_length = 0
-                    hit_aft = before_and_after_hits(hitters, compo_table, mge_bounds, "after")
+                    hit_aft = before_and_after_hits(hitters, compo_table, mge_bounds, "after","rev","rev")
                     if isinstance(hit_aft.iloc[0], int):
                         hit_aft = "No"
                 else:
@@ -783,7 +786,7 @@ def whole_match_splitter(match, mge_locs, hit_to_split):
     elif hit_to_split == "before":
         return  hit_bef
 
-def before_and_after_hits(hit_info, compo_table, contig_bounds, hits_to_search):
+def before_and_after_hits(hit_info, compo_table, contig_bounds, hits_to_search, mge_bef_ori, mge_aft_ori):
     ## This function looks for matches around the MGE loc based on their
     ## position in the query sequence. First looks for hits with align
     ## greater than 2000, then if this isn't on contig looks for hits
@@ -792,87 +795,171 @@ def before_and_after_hits(hit_info, compo_table, contig_bounds, hits_to_search):
     compo_names = ['query', 'subject', 'pid', 'align', 'gap', 'mismatch', 'qstart',
                    'qend', 'sstart', 'send', 'eval', 'bitscore']
 
-    if hit_info[0] < hit_info[1]:
-        if hits_to_search == "both" or hits_to_search == "before":
-            hits_before = compo_table.loc[compo_table[compo_table.columns[7]] < (hit_info[0] + overhang)]
-            hits_before = hits_before.sort_values(by=['qend'], ascending=False)
-            hits_before_1k = hits_before.loc[hits_before['align'] > 2000]
-            ## Just check if this align > 1500 hit is on the same contig, if not we
-            ## use the original hits_before ordered df
+    if isinstance(contig_bounds, list):
 
-            if hits_before_1k.empty:
-                hits_before_1k = hits_before
 
-            else:
-                if hits_before_1k.iloc[0, 6] < (contig_bounds[0] - 10):
+        if hits_to_search == "before" or hits_to_search == "both":
+            if mge_bef_ori == "forward":
+
+                hits_before = compo_table.loc[compo_table[compo_table.columns[7]] < (hit_info[0] + overhang)]
+                hits_before = hits_before.sort_values(by=['qend'], ascending=False)
+                hits_before_1k = hits_before.loc[hits_before['align'] > 2000]
+                ## Just check if this align > 1500 hit is on the same contig, if not we
+                ## use the original hits_before ordered df
+
+                if hits_before_1k.empty:
                     hits_before_1k = hits_before
 
-            ## Check now if this align > 1500 df is empty, if so again we use the
-            ## original hits before df
+                else:
+                    if hits_before_1k.iloc[0, 6] < (contig_bounds[0][0] - 10):
+                        hits_before_1k = hits_before
 
-            if hits_before_1k.empty:
-                hit_before = pandas.DataFrame(data=numpy.zeros(shape=(1, 12)),
-                                              columns=compo_names)
-            else:
-                hit_before = hits_before_1k.iloc[0]
+                ## Check now if this align > 1500 df is empty, if so again we use the
+                ## original hits before df
 
-        ## Now we get the major hit before the insertion
-        if hits_to_search == "both" or hits_to_search == "after":
-            hits_after = compo_table.loc[compo_table[compo_table.columns[6]] > (hit_info[1] - overhang)]
-            hits_after = hits_after.sort_values(by=['qstart'], ascending=True)
-            hits_after_1k = hits_after.loc[hits_after['align'] > 2000]
+                if hits_before_1k.empty:
+                    hit_before = pandas.DataFrame(data=numpy.zeros(shape=(1, 12)),
+                                                  columns=compo_names)
+                else:
+                    hit_before = hits_before_1k.iloc[0]
+            elif mge_bef_ori == "reverse":
+                hits_before = compo_table.loc[compo_table[compo_table.columns[6]] > (hit_info[0] - overhang)]
+                hits_before = hits_before.sort_values(by=['qstart'], ascending=True)
+                hits_before_1k = hits_before.loc[hits_before['align'] > 2000]
 
-            if hits_after_1k.empty:
-                hits_after_1k = hits_after
-
-            else:
-                if hits_after_1k.iloc[0, 7] > (contig_bounds[1] + 10):
-                    hits_after_1k = hits_after
-
-
-            if hits_after_1k.empty:
-                hit_after = pandas.DataFrame(data=numpy.zeros(shape=(1, 12)),
-                                             columns=compo_names)
-            else:
-                hit_after = hits_after_1k.iloc[0]
-
-
-    elif hit_info[0] > hit_info[1]:
-        if hits_to_search == "both" or hits_to_search == "before":
-            hits_before = compo_table.loc[compo_table[compo_table.columns[6]] > (hit_info[0] - overhang)]
-            hits_before = hits_before.sort_values(by=['qstart'], ascending=True)
-            hits_before_1k = hits_before.loc[hits_before['align'] > 2000]
-
-            if hits_before_1k.empty:
-                hits_before_1k = hits_before
-
-            else:
-                if hits_before_1k.iloc[0, 7] > (contig_bounds[1] + 10):
+                if hits_before_1k.empty:
                     hits_before_1k = hits_before
 
+                else:
+                    if hits_before_1k.iloc[0, 7] > (contig_bounds[0][1] + 10):
+                        hits_before_1k = hits_before
 
-            if hits_before_1k.empty:
-                hit_before = pandas.DataFrame(data=numpy.zeros(shape=(1, 12)),
-                                              columns=compo_names)
-            else:
-                hit_before = hits_before_1k.iloc[0]
+                if hits_before_1k.empty:
+                    hit_before = pandas.DataFrame(data=numpy.zeros(shape=(1, 12)),
+                                                  columns=compo_names)
+                else:
+                    hit_before = hits_before_1k.iloc[0]
         if hits_to_search == "both" or hits_to_search == "after":
-            hits_after = compo_table.loc[compo_table[compo_table.columns[7]] < (hit_info[1] + overhang)]
-            hits_after = hits_after.sort_values(by=['qend'], ascending=False)
-            hits_after_1k = hits_after.loc[hits_after['align'] > 2000]
+            if mge_aft_ori == "forward":
+                hits_after = compo_table.loc[compo_table[compo_table.columns[6]] > (hit_info[1] - overhang)]
+                hits_after = hits_after.sort_values(by=['qstart'], ascending=True)
+                hits_after_1k = hits_after.loc[hits_after['align'] > 2000]
 
-            if hits_after_1k.empty:
-                hits_after_1k = hits_after
-            else:
-                if hits_after_1k.iloc[0, 6] < (contig_bounds[0] - 10):
+                if hits_after_1k.empty:
                     hits_after_1k = hits_after
 
+                else:
+                    if hits_after_1k.iloc[0, 7] > (contig_bounds[1][1] + 10):
+                        hits_after_1k = hits_after
 
-            if hits_after_1k.empty:
-                hit_after = pandas.DataFrame(data=numpy.zeros(shape=(1, 12)),
-                                             columns=compo_names)
-            else:
-                hit_after = hits_after_1k.iloc[0]
+                if hits_after_1k.empty:
+                    hit_after = pandas.DataFrame(data=numpy.zeros(shape=(1, 12)),
+                                                 columns=compo_names)
+                else:
+                    hit_after = hits_after_1k.iloc[0]
+            elif mge_aft_ori == "reverse":
+                hits_after = compo_table.loc[compo_table[compo_table.columns[7]] < (hit_info[1] + overhang)]
+                hits_after = hits_after.sort_values(by=['qend'], ascending=False)
+                hits_after_1k = hits_after.loc[hits_after['align'] > 2000]
+
+                if hits_after_1k.empty:
+                    hits_after_1k = hits_after
+                else:
+                    if hits_after_1k.iloc[0, 6] < (contig_bounds[1][0] - 10):
+                        hits_after_1k = hits_after
+
+                if hits_after_1k.empty:
+                    hit_after = pandas.DataFrame(data=numpy.zeros(shape=(1, 12)),
+                                                 columns=compo_names)
+                else:
+                    hit_after = hits_after_1k.iloc[0]
+
+
+
+
+    else:
+
+        if hit_info[0] < hit_info[1]:
+            if hits_to_search == "both" or hits_to_search == "before":
+                hits_before = compo_table.loc[compo_table[compo_table.columns[7]] < (hit_info[0] + overhang)]
+                hits_before = hits_before.sort_values(by=['qend'], ascending=False)
+                hits_before_1k = hits_before.loc[hits_before['align'] > 2000]
+                ## Just check if this align > 1500 hit is on the same contig, if not we
+                ## use the original hits_before ordered df
+
+                if hits_before_1k.empty:
+                    hits_before_1k = hits_before
+
+                else:
+                    if hits_before_1k.iloc[0, 6] < (contig_bounds[0] - 10):
+                        hits_before_1k = hits_before
+
+                ## Check now if this align > 1500 df is empty, if so again we use the
+                ## original hits before df
+
+                if hits_before_1k.empty:
+                    hit_before = pandas.DataFrame(data=numpy.zeros(shape=(1, 12)),
+                                                  columns=compo_names)
+                else:
+                    hit_before = hits_before_1k.iloc[0]
+
+            ## Now we get the major hit before the insertion
+            if hits_to_search == "both" or hits_to_search == "after":
+                hits_after = compo_table.loc[compo_table[compo_table.columns[6]] > (hit_info[1] - overhang)]
+                hits_after = hits_after.sort_values(by=['qstart'], ascending=True)
+                hits_after_1k = hits_after.loc[hits_after['align'] > 2000]
+
+                if hits_after_1k.empty:
+                    hits_after_1k = hits_after
+
+                else:
+                    if hits_after_1k.iloc[0, 7] > (contig_bounds[1] + 10):
+                        hits_after_1k = hits_after
+
+
+                if hits_after_1k.empty:
+                    hit_after = pandas.DataFrame(data=numpy.zeros(shape=(1, 12)),
+                                                 columns=compo_names)
+                else:
+                    hit_after = hits_after_1k.iloc[0]
+
+
+        elif hit_info[0] > hit_info[1]:
+            if hits_to_search == "both" or hits_to_search == "before":
+                hits_before = compo_table.loc[compo_table[compo_table.columns[6]] > (hit_info[0] - overhang)]
+                hits_before = hits_before.sort_values(by=['qstart'], ascending=True)
+                hits_before_1k = hits_before.loc[hits_before['align'] > 2000]
+
+                if hits_before_1k.empty:
+                    hits_before_1k = hits_before
+
+                else:
+                    if hits_before_1k.iloc[0, 7] > (contig_bounds[1] + 10):
+                        hits_before_1k = hits_before
+
+
+                if hits_before_1k.empty:
+                    hit_before = pandas.DataFrame(data=numpy.zeros(shape=(1, 12)),
+                                                  columns=compo_names)
+                else:
+                    hit_before = hits_before_1k.iloc[0]
+            if hits_to_search == "both" or hits_to_search == "after":
+                hits_after = compo_table.loc[compo_table[compo_table.columns[7]] < (hit_info[1] + overhang)]
+                hits_after = hits_after.sort_values(by=['qend'], ascending=False)
+                hits_after_1k = hits_after.loc[hits_after['align'] > 2000]
+
+                if hits_after_1k.empty:
+                    hits_after_1k = hits_after
+                else:
+                    if hits_after_1k.iloc[0, 6] < (contig_bounds[0] - 10):
+                        hits_after_1k = hits_after
+
+
+                if hits_after_1k.empty:
+                    hit_after = pandas.DataFrame(data=numpy.zeros(shape=(1, 12)),
+                                                 columns=compo_names)
+                else:
+                    hit_after = hits_after_1k.iloc[0]
 
     hits_to_use = "both"
     if hits_to_search == "both":
@@ -1767,9 +1854,20 @@ def multi_contig_dropper(hits, ref_contig, ref_contig_bounds):
     return returned_hits
 
 
-def hit_mover(hit_before, hit_after, compo_csv, isolate_id, mge_bounds, mge_ori, ref_contig_bounds, ref_contigs):
+def hit_mover(hit_before, hit_after, compo_csv, isolate_id, mge_bounds, mge_ori_bef, mge_ori_aft, ref_contig_bounds, ref_contigs):
     ## Function to include hits after the current if its less than 2k and the new hit
     ## is very close. Finds closest hits, if they are within 50bp of the next nearest.
+    ## Input:
+    ## hit_before - The act comparison hit identified upstream of the insertion
+    ## hit_after - The act comparison hit identified downstream of the insertion
+    ## compo_csv - The act comparison csv
+    ## isolate_id - The isolate_id
+    ## mge_bounds - List of length two, with each item the bounds of the contig the before and after hits are on
+    ## mge_ori_bef - The orientation of the start of the MGE
+    ## mge_ori_aft - The orientation of the end of the MGE
+    ## ref_contig_bounds - The reference contig table
+    ## ref_contigs - The contigs of the reference where the MGE is present.
+
 
 
     hit_before_length = abs(hit_before.iloc[7] - hit_before.iloc[6])
@@ -1783,14 +1881,17 @@ def hit_mover(hit_before, hit_after, compo_csv, isolate_id, mge_bounds, mge_ori,
     before_pass = False
     after_pass = False
 
+    print(mge_ori_bef)
+
     if hit_before_length < 5000:
-        if mge_ori == "forward":
+        if mge_ori_bef == "forward":
             ## looking for hits previous to the current before
             poss_hit_before = compo_csv[(compo_csv['qend'] <= (hit_before['qstart'] + 50)) &\
-                                         (compo_csv['qstart'] >= (mge_bounds[0] - 10)) ]
+                                         (compo_csv['qstart'] >= (mge_bounds[0][0] - 10)) ]
             poss_hit_before = poss_hit_before.sort_values(by = 'qend', ascending=False)
             new_align = hit_before_length
             if not poss_hit_before.empty:
+                poss_hit_before['indexio'] = pandas.Series(list(poss_hit_before.index.values),index=poss_hit_before.index)
                 current_hit = poss_hit_before[poss_hit_before['qend'] >= (hit_new_bef.iloc[6] - 1000)]
                 current_hit = multi_contig_dropper(current_hit, ref_contigs[0], ref_contig_bounds)
                 if not current_hit.empty:
@@ -1806,12 +1907,14 @@ def hit_mover(hit_before, hit_after, compo_csv, isolate_id, mge_bounds, mge_ori,
                         current_hit = pandas.DataFrame(current_hit.iloc[0]).transpose()
                         hit_new_bef = pandas.concat([hit_new_bef, current_hit], sort=False, ignore_index=False)
                         hit_new_bef = hit_new_bef.reset_index(drop=True)
+                        poss_hit_before = poss_hit_before[poss_hit_before['indexio'] != current_hit['indexio'].iloc[0]]
                         while_n = 0
                         while not current_hit.empty and new_align < 5000:
                             while_n += 1
                             if while_n != 1:
                                 hit_new_bef = pandas.concat([hit_new_bef, current_hit.iloc[[0]]], sort=False,ignore_index=False)
                                 hit_new_bef = hit_new_bef.reset_index(drop=True)
+                                poss_hit_before = poss_hit_before[poss_hit_before['indexio'] != current_hit['indexio'].iloc[0]]
                             end_indy = max(hit_new_bef.index.values) - 1
                             current_hit = poss_hit_before[(poss_hit_before['qend'] >= (hit_new_bef.iloc[end_indy, 6] - 1000))]
                             current_hit = multi_contig_dropper(current_hit, ref_contigs[0], ref_contig_bounds)
@@ -1832,18 +1935,22 @@ def hit_mover(hit_before, hit_after, compo_csv, isolate_id, mge_bounds, mge_ori,
             else:
                 before_process = "no"
 
-        elif mge_ori == "reverse":
+        elif mge_ori_bef == "reverse":
 
             poss_hit_before = compo_csv[(compo_csv['qstart'] >= (hit_before['qend'] - 50)) & \
-                                        (compo_csv['qend'] <= (mge_bounds[1] + 10)) ]
+                                        (compo_csv['qend'] <= (mge_bounds[0][1] + 10)) ]
             poss_hit_before = poss_hit_before.sort_values(by='qstart', ascending=True)
+            ## add an index column to remove hits merged in
 
-            if isolate_id == "6569_4#15":
-                print(poss_hit_before)
-            new_align = hit_before_length
             if not poss_hit_before.empty:
+                ## add an index column to remove hits merged in
+                poss_hit_before['indexio'] = pandas.Series(list(poss_hit_before.index.values), index=poss_hit_before.index)
                 current_hit = poss_hit_before[poss_hit_before['qstart'] <= (hit_new_bef.iloc[7] + 1000)]
+
+                ## Going to assume that the match in the reference is not split over two contigs, that would
+                ## be fatal!
                 current_hit = multi_contig_dropper(current_hit, ref_contigs[0], ref_contig_bounds)
+
                 if not current_hit.empty:
                     new_align = abs(hit_new_bef.iloc[6] - current_hit['qend'].iloc[0])
 
@@ -1858,18 +1965,26 @@ def hit_mover(hit_before, hit_after, compo_csv, isolate_id, mge_bounds, mge_ori,
                         current_hit = pandas.DataFrame(current_hit.iloc[0]).transpose()
                         hit_new_bef = pandas.concat([hit_new_bef, current_hit], sort=False, ignore_index=False)
                         hit_new_bef = hit_new_bef.reset_index(drop=True)
+                        poss_hit_before = poss_hit_before[poss_hit_before['indexio'] != current_hit['indexio'].iloc[0]]
+
                         while_n = 0
                         while not current_hit.empty and new_align < 5000:
                             while_n += 1
                             if while_n != 1:
+
                                 hit_new_bef = pandas.concat([hit_new_bef, current_hit.iloc[[0]]], sort=False, ignore_index=False)
                                 hit_new_bef = hit_new_bef.reset_index(drop=True)
+                                poss_hit_before = poss_hit_before[poss_hit_before['indexio'] != current_hit['indexio'].iloc[0]]
                             end_indy = max(hit_new_bef.index.values) - 1
                             current_hit = poss_hit_before[poss_hit_before['qstart'] <= (hit_new_bef.iloc[end_indy, 7] + 1000)]
+
                             current_hit = multi_contig_dropper(current_hit, ref_contigs[0], ref_contig_bounds)
+
+
                             if not current_hit.empty:
                                 new_align = abs(hit_new_bef.iloc[0, 6] - current_hit.iloc[0, 7])
                                 poss_hit_before = poss_hit_before.drop(current_hit.index[0])
+
                         if new_align < 5000:
                             hit_new_bef = multi_hit_merger(hit_new_bef)
                             hit_new_bef, new_align = subject_checker(hit_new_bef, "before",poss_hit_before, mge_bounds, "reverse")
@@ -1888,13 +2003,14 @@ def hit_mover(hit_before, hit_after, compo_csv, isolate_id, mge_bounds, mge_ori,
         before_process = "No"
 
     if hit_after_length < 5000:
-        if mge_ori == "forward":
+        if mge_ori_aft == "forward":
             poss_hit_after = compo_csv[(compo_csv['qstart'] >= (hit_after['qend'] - 50)) & \
-                                        (compo_csv['qend'] <= (mge_bounds[1] + 10)) ]
+                                        (compo_csv['qend'] <= (mge_bounds[1][1] + 10)) ]
             poss_hit_after = poss_hit_after.sort_values(by='qstart', ascending=True)
-            new_align = hit_after_length
 
             if not poss_hit_after.empty:
+                poss_hit_after['indexio'] = pandas.Series(list(poss_hit_after.index.values),
+                                                           index=poss_hit_after.index)
                 current_hit = poss_hit_after[poss_hit_after['qstart'] <= (hit_new_aft.iloc[7] + 1000)]
                 current_hit = multi_contig_dropper(current_hit, ref_contigs[1], ref_contig_bounds)
                 if not current_hit.empty:
@@ -1910,12 +2026,15 @@ def hit_mover(hit_before, hit_after, compo_csv, isolate_id, mge_bounds, mge_ori,
                         current_hit = pandas.DataFrame(current_hit.iloc[0]).transpose()
                         hit_new_aft = pandas.concat([hit_new_aft, current_hit], sort=False, ignore_index=False)
                         hit_new_aft = hit_new_aft.reset_index(drop=True)
+                        poss_hit_after = poss_hit_after[poss_hit_after['indexio'] != current_hit['indexio'].iloc[0]]
                         while_n = 0
                         while not current_hit.empty and new_align < 5000:
                             while_n += 1
                             if while_n != 1:
                                 hit_new_aft = pandas.concat([hit_new_aft, current_hit.iloc[[0]]], sort=False, ignore_index=False)
                                 hit_new_aft = hit_new_aft.reset_index(drop=True)
+                                poss_hit_after = poss_hit_after[
+                                    poss_hit_after['indexio'] != current_hit['indexio'].iloc[0]]
                             end_indy = max(hit_new_aft.index.values) - 1
                             current_hit = poss_hit_after[poss_hit_after['qstart'] <= (hit_new_aft.iloc[end_indy, 7] + 1000)]
                             current_hit = multi_contig_dropper(current_hit, ref_contigs[1], ref_contig_bounds)
@@ -1932,13 +2051,15 @@ def hit_mover(hit_before, hit_after, compo_csv, isolate_id, mge_bounds, mge_ori,
                 after_process = "merge"
             else:
                 after_process = "no"
-        elif mge_ori == "reverse":
+        elif mge_ori_aft == "reverse":
             ## looking for hits previous to the current before
             poss_hit_after = compo_csv[(compo_csv['qend'] <= (hit_after['qstart'] + 50)) & \
-                                        (compo_csv['qstart'] >= (mge_bounds[0] - 10)) ]
+                                        (compo_csv['qstart'] >= (mge_bounds[1][0] - 10)) ]
             poss_hit_after = poss_hit_after.sort_values(by='qend', ascending=False)
             new_align = hit_after_length
             if not poss_hit_after.empty:
+                poss_hit_after['indexio'] = pandas.Series(list(poss_hit_after.index.values),
+                                                          index=poss_hit_after.index)
                 current_hit = poss_hit_after[poss_hit_after['qend'] >= (hit_new_aft.iloc[ 6] - 1000)]
                 current_hit = multi_contig_dropper(current_hit, ref_contigs[1], ref_contig_bounds)
                 if not current_hit.empty:
@@ -1958,12 +2079,15 @@ def hit_mover(hit_before, hit_after, compo_csv, isolate_id, mge_bounds, mge_ori,
                         current_hit = pandas.DataFrame(current_hit.iloc[0]).transpose()
                         hit_new_aft = pandas.concat([hit_new_aft, current_hit], sort=False, ignore_index=False)
                         hit_new_aft = hit_new_aft.reset_index(drop=True)
+                        poss_hit_after = poss_hit_after[poss_hit_after['indexio'] != current_hit['indexio'].iloc[0]]
                         while_n = 0
                         while not current_hit.empty and new_align < 5000:
                             while_n += 1
                             if while_n != 1:
                                 hit_new_aft = pandas.concat([hit_new_aft, current_hit.iloc[[0]]], sort=False, ignore_index=False)
                                 hit_new_aft = hit_new_aft.reset_index(drop=True)
+                                poss_hit_after = poss_hit_after[
+                                    poss_hit_after['indexio'] != current_hit['indexio'].iloc[0]]
                             end_indy = max(hit_new_aft.index.values) - 1
                             current_hit = poss_hit_after[poss_hit_after['qend'] >= (hit_new_aft.iloc[end_indy, 6] - 1000)]
                             current_hit = multi_contig_dropper(current_hit, ref_contigs[1], ref_contig_bounds)
@@ -1989,6 +2113,8 @@ def hit_mover(hit_before, hit_after, compo_csv, isolate_id, mge_bounds, mge_ori,
 
 
     if before_process == "merge":
+        print("~~~~~~~~~~~~~~~~~ NOW SHOULD BE IN THE MERGING BIT ~~~~~~~~~~~~~~~~~~~~~~~~~")
+        print(hit_new_bef)
         max_row = pandas.to_numeric(hit_new_bef['qend']).idxmax()
         min_row = pandas.to_numeric(hit_new_bef['qstart']).idxmin()
         length_bef = hit_new_bef.iloc[max_row, 7] - hit_new_bef.iloc[min_row, 6]
@@ -2038,15 +2164,16 @@ def hit_mover(hit_before, hit_after, compo_csv, isolate_id, mge_bounds, mge_ori,
     return hit_bef_out, hit_aft_out, tot_pass
 
 
-def final_acceptor(hit_before, hit_after, isolate_id, mge_bounds, mge_ori):
+def final_acceptor(hit_before, hit_after, isolate_id, mge_bounds, mge_ori_bef, mge_ori_after):
     ## Function to check whether the merged bounds are above 2500 and then
     ## to just take the 5000 from here if it's within the contig bounds
     ## input: hit_before: Merged hit before from hit_mover
     ##        hit_after: Merged hit after from hit_mover
     ##        compo_csv: The act comparison csv
     ##        isolate_id: The current isolate_id
-    ##        mge_bounds: The contig bounds for the mge
-    ##        mge_ori: The orientation of the mge
+    ##        mge_bounds: The contig bounds for the mge, list of two lists
+    ##        mge_ori_bef: The orientation of the mge for start of MGE
+    ##        mge_ori_aft: The orientation of the MGE at the end of it.
 
     hit_before_length = abs(hit_before.iloc[7] - hit_before.iloc[6])
     hit_after_length = abs(hit_after.iloc[7] - hit_after.iloc[6])
@@ -2055,9 +2182,9 @@ def final_acceptor(hit_before, hit_after, isolate_id, mge_bounds, mge_ori):
     hit_new_aft = hit_after.copy()
 
     if hit_before_length < 5000:
-        if mge_ori == "forward":
+        if mge_ori_bef == "forward":
             new_end = hit_before.iloc[7] - 5000
-            if new_end > mge_bounds[0]:
+            if new_end > mge_bounds[0][0]:
                 max_send = max([hit_before['sstart'], hit_before['send']])
 
                 hit_bef_out = pandas.Series({'query': hit_before['query'],
@@ -2075,9 +2202,9 @@ def final_acceptor(hit_before, hit_after, isolate_id, mge_bounds, mge_ori):
                 hit_before_length = 5000
             else:
                 hit_bef_out = hit_new_bef
-        elif mge_ori == "reverse":
+        elif mge_ori_bef == "reverse":
             new_end = hit_before.iloc[6] + 5000
-            if new_end < mge_bounds[1]:
+            if new_end < mge_bounds[0][1]:
                 min_send = min([hit_before['sstart'], hit_before['send']])
                 hit_bef_out = pandas.Series({'query': hit_before['query'],
                                              'subject': hit_before['subject'],
@@ -2099,9 +2226,9 @@ def final_acceptor(hit_before, hit_after, isolate_id, mge_bounds, mge_ori):
 
     ## Now for the after hits
     if hit_after_length < 5000:
-        if mge_ori == "reverse":
+        if mge_ori_after == "reverse":
             new_end = hit_after.iloc[7] - 5000
-            if new_end > mge_bounds[0]:
+            if new_end > mge_bounds[1][0]:
                 max_send = max([hit_after['sstart'], hit_after['send']])
                 hit_aft_out = pandas.Series({'query': hit_after['query'],
                                              'subject': hit_after['subject'],
@@ -2118,9 +2245,9 @@ def final_acceptor(hit_before, hit_after, isolate_id, mge_bounds, mge_ori):
                 hit_after_length = 5000
             else:
                 hit_aft_out = hit_new_aft
-        elif mge_ori == "forward":
+        elif mge_ori_after == "forward":
             new_end = hit_after.iloc[6] + 5000
-            if new_end < mge_bounds[1]:
+            if new_end < mge_bounds[1][1]:
                 min_send = min([hit_after['sstart'], hit_after['send']])
                 hit_aft_out = pandas.Series({'query': hit_after['query'],
                                              'subject': hit_after['subject'],
@@ -2147,7 +2274,8 @@ def final_acceptor(hit_before, hit_after, isolate_id, mge_bounds, mge_ori):
 
     return  hit_bef_out, hit_aft_out, both_tigs
 
-def before_and_after_check(hit_to_check, mge_locs, compo_table, hit_loc, other_hit, isolate_id):
+def before_and_after_check(hit_to_check, mge_locs, compo_table, hit_loc, other_hit, isolate_id, mge_bef_ori,
+                           mge_aft_ori):
     ## This function will take input from the hit distance checker. We're looking for
     ## any hits that might have been missed by our initial search in before and after
     ## hits function, i.e they have an align < 2000. They have to be adjacent to the
@@ -2157,10 +2285,10 @@ def before_and_after_check(hit_to_check, mge_locs, compo_table, hit_loc, other_h
     hit_check_subject = hit_to_check[[8, 9]]
     other_hit_subject = other_hit[[8,9]]
 
-    if mge_locs[0] < mge_locs[1]:
-        mge_ori = "forward"
-    elif mge_locs[0] > mge_locs[1]:
-        mge_ori = "reverse"
+    if hit_loc == "before" :
+        mge_ori = mge_bef_ori
+    elif hit_loc == "after":
+        mge_ori = mge_aft_ori
 
     if hit_check_subject[0] < hit_check_subject[1]:
         check_ori = "forward"
@@ -2168,8 +2296,6 @@ def before_and_after_check(hit_to_check, mge_locs, compo_table, hit_loc, other_h
         check_ori = "reverse"
 
     added_hits = pandas.DataFrame()
-
-
 
     if hit_loc == "before":
         if mge_ori == "forward":
@@ -2216,7 +2342,7 @@ def before_and_after_check(hit_to_check, mge_locs, compo_table, hit_loc, other_h
         elif mge_ori == "reverse":
             if check_ori == "forward":
 
-                poss_hits = compo_table[(compo_table['qstart'] > (mge_locs[1] - 50)) & \
+                poss_hits = compo_table[(compo_table['qstart'] > (mge_locs[0] - 50)) & \
                                         (compo_table['qstart'] < hit_check_query[1]) & \
                                         (compo_table['sstart'] < hit_check_subject[0]) & \
                                         (compo_table['send'] > (other_hit_subject[1] - 500))]
@@ -2238,7 +2364,7 @@ def before_and_after_check(hit_to_check, mge_locs, compo_table, hit_loc, other_h
                         poss_hits = poss_hits.drop(new_row)
 
             elif check_ori == "reverse":
-                poss_hits = compo_table[(compo_table['qstart'] > (mge_locs[1] - 50)) & \
+                poss_hits = compo_table[(compo_table['qstart'] > (mge_locs[0] - 50)) & \
                                         (compo_table['qstart'] < hit_check_query[1]) & \
                                         (compo_table['sstart'] > hit_check_subject[0]) &\
                                         (compo_table['send'] < (other_hit_subject[1] + 500))]
@@ -2299,7 +2425,7 @@ def before_and_after_check(hit_to_check, mge_locs, compo_table, hit_loc, other_h
 
         elif mge_ori == "reverse":
             if check_ori == "forward":
-                poss_hits = compo_table[(compo_table['qend'] < (mge_locs[0] + 50)) & \
+                poss_hits = compo_table[(compo_table['qend'] < (mge_locs[1] + 50)) & \
                                         (compo_table['qend'] > hit_check_query[0]) & \
                                         (compo_table['send'] > hit_check_subject[1]) &\
                                         (compo_table['sstart'] < (other_hit_subject[0] + 500))]
@@ -2319,7 +2445,7 @@ def before_and_after_check(hit_to_check, mge_locs, compo_table, hit_loc, other_h
 
 
             elif check_ori == "reverse":
-                poss_hits = compo_table[(compo_table['qend'] < (mge_locs[0] + 50)) & \
+                poss_hits = compo_table[(compo_table['qend'] < (mge_locs[1] + 50)) & \
                                         (compo_table['qend'] > hit_check_query[0]) & \
                                         (compo_table['send'] < hit_check_subject[1]) &\
                                         (compo_table['sstart'] > (other_hit_subject[0] - 500))]
@@ -2471,6 +2597,44 @@ def act_mapper(hit_before, hit_after, act_loc, current_insert_locs):
 
     return  nuevo_before, nuevo_after, mapped
 
+class mge_hits_row():
+    def __init__(self, db_row):
+        self.mge_start = db_row.iloc[0, 5]
+        self.mge_end = db_row.iloc[0, 6]
+        self.mge_bef_ori = db_row.iloc[0,10]
+        self.mge_aft_ori = db_row.iloc[0, 11]
+        self.id = db_row.iloc[0,0]
+        self.merged = db_row['merged'].values[0]
+        self.align = db_row['align']
+
+
+    @property
+    def id_z(self):
+        isolate_id_z = self.id
+        if isolate_id_z.count('_') == 2:
+            last_occy = isolate_id_z.rfind('_')
+            isolate_id = isolate_id_z[0:last_occy]
+        else:
+            isolate_id = isolate_id_z
+        return isolate_id
+
+    @property
+    def mge_length(self):
+        return(abs(hitters[1] - hitters[0]))
+
+    @property
+    def mge_ori(self):
+        if self.mge_bef_ori == self.mge_bef_ori[1]:
+            mge_ori = self.mge_bef_ori
+        elif self.mge_bef_ori != self.mge_bef_ori[1]:
+            mge_ori = "reverse"
+
+        return mge_ori
+
+
+
+
+
 
 if __name__ == '__main__':
     tab = str.maketrans("ACTG", "TGAC")
@@ -2552,43 +2716,22 @@ if __name__ == '__main__':
         start_len = len(missing_isolate.index) + len(hit_df.index)
         print("On isolate: ", k, end='\r', flush=True)
 
-        current_row = narrowed_prop.iloc[[k]]
-        hitters = (list(current_row.iloc[0, [5, 6]]))
-        mge_oris = list(current_row.iloc[0,[10,11]])
+        current_row = mge_hits_row(narrowed_prop.iloc[[k]])
+        hitters = [current_row.mge_start, current_row.mge_end]
+        mge_oris = [current_row.mge_bef_ori, current_row.mge_aft_ori]
+        mge_ori = current_row.mge_ori
+        isolate_id_z = current_row.id
+        isolate_id = current_row.id_z
+        current_mge_length = current_row.mge_length
 
-        if mge_oris[0] == mge_oris[1]:
-            mge_ori = mge_oris[0]
-            mge_bef = mge_oris[0]
-            mge_aft = mge_oris[0]
-        elif mge_oris[0] != mge_oris[1]:
-            mge_ori = "reverse"
-            mge_bef = mge_oris[0]
-            mge_aft = mge_oris[1]
+        ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ The single merged hit I want to add in atm ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        if isolate_id != "6569_4#15":
+            continue
 
-        ## Now we'll go into the tab files and get the compo files
-        isolate_id_z = narrowed_prop.iloc[k, 0]
-        if isolate_id_z.count('_') == 2:
-            last_occy = isolate_id_z.rfind('_')
-            isolate_id = isolate_id_z[0:last_occy]
-        else:
-            isolate_id = isolate_id_z
 
-        current_mge_length = abs(hitters[1] - hitters[0])
-        # cluster_2 = ["10900_6#9", "15608_3#45", "15608_3#49", "15608_3#55", "15608_3#71", "15608_3#75", "15608_4#18", \
-        #            "15608_4#30", "15608_4#2", "15608_4#24"]
-        # cluster_2 = ["6678_3#5","6569_4#15"]
 
-        # cluster_2 = ["12291_5#65","15682_1#29","15682_1#38","15682_1#51","15682_1#65","15682_2#52","20925_3#47","21127_1#10",\
-        #             "21127_1#104","21127_1#108","21127_1#35","21127_1#44","21127_1#67","21127_1#70","21127_1#83","21127_1#97",\
-        #             "22841_4#117","6569_4#16","6569_4#17","6569_4#18"]
-        # cluster_2 = ["15608_5#88","15682_1#66", "19084_7#62", "19084_7#68","20925_3#60","20925_3#68","6187_5#9"]
 
-        # if isolate_id not in cluster_2:
-        #    continue
-        # if isolate_id != "6569_4#15":
-        #     continue
 
-        print(current_row)
         current_gff_loc, ref_loc, cluster_name = gff_finder(isolate_ref_gff, isolate_id, True)
         ref_name = os.path.basename(ref_loc.iloc[0])
         ref_name = re.sub("\..*[a-zA-Z]*$", "", ref_name)
@@ -2723,12 +2866,22 @@ if __name__ == '__main__':
         ## identical hits as the current isolate in question ######################
         ###########################################################################
 
-        hit_before, hit_after, overlap = ref_contains_hit(compo_table, hitters, mge_bounds, isolate_id)
+
+
+
+
+        if contig_mge_bef == contig_mge_aft:
+            hit_before, hit_after, overlap = ref_contains_hit(compo_table, hitters, mge_bounds, isolate_id)
+        else:
+            overlap = "No"
+            mge_bounds = [mge_bounds_bef, mge_bounds_aft]
+
 
         if overlap == "No":
 
             hit_before, hit_after, which_hit = before_and_after_hits(hitters, compo_table, mge_bounds,
-                                                                     hits_to_search="both")
+                                                                     hits_to_search="both",  mge_bef_ori= current_row.mge_bef_ori,
+                                                                     mge_aft_ori= current_row.mge_aft_ori)
 
         else:
             which_hit = "both"
@@ -2774,8 +2927,10 @@ if __name__ == '__main__':
 
         if all_one_tig and contig_bef_ref == contig_aft_ref and overlap == "No":
 
-            hit_before_check = before_and_after_check(hit_before, hitters, compo_table, "before", hit_after, isolate_id)
-            hit_after_check = before_and_after_check(hit_after, hitters, compo_table, "after", hit_before, isolate_id)
+            hit_before_check = before_and_after_check(hit_before, hitters, compo_table, "before", hit_after, isolate_id,
+                                                      current_row.mge_bef_ori, current_row.mge_aft_ori)
+            hit_after_check = before_and_after_check(hit_after, hitters, compo_table, "after", hit_before, isolate_id,
+                                                      current_row.mge_bef_ori, current_row.mge_aft_ori)
 
             if not hit_before_check.empty:
                 hit_before = multi_hit_merger(hit_before_check)
@@ -2792,23 +2947,61 @@ if __name__ == '__main__':
         ref_contigs = [contig_bef_ref, contig_aft_ref]
 
         if all_one_tig and not all_one_tig_5k:
-
+            mge_bounds = [mge_bounds_bef, mge_bounds_aft]
             hit_before, hit_after, all_one_tig_5k = hit_mover(hit_before, hit_after, compo_table, isolate_id,
-                                                              mge_bounds, mge_ori, ref_contig_tab, ref_contigs)
+                                                              mge_bounds,current_row.mge_bef_ori, current_row.mge_aft_ori,
+                                                              ref_contig_tab, ref_contigs)
             hit_before_loc = hit_before.iloc[[6, 7]]
             hit_after_loc = hit_after.iloc[[6, 7]]
 
             if not all_one_tig_5k:
-
-                hit_before, hit_after, all_one_tig_5k = final_acceptor(hit_before, hit_after, isolate_id, mge_bounds, mge_ori)
+                mge_bounds = [mge_bounds_bef, mge_bounds_aft]
+                hit_before, hit_after, all_one_tig_5k = final_acceptor(hit_before, hit_after, isolate_id, mge_bounds,
+                                                                       current_row.mge_bef_ori, current_row.mge_aft_ori)
                 hit_before_loc = hit_before.iloc[[6, 7]]
                 hit_after_loc = hit_after.iloc[[6, 7]]
 
-        if isolate_id in ["6569_4#15", "6570_2#5"]:
-            print(hit_before, hit_after)
-            print(all_one_tig_5k)
-            print(all_one_tig)
 
+
+        ## Now for the merged isolates, we'll try and get good hits either side
+        if all_one_tig_5k == False and contig_before == contig_mge_bef and contig_after == contig_mge_aft:
+
+            hit_before_check = before_and_after_check(hit_before, hitters, compo_table, "before", hit_after, isolate_id,
+                                                      current_row.mge_bef_ori, current_row.mge_aft_ori)
+            hit_after_check = before_and_after_check(hit_after, hitters, compo_table, "after", hit_before, isolate_id,
+                                                      current_row.mge_bef_ori, current_row.mge_aft_ori)
+
+            if not hit_before_check.empty:
+                hit_before = multi_hit_merger(hit_before_check)
+                hit_before_loc = hit_before.iloc[[6, 7]]
+                hit_before_length = abs(hit_before_loc[1] - hit_before_loc[0])
+
+            if not hit_after_check.empty:
+                hit_after = multi_hit_merger(hit_after_check)
+                hit_after_loc = hit_after.iloc[[6, 7]]
+                hit_after_length = abs(hit_after_loc[1] - hit_after_loc[0])
+
+            if hit_after_length >= 5000 and hit_before_length >= 5000:
+                all_one_tig_5k = True
+            else:
+                mge_bounds = [mge_bounds_bef, mge_bounds_aft]
+                hit_before, hit_after, all_one_tig_5k = hit_mover(hit_before, hit_after, compo_table, isolate_id,
+                                                                  mge_bounds, current_row.mge_bef_ori,
+                                                                  current_row.mge_aft_ori,
+                                                                  ref_contig_tab, ref_contigs)
+                hit_before_loc = hit_before.iloc[[6, 7]]
+                hit_after_loc = hit_after.iloc[[6, 7]]
+                hit_before_length = abs(hit_before_loc[1] - hit_before_loc[0])
+                hit_after_length = abs(hit_after_loc[1] - hit_after_loc[0])
+
+                if not all_one_tig_5k:
+                    hit_before, hit_after, all_one_tig_5k = final_acceptor(hit_before, hit_after, isolate_id,
+                                                                            mge_bounds, current_row.mge_bef_ori,
+                                                                           current_row.mge_aft_ori)
+                    hit_before_loc = hit_before.iloc[[6, 7]]
+                    hit_after_loc = hit_after.iloc[[6, 7]]
+                    hit_before_length = abs(hit_before_loc[1] - hit_before_loc[0])
+                    hit_after_length = abs(hit_after_loc[1] - hit_after_loc[0])
 
 
 
@@ -2818,6 +3011,8 @@ if __name__ == '__main__':
             ## If the before and after hits to the isolate all line up on one contig we can assume this is
             ## a good enough hit to be used in library creation. Also needs to have at least 5k bp either side
             ## in this hit
+
+            ## Need to split this up into a before hit getter and an after hit getter. 
 
             current_gff = pandas.read_csv(current_gff_loc.iloc[0], sep='\t',
                                           names=['seqid', 'source', 'type', 'start', 'end', 'score', 'strand', 'phase',
@@ -2835,8 +3030,9 @@ if __name__ == '__main__':
                 ## The insertion length
                 ## Number of genes in the inserton
                 ## number genes & average length 500bp either side.
-                if current_row['merged'].values == "Yes":
-                    current_mge_length = current_row['align']
+                print(current_row.merged)
+                if current_row.merged == "Yes":
+                    current_mge_length = current_row.align
                     mergio = True
                 else:
                     current_mge_length = hitters[1] - hitters[0]
@@ -2969,8 +3165,8 @@ if __name__ == '__main__':
 
             elif mge_ori == "reverse":
 
-                if current_row['merged'].values == "Yes":
-                    current_mge_length = current_row['align']
+                if current_row.merged == "Yes":
+                    current_mge_length = current_row.align
                     mergio = True
                 else:
                     current_mge_length = hitters[0] - hitters[1]
@@ -3107,8 +3303,8 @@ if __name__ == '__main__':
             missing_current['insert_end'] = pandas.Series(hitters[1], index=missing_current.index)
             missing_current['before_gene_name'] = pandas.Series("No hit", index=missing_current.index)
             missing_current['after_gene_name'] = pandas.Series("No hit", index=missing_current.index)
-            if current_row['merged'].values[0] == "Yes":
-                missing_current['mge_length'] = pandas.Series(current_row['align'], index=missing_current.index)
+            if current_row.merged == "Yes":
+                missing_current['mge_length'] = pandas.Series(current_row.align, index=missing_current.index)
                 missing_current['reason'] = pandas.Series(["MERGED No good hits before and after"],missing_current.index)
             else:
                 missing_current['mge_length'] = pandas.Series(current_mge_length, index=missing_current.index)

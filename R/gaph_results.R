@@ -7,6 +7,7 @@ require(stringr, quietly = TRUE)
 require(ggpubr, quietly = TRUE)
 require(tictoc, quietly = TRUE)
 require(dplyr, quietly = TRUE)
+require(asht, quietly = TRUE)
 
 graph_getter <- function(dir_to_files,graph_name, current_flanks, insert_name){
   #browser()  
@@ -388,6 +389,7 @@ parse_args <- function(){
 
 
 input_args <- parse_args()
+input_args <- NULL
 
 graph_name <- input_args[1]
 graph_name <- "GPS MEGA"
@@ -413,13 +415,16 @@ t.test(inserts_whole$bit_pneumo, reference_whole$bit_pneumo)
 ggplot(data = mega_whole_res, aes(x = control, y = bit_pneumo, fill = control, colour = control)) +
   geom_violin()
 
-whole_df <- bind_rows(pmen_mega_res_total$whole_res$total_df , bind_rows(pmen_mega_res_total$before_res$total_df, pmen_mega_res_total$after_res$total_df))
+whole_df <- bind_rows(pmen_mega_res_total$before_res$total_df, pmen_mega_res_total$after_res$total_df)
 
 whole_df_insert <- whole_df[whole_df$control == "Actual",]
 whole_df_ref <- whole_df[whole_df$control == "Control",]
-wilcox.test(whole_df_insert$bit_pneumo, whole_df_ref$bit_pneumo)
+wilcox.test(whole_df_insert$bit_pneumo, whole_df_ref$bit_pneumo, conf.int = TRUE)
 median(whole_df_insert$bit_pneumo)
 median(whole_df_ref$bit_pneumo)
+
+mann_u_output <- wmwTest(whole_df_insert$bit_pneumo, whole_df_ref$bit_pneumo)
+
 
 boxplot_whole <- ggplot(data = whole_df,aes(x = control, y = bit_pneumo)) + geom_boxplot() 
 boxplot_whole
@@ -456,7 +461,7 @@ wilcox.test(inserts_whole$bit_pneumo, reference_whole$bit_pneumo)
 t.test(inserts_whole$bit_pneumo, reference_whole$bit_pneumo)
 
 
-whole_df <- bind_rows(pmen_tn916_res_total$whole_res$total_df , bind_rows(pmen_tn916_res_total$before_res$total_df, pmen_tn916_res_total$after_res$total_df))
+whole_df <- bind_rows(pmen_tn916_res_total$before_res$total_df, pmen_tn916_res_total$after_res$total_df)
 
 whole_df_insert <- whole_df[whole_df$control == "Actual",]
 whole_df_ref <- whole_df[whole_df$control == "Control",]
@@ -464,7 +469,7 @@ whole_df_ref <- whole_df[whole_df$control == "Control",]
 ## Lets pair it up 
 pairing_df <- whole_df %>% mutate(iso = ifelse(grepl("!",isolate),sub(".*!","",isolate), isolate))
 
-wilcox.test(whole_df_insert$bit_pneumo, whole_df_ref$bit_pneumo)
+wilcox.test(whole_df_insert$bit_pneumo, whole_df_ref$bit_pneumo, conf.int = TRUE)
 median(whole_df_insert$bit_pneumo)
 median(whole_df_ref$bit_pneumo)
 
@@ -511,6 +516,25 @@ violin_plot_whole <- ggplot(data = whole_df, aes(x = control, y = bit_pneumo)) +
 violin_plot_whole
 
 #whole_plot <- pmen_mega_res$whole_res$pneumo_plot
+whole_plot_figshare <- whole_df[,c(1,2,4)]
+colnames(whole_plot_figshare) <- c("Isolate","gamma","Insertion")
+
+write.csv(whole_plot_figshare, file = "~/Dropbox/phd/elife_paper/figures_data/Figure10_species_over_flank_length/GPS_tag_and_control_isolates",
+          row.names = FALSE)
+
+before_flanks <- pmen_mega_res_tag$before_res$graph_data %>% mutate(region = sub("before","upstream", region)) %>%
+  select(c(bit_pneumo,flank, region, lqr, uqr)) %>% rename(gamma = bit_pneumo) %>%
+  mutate(region = sub("28", "tag",region))
+
+after_flanks <- pmen_mega_res_tag$after_res$graph_data %>% mutate(region = sub("after","downstream", region)) %>%
+  select(c(bit_pneumo,flank, region, lqr, uqr)) %>% rename(gamma = bit_pneumo) %>%
+  mutate(region = sub("28", "tag",region))
+
+
+write.csv(before_flanks, file = "~/Dropbox/phd/elife_paper/figures_data/Figure10_species_over_flank_length/GPS_tag_upstream_flanks_summary.csv",
+          row.names = FALSE)
+write.csv(after_flanks, file = "~/Dropbox/phd/elife_paper/figures_data/Figure10_species_over_flank_length/GPS_tag_downstream_flanks_summary.csv",
+          row.names = FALSE)
 
 
 mean_40_60 <- ggdraw()  +

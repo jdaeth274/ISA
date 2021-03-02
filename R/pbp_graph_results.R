@@ -193,6 +193,14 @@ bit_ranked <- ggplot(data = results_df) + geom_violin(aes(x = Gene,
   )
   
 bit_ranked
+gps_pbp_figshare <- results_df[,c(1,2,5,6)]
+colnames(gps_pbp_figshare)[3] <- "gamma"
+
+
+write.csv(gps_pbp_figshare, 
+          file = "~/Dropbox/phd/elife_paper/figures_data/Figure5_penicillin_reconstruction/GPS_pbp_gamma_scores.csv",
+          row.names = FALSE)
+
 
 labels = c(expression(paste(italic("pbp1a"),"  ", "\nSensitive to Resistant")),
            expression(paste(italic("pbp2x"),"  ", "\nSensitive to Resistant")),
