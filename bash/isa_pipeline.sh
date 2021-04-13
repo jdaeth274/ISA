@@ -1,6 +1,17 @@
 #!/bin/bash
 
 set -e
+
+if [ $# -lt 10 ]
+then
+  echo "Insertion point analysis pipeline. Usage:
+  bash ./isa_pipeline.sh <dir_prefix_of_fasta_lists> <MGE_fasta_loc> <align_cutoff>
+  <outfolder> <prefix> <gubbins_res> <Flank_length> <act_compos(no/loc)>
+  <BLAST_only(yes/no)> <ref_db> <extra_lib(default_no)>"
+
+  exit
+fi
+
 ref_isolate_gff="$1_reference_isolate_gff.csv"
 ref_isolate_fasta="$1_reference_isolate_fasta.csv"
 fasta_list="$1_fastas_list"
@@ -22,6 +33,12 @@ echo "Flank length to extract: $7"
 echo "Go through Act compos (yes/loc_of_act_compos): $8"
 echo "Just blast res (yes/no): $9"
 echo "Reference db loc : ${10}"
+if [ $# -eq 11 ]
+then
+  echo "Extra lib: ${11}"
+  extra_lib=${11}
+fi
+
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 parentdir="$(dirname "$DIR")"
@@ -30,7 +47,7 @@ perldir="${parentdir}/perl/"
 rdir="${parentdir}/R/"
 
 
-echo "This is number 9:$9"
+
 if [ $9 == "no" ]
 then
   echo "This is working here"
@@ -157,6 +174,12 @@ then
     --hit_csv "$4/$5_merged_blast_file" --reference_csv $ref_isolate_gff --align_cutoff $3 \
     --act_loc "${act_compos_loc}referoo.fasta." --contig_loc ./contig_bounds/ --output "$4/$5" \
     --fasta_csv $ref_isolate_fasta
+
+    if [ $# -eq 11 ]
+    then
+      python "${pythondir}lib_combiner.py" \
+      --new_lib "$4/$5_library.csv" --old_lib $extra_lib --out_csv "$4/$5_library.csv"
+    fi
 
     ## Now for the hit allocation step
     python "${pythondir}hit_allocator.py" \

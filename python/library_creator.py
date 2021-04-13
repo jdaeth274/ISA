@@ -2370,6 +2370,9 @@ if __name__ == '__main__':
     fasta_pandas = pandas.read_csv(fasta_csv)
     fasta_pandas.columns = ['isolate', 'reference', 'cluster']
 
+    ## Get the data directory
+
+    data_path = re.sub("python$", "data",os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))  # script directory
 
     merged_csv = merged_contig_checker(hit_csv, contig_file_abs_path, absolute_act_path)
     is_2k = merged_csv['align'] >= int(files_for_input.align_cutoff)
