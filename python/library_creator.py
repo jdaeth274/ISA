@@ -2470,7 +2470,7 @@ if __name__ == '__main__':
         compo_ref = ref_name
         #print(cluster_name)
 
-        
+
 
         if ref_name not in refs_to_alter:
 
@@ -2585,6 +2585,9 @@ if __name__ == '__main__':
             act_map = True
             altered_index = [i for i, x in enumerate(refs_to_alter) if x == ref_name]
             compo_ref = new_refs[altered_index[0]]
+            if compo_ref == "global":
+                compo_ref = "pmen3_reference"
+
 
 
 
@@ -2606,7 +2609,16 @@ if __name__ == '__main__':
         ref_contig = re.sub("#","_", compo_ref)
         ref_contig_file = contig_file_abs_path + ref_contig + contig_suffix
         contig_tab = pandas.read_csv(contig_file_path)
-        ref_contig_tab = pandas.read_csv(ref_contig_file)
+        try:
+            ref_contig_tab = pandas.read_csv(ref_contig_file)
+        except:
+            ## reference contig doesn't assume this is for global ref, lets make sure the global reference does now
+            grep_command = "grep -n \">\" " + global_reference + " > grep_output_temp"
+            py_command = "python" + re.sub("data", "python",data_path) + "/contig_bound_check.py --grep_file grep_output_temp --fasta_file " + global_reference + " && rm grep_output_temp && mv *contig_bounds.csv " + contig_file_abs_path
+            subprocess.call(grep_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.call(py_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            ref_contig_tab = pandas.read_csv(ref_contig_file)
+
 
         contig_mge = contig_checker(contig_tab, hitters)
 

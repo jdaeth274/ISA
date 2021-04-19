@@ -1333,7 +1333,11 @@ def blast_search(isolate_id, reference_loc, cluster_id):
     before_gene = isolate_id + "_before_gene.fasta"
     after_gene = isolate_id + "_after_gene.fasta"
     if not os.path.isfile(reference_db):
-        reference_name = "./tmp_dna_dir/" + re.sub("#","_", reference_loc) + ".dna"
+        if reference_loc == "pmen3_reference":
+            data_dir = re.sub("python$", "data", os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))  # script directory
+            reference_name = data_dir + "/pmen3_reference.fasta"
+        else:
+            reference_name = "./tmp_dna_dir/" + re.sub("#","_", reference_loc) + ".dna"
         db_command = "makeblastdb -in " + reference_name + " -dbtype nucl -out " + cluster_id + "_db"
         subprocess.call(db_command, shell=True)
 
@@ -2939,10 +2943,8 @@ if __name__ == '__main__':
     fasta_pandas.columns = ['isolate', 'reference', 'cluster_name']
     clusters_present = fasta_pandas['cluster_name'].unique()
 
-    print(inspect.getfile(inspect.currentframe()))  # script filename (usually with path)
-    print(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))  # script directory
     data_path = re.sub("python$", "data", os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))  # script directory
-    print(data_path)
+    global_reference = data_path + "/pmen3_reference.fasta"
     sys.exit(1)
 
     proper_hits = pandas.read_csv(files_for_input.blast_csv)
@@ -3032,22 +3034,6 @@ if __name__ == '__main__':
 
         ref_contig_name = ref_name
         act_map = False
-        if cluster_name in clusters_to_skip:
-            missing_current = pandas.DataFrame()
-            missing_current['id'] = pandas.Series(isolate_id)
-            missing_current['mge_start'] = pandas.Series(hitters[0], index=missing_current.index)
-            missing_current['mge_end'] = pandas.Series(hitters[1], index=missing_current.index)
-            missing_current['insert_start'] = pandas.Series(hitters[0], index=missing_current.index)
-            missing_current['insert_end'] = pandas.Series(hitters[1], index=missing_current.index)
-            missing_current['before_gene_name'] = pandas.Series("No_hit", index=missing_current.index)
-            missing_current['after_gene_name'] = pandas.Series("No_hit", index=missing_current.index)
-            missing_current['ref_name'] = pandas.Series(ref_name, index=missing_current.index)
-            missing_current['cluster_name'] = pandas.Series(cluster_name, index=missing_current.index)
-            missing_current['mge_length'] = pandas.Series(current_mge_length, index=missing_current.index)
-            missing_current['reason'] = pandas.Series(["In clusters to skip"], index=missing_current.index)
-            missing_isolate = missing_isolate.append(missing_current, sort = False)
-
-            continue
 
         if ref_name not in refs_to_alter:
 
@@ -3059,21 +3045,66 @@ if __name__ == '__main__':
                 current_ids = isolate_name_producer(current_cluster_vals['isolate'])
                 skip = all_presence_checker(current_ids, nice_ids)
                 if skip:
-                    missing_current = pandas.DataFrame()
-                    missing_current['id'] = pandas.Series(isolate_id)
-                    missing_current['mge_start'] = pandas.Series(hitters[0], index=missing_current.index)
-                    missing_current['mge_end'] = pandas.Series(hitters[1], index=missing_current.index)
-                    missing_current['insert_start'] = pandas.Series(hitters[0], index=missing_current.index)
-                    missing_current['insert_end'] = pandas.Series(hitters[1], index=missing_current.index)
-                    missing_current['before_gene_name'] = pandas.Series("No_hit", index=missing_current.index)
-                    missing_current['after_gene_name'] = pandas.Series("No_hit", index=missing_current.index)
-                    missing_current['ref_name'] = pandas.Series(ref_name, index=missing_current.index)
-                    missing_current['cluster_name'] = pandas.Series(cluster_name, index=missing_current.index)
-                    missing_current['mge_length'] = pandas.Series(current_mge_length, index=missing_current.index)
-                    missing_current['reason'] = pandas.Series(["In clusters to skip"], index=missing_current.index)
-                    missing_isolate = missing_isolate.append(missing_current, sort=False)
                     clusters_to_skip.append(cluster_name)
-                    continue
+                    all_ids = nice_ids
+                    no_element_ids = numpy.setdiff1d(current_ids, all_ids).tolist()
+
+                    element_ids = list(set(current_ids) & set(all_ids))
+                    ## no element ids contains the isolates without the element in this cluster
+                    ## Now we need to find their fastas and then run through the act comparison
+                    fastas_to_run = []
+                    for fasta_fn in no_element_ids:
+                        current_loc, ref_loc, ignore_me = gff_finder(fasta_pandas, fasta_fn, False)
+                        fastas_to_run.append(current_loc.iloc[0])
+
+                    fastas_to_act = []
+                    for fasta_fn in element_ids:
+                        current_loc, ref_loc, ignore_me = gff_finder(fasta_pandas, fasta_fn, False)
+                        fastas_to_act.append(current_loc.iloc[0])
+
+                    new_act_df = pandas.DataFrame()
+                    new_act_df['isolate'] = pandas.Series(fastas_to_act)
+                    new_act_df['reference'] = pandas.Series(numpy.repeat(global_reference, len(fastas_to_act)).tolist(), \
+                                                            index=new_act_df.index)
+                    new_act_df['cluster_name'] = cluster_name
+
+                    df_loc = "./" + cluster_name + "_altered_fasta_for_ACT.csv"
+                    new_act_df.to_csv(path_or_buf=df_loc, index=False)
+                    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+                    print("Rerunning act comparisons for %s isolates in cluster %s with new ref %s" % (
+                        len(element_ids), cluster_name, new_ref_name))
+                    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+                    ## Now lets run these new acts to replace the current ones with the reference
+                    act_command = "python " + python_dir + "/running_act_comparisons.py" + \
+                                  " --csv " + df_loc + " --perl_dir " + perl_dir + "/" + " --act_dir ./act_compos/"
+
+                    subprocess.call(act_command, shell=True)  # , stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+                    refs_to_alter.append(ref_name)
+                    new_refs.append("global")
+                    with open(("./" + files_for_input.output + "_realtered_act_refs.txt"), mode='wt',
+                              encoding='utf-8') as myfile:
+                        myfile.write('\n'.join(refs_to_alter) + '\n')
+                    with open(("./" + files_for_input.output + "_new_act_refs.txt"), mode='wt',
+                              encoding='utf-8') as myfile:
+                        myfile.write('\n'.join(new_refs) + '\n')
+                    act_map = True
+
+                    # missing_current = pandas.DataFrame()
+                    # missing_current['id'] = pandas.Series(isolate_id)
+                    # missing_current['mge_start'] = pandas.Series(hitters[0], index=missing_current.index)
+                    # missing_current['mge_end'] = pandas.Series(hitters[1], index=missing_current.index)
+                    # missing_current['insert_start'] = pandas.Series(hitters[0], index=missing_current.index)
+                    # missing_current['insert_end'] = pandas.Series(hitters[1], index=missing_current.index)
+                    # missing_current['before_gene_name'] = pandas.Series("No_hit", index=missing_current.index)
+                    # missing_current['after_gene_name'] = pandas.Series("No_hit", index=missing_current.index)
+                    # missing_current['ref_name'] = pandas.Series(ref_name, index=missing_current.index)
+                    # missing_current['cluster_name'] = pandas.Series(cluster_name, index=missing_current.index)
+                    # missing_current['mge_length'] = pandas.Series(current_mge_length, index=missing_current.index)
+                    # missing_current['reason'] = pandas.Series(["In clusters to skip"], index=missing_current.index)
+                    # missing_isolate = missing_isolate.append(missing_current, sort=False)
+                    # clusters_to_skip.append(cluster_name)
+                    # continue
                 else:
                     ## Find n50 of those not in the blast file  re-run act compos
                     all_ids = nice_ids
@@ -3122,6 +3153,8 @@ if __name__ == '__main__':
             act_map = True
             altered_index = [i for i, x in enumerate(refs_to_alter) if x == ref_name]
             ref_contig_name = new_refs[altered_index[0]]
+            if ref_contig_name == "global":
+                ref_contig_name = "pmen3_reference"
 
         compo_file = absolute_act_path + isolate_id + ".crunch.gz"
         compo_names = ['query', 'subject', 'pid', 'align', 'gap', 'mismatch', 'qstart',
@@ -3140,8 +3173,16 @@ if __name__ == '__main__':
         ref_contig = re.sub("#", "_", ref_contig_name)
         ref_contig_file = contig_file_abs_path + ref_contig + contig_suffix
         contig_tab = pandas.read_csv(contig_file_path)
-        ref_contig_tab = pandas.read_csv(ref_contig_file)
-
+        try:
+            ref_contig_tab = pandas.read_csv(ref_contig_file)
+        except:
+            ## reference contig doesn't assume this is for global ref, lets make sure the global reference does now
+            grep_command = "grep -n \">\" " + global_reference + " > grep_output_temp"
+            py_command = "python" + re.sub("data", "python",
+                                           data_path) + "/contig_bound_check.py --grep_file grep_output_temp --fasta_file " + global_reference + " && rm grep_output_temp && mv *contig_bounds.csv " + contig_file_abs_path
+            subprocess.call(grep_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.call(py_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            ref_contig_tab = pandas.read_csv(ref_contig_file)
 
         contig_mge = contig_checker(contig_tab, hitters)
         contig_mge_bef = contig_checker(contig_tab, [hitters[0]])
