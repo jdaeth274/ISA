@@ -96,6 +96,8 @@ gps_tn916_tot <- bind_rows(gps_tn916_assigned, gps_tn916_missing)
 
 
 
+
+
 gps_mega_gpsc1 <- gps_mega_hits[gps_mega_hits$cluster_name == "gpsc.1",]
 
 gpsc_1_tree <- read.tree("~/Dropbox/phd/insertion_site_analysis/data/gpsc.1_run_data/gpsc.1.node_labelled.final_tree.tre")
@@ -169,14 +171,29 @@ binded_rows <- bind_rows(gps_tn916_tot, gps_mega_tot)
 
 merged_insertions_tot <- full_join(gps_tn916_tot, gps_mega_tot, by = "id") %>% mutate(Tn916 = ifelse(is.na(Tn916),"",Tn916)) %>%
   mutate(Mega = ifelse(is.na(Mega),"",Mega)) %>% mutate(element = paste(Mega, Tn916, sep = "#")) %>%
-  mutate(Cluster_name = ifelse(is.na(cluster_name.x),cluster_name.y, cluster_name.x))
+  mutate(Cluster_name = ifelse(is.na(cluster_name.x),cluster_name.y, cluster_name.x)) %>%
+  mutate(element = ifelse((element == "Mega#Tn916") & (mge_start.y >= insert_start.x) & (mge_start.y <= insert_end.x),"Mega in Tn916",element))
 
 count(merged_insertions_tot, id) %>% nrow()
 
 count(merged_insertions_tot, element)
 
+head(merged_insertions_tot)
 
+bar_chart_data <- merged_insertions_tot[,c("id","element")] %>% mutate(element = ifelse(element == "#Tn916", "Tn916",
+                                                                              ifelse(element == "Mega#","Tn1207.1", 
+                                                                                     ifelse(element == "Mega#Tn916","Tn1207.1 and Tn916", "Tn1207.1 within Tn916")))) %>%
+  dplyr::count(element) %>% mutate(element = factor(element, levels = c("Tn1207.1","Tn916","Tn1207.1 and Tn916", "Tn1207.1 within Tn916")))
+  
+  
+png(filename = "~/Dropbox/phd/meetings/sanger_2021_presentation/gps_mge_freqs.png", width = 4.8,
+    height = 3.5, units = "in",res = 1000)
+ggplot(data = bar_chart_data, aes(x = element, y = n)) +
+  geom_bar(stat = "identity", fill = "Midnightblue") + labs(x = "MGE",y = "Frequency") 
+dev.off()
 
+ggsave(filename = "~/Dropbox/phd/meetings/sanger_2021_presentation/gps_mge_freqs2.png",
+       device = "png", width = 5, height = 3.5, units = "in", dpi = 500)
 ###############################################################################
 ## Cluster prevalences ########################################################
 ###############################################################################

@@ -2943,6 +2943,7 @@ if __name__ == '__main__':
     print(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))  # script directory
     data_path = re.sub("python$", "data", os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))  # script directory
     print(data_path)
+    sys.exit(1)
 
     proper_hits = pandas.read_csv(files_for_input.blast_csv)
     nice_ids = nice_proper_hits_ids(proper_hits.iloc[:, 0].tolist())

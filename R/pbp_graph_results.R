@@ -175,10 +175,15 @@ flanks_extracted <- read.csv("~/Dropbox/phd/insertion_site_analysis/data/gps_run
 
 pbp_res <- graph_getter_pbp("~/Dropbox/phd/insertion_site_analysis/data/gps_run_data/pbp_res/gps_pbp_extraction/500_pbp_seqs_res/",
                         graph_name = "PBP genes")
+pbp_pmen_res <- graph_getter_pbp("~/Dropbox/phd/insertion_site_analysis/data/pmen_run/pmen_pbps/500_pbp_seqs_res/",
+                                 graph_name = "PBP genes")
+
 pbp_res$ranked_bit
 
-results_df <- pbp_res$by_insertion %>% filter(insertion_loci %in% c("S-R-pbp1A","S-R-pbp2X","S-R-pbp2B")) %>% mutate(Gene = insertion_loci)
 
+
+results_df <- pbp_res$by_insertion %>% filter(insertion_loci %in% c("S-R-pbp1A","S-R-pbp2X","S-R-pbp2B")) %>% mutate(Gene = insertion_loci)
+results_df_pbp <- pbp_pmen_res$by_insertion %>% filter(insertion_loci %in% c("S-R-pbp1A","S-R-pbp2X","S-R-pbp2B")) %>% mutate(Gene = insertion_loci)
 
 
 bit_ranked <- ggplot(data = results_df) + geom_violin(aes(x = Gene,
@@ -191,7 +196,22 @@ bit_ranked <- ggplot(data = results_df) + geom_violin(aes(x = Gene,
                               bquote(atop(italic("pbp2b"), "Sensitive to Resistant")),
                               bquote(atop(italic("pbp2x"), "Sensitive to Resistant")))
   )
-  
+
+png(filename = "~/Dropbox/phd/meetings/sanger_2021_presentation/pmen_pbps_scores.png",
+    width = 7.43, height = 4.58, units = "in", res = 500)
+
+bit_ranked_pbp <- ggplot(data = results_df_pbp) + geom_violin(aes(x = Gene,
+                                                          y = bit_pneumo)) + geom_point(aes(x = insertion_loci,
+                                                                                            y = bit_pneumo),
+                                                                                        position = position_jitter(width = 0.1, height = 0)) +
+  labs(y = "Score") + theme_bw() + 
+  scale_x_discrete(name = "Gene", breaks = c("S-R-pbp1A","S-R-pbp2B","S-R-pbp2X"), 
+                   labels = c(bquote(atop(italic("pbp1a"), "Sensitive to Resistant")),
+                              bquote(atop(italic("pbp2b"), "Sensitive to Resistant")),
+                              bquote(atop(italic("pbp2x"), "Sensitive to Resistant")))
+  )
+
+
 bit_ranked
 gps_pbp_figshare <- results_df[,c(1,2,5,6)]
 colnames(gps_pbp_figshare)[3] <- "gamma"

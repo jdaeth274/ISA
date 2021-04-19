@@ -2372,7 +2372,8 @@ if __name__ == '__main__':
 
     ## Get the data directory
 
-    data_path = re.sub("python$", "data",os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))  # script directory
+    data_path = re.sub("python$", "data",os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))    # script directory
+    global_reference = data_path + "/pmen3_reference.fasta"
 
     merged_csv = merged_contig_checker(hit_csv, contig_file_abs_path, absolute_act_path)
     is_2k = merged_csv['align'] >= int(files_for_input.align_cutoff)
@@ -2469,9 +2470,7 @@ if __name__ == '__main__':
         compo_ref = ref_name
         #print(cluster_name)
 
-        if cluster_name in clusters_to_skip:
-            continue
-
+        
 
         if ref_name not in refs_to_alter:
 
@@ -2484,8 +2483,55 @@ if __name__ == '__main__':
                 current_ids = isolate_name_producer(current_cluster_vals['isolate'])
                 skip = all_presence_checker(current_ids, nice_ids)
                 if skip:
+                    ## So all the cluster ids have the element present in them
+                    ## We'll re-run this whole cluster then with the PMEN3 reference
                     clusters_to_skip.append(cluster_name)
-                    continue
+                    all_ids = nice_ids
+                    no_element_ids = numpy.setdiff1d(current_ids, all_ids).tolist()
+
+                    element_ids = list(set(current_ids) & set(all_ids))
+                    ## no element ids contains the isolates without the element in this cluster
+                    ## Now we need to find their fastas and then run through the act comparison
+                    fastas_to_run = []
+                    for fasta_fn in no_element_ids:
+                        current_loc, ref_loc, ignore_me = gff_finder(fasta_pandas, fasta_fn, False)
+                        fastas_to_run.append(current_loc.iloc[0])
+
+                    fastas_to_act = []
+                    for fasta_fn in element_ids:
+                        current_loc, ref_loc, ignore_me = gff_finder(fasta_pandas, fasta_fn, False)
+                        fastas_to_act.append(current_loc.iloc[0])
+
+                    new_act_df = pandas.DataFrame()
+                    new_act_df['isolate'] = pandas.Series(fastas_to_act)
+                    new_act_df['reference'] = pandas.Series(numpy.repeat(global_reference, len(fastas_to_act)).tolist(), \
+                                                            index=new_act_df.index)
+                    new_act_df['cluster_name'] = cluster_name
+
+                    df_loc = "./" + cluster_name + "_altered_fasta_for_ACT.csv"
+                    new_act_df.to_csv(path_or_buf=df_loc, index=False)
+                    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+                    print("Rerunning act comparisons for %s isolates in cluster %s with new ref %s" % (
+                    len(element_ids), cluster_name, new_ref_name))
+                    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+                    ## Now lets run these new acts to replace the current ones with the reference
+                    act_command = "python " + python_dir + "/running_act_comparisons.py" + \
+                                  " --csv " + df_loc + " --perl_dir " + perl_dir + "/" + " --act_dir ./act_compos/"
+
+                    subprocess.call(act_command, shell=True)  # , stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+                    refs_to_alter.append(ref_name)
+                    new_refs.append("global")
+                    with open(("./" + files_for_input.output + "_realtered_act_refs.txt"), mode='wt',
+                              encoding='utf-8') as myfile:
+                        myfile.write('\n'.join(refs_to_alter) + '\n')
+                    with open(("./" + files_for_input.output + "_new_act_refs.txt"), mode='wt',
+                              encoding='utf-8') as myfile:
+                        myfile.write('\n'.join(new_refs) + '\n')
+                    act_map = True
+
+
+
                 else:
                     ## Find n50 of those not in the blast file  re-run act compos
                     all_ids = nice_ids
