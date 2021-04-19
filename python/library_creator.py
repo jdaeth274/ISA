@@ -2925,7 +2925,10 @@ if __name__ == '__main__':
                     ## Get the altered ref to use, then check if we can actually map this back to the reference in
                     ## the act_mapper function, if not skip hit
                     altered_index = [i for i, x in enumerate(refs_to_alter) if x == ref_name]
+                    print(altered_index)
+                    print(new_refs)
                     current_new = new_refs[altered_index[0]]
+                    print(current_new)
                     if current_new == "global":
                         current_new == "pmen3_reference"
                     new_act_loc = absolute_act_path + current_new + ".crunch.gz"
