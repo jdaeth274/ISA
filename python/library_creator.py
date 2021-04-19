@@ -18,6 +18,7 @@ import time
 import pyfastx
 import subprocess
 from itertools import product
+import inspect
 
 def get_options():
     purpose = '''This is a python script to intake a csv of hit locations for an MGE for a large collection of 
@@ -2512,7 +2513,7 @@ if __name__ == '__main__':
                     new_act_df.to_csv(path_or_buf=df_loc, index=False)
                     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
                     print("Rerunning act comparisons for %s isolates in cluster %s with new ref %s" % (
-                    len(element_ids), cluster_name, "pmen3_reference"))
+                    len(element_ids), cluster_name, "pmen3_reference"   ))
                     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
                     ## Now lets run these new acts to replace the current ones with the reference
                     act_command = "python " + python_dir + "/running_act_comparisons.py" + \
