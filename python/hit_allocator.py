@@ -2945,7 +2945,7 @@ if __name__ == '__main__':
 
     data_path = re.sub("python$", "data", os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))  # script directory
     global_reference = data_path + "/pmen3_reference.fasta"
-    sys.exit(1)
+    
 
     proper_hits = pandas.read_csv(files_for_input.blast_csv)
     nice_ids = nice_proper_hits_ids(proper_hits.iloc[:, 0].tolist())
@@ -3062,6 +3062,10 @@ if __name__ == '__main__':
                         current_loc, ref_loc, ignore_me = gff_finder(fasta_pandas, fasta_fn, False)
                         fastas_to_act.append(current_loc.iloc[0])
 
+                    new_ref_list = numpy.repeat(global_reference, len(fastas_to_act)).tolist()
+                    new_ref_list.append(ref_loc)
+                    fastas_to_act.append(global_reference)
+
                     new_act_df = pandas.DataFrame()
                     new_act_df['isolate'] = pandas.Series(fastas_to_act)
                     new_act_df['reference'] = pandas.Series(numpy.repeat(global_reference, len(fastas_to_act)).tolist(), \
@@ -3072,7 +3076,7 @@ if __name__ == '__main__':
                     new_act_df.to_csv(path_or_buf=df_loc, index=False)
                     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
                     print("Rerunning act comparisons for %s isolates in cluster %s with new ref %s" % (
-                        len(element_ids), cluster_name, new_ref_name))
+                        len(element_ids), cluster_name, "pmen3 reference"))
                     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
                     ## Now lets run these new acts to replace the current ones with the reference
                     act_command = "python " + python_dir + "/running_act_comparisons.py" + \
@@ -3477,6 +3481,8 @@ if __name__ == '__main__':
                 ## the act_mapper function, if not skip hit
                 altered_index = [i for i, x in enumerate(refs_to_alter) if x == ref_name]
                 current_new = new_refs[altered_index[0]]
+                if current_new == "global":
+                    current_new = "pmen3_reference"
                 new_act_loc = absolute_act_path + current_new + ".crunch.gz"
                 if isolate_id != ref_name:
                     hit_before, hit_after, mapped = act_mapper(hit_before, hit_after, new_act_loc,
