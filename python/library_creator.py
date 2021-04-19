@@ -2923,7 +2923,7 @@ if __name__ == '__main__':
                     altered_index = [i for i, x in enumerate(refs_to_alter) if x == ref_name]
                     current_new = new_refs[altered_index[0]]
                     if current_new == "global":
-                        current_new = "pmen3_refernce"
+                        current_new == "pmen3_reference"
                     new_act_loc = absolute_act_path + current_new + ".crunch.gz"
                     if isolate_id != ref_name:
                         hit_before, hit_after, mapped = act_mapper(hit_before, hit_after, new_act_loc, current_insert_s_locs)
