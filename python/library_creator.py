@@ -2622,6 +2622,10 @@ if __name__ == '__main__':
             ## reference contig doesn't assume this is for global ref, lets make sure the global reference does now
             grep_command = "grep -n \">\" " + global_reference + " > grep_output_temp"
             py_command = "python" + re.sub("data", "python",data_path) + "/contig_bound_check.py --grep_file grep_output_temp --fasta_file " + global_reference + " && rm grep_output_temp && mv *contig_bounds.csv " + contig_file_abs_path
+            print("Using this grep command %s" % grep_command)
+            print("Using this python command %s" % py_command)
+
+
             subprocess.call(grep_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             subprocess.call(py_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             ref_contig_tab = pandas.read_csv(ref_contig_file)
