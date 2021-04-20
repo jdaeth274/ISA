@@ -1252,8 +1252,10 @@ def fasta_extractor(isolate_id, gene_rows, fasta_csv, contig_bounds):
     ##                       the
 
     fasta_file, reference, cluster = gff_finder(fasta_csv, isolate_id, True)
+    
     current_contig_before = contig_number_getter(gene_rows[0].iloc[0])
     current_contig_after = contig_number_getter(gene_rows[1].iloc[0])
+
 
     before_contig_start = contig_bounds.iloc[current_contig_before-1,0]
     after_contig_start = contig_bounds.iloc[current_contig_after-1, 0]
@@ -1658,6 +1660,7 @@ def gene_name_finder(flanks_csv, back_it_up):
     search_res = ""
     gene_row = None
 
+
     if back_it_up:
         for k in reversed(range(len(new_flanks.index))):
             search_res = re.findall('gene=.*?;', new_flanks.iloc[k, 8])
@@ -1691,7 +1694,12 @@ def gene_name_finder(flanks_csv, back_it_up):
                 break
 
     if search_res == []:
-        search_res = "NONE"
+        search_res = "None"
+        if back_it_up:
+            gene_row = new_flanks.iloc[len(new_flanks.index) - 1].copy()
+        else:
+            gene_row = new_flanks.iloc[0].copy()
+
 
     if re.search("_[0-9]$",search_res):
         search_res = re.sub("_[0-9]$", "", search_res)
