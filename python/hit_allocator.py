@@ -279,7 +279,7 @@ def row_merger(narrowed_rows):
 
     if len(end_rows.index) == 0:
         ## If no end rows just take the returned row as the end
-        # print(first_row.iloc[0])
+
         returned_row = narrowed_rows.drop(['merged_index', 'contig_pos', 'end_loc', 'start_loc'], axis=1)
         merged_indexers = []
         merged_locs = []
@@ -291,7 +291,7 @@ def row_merger(narrowed_rows):
         ## while loop to incorporate rest of hits
         if len(start_rows.index) == 0:
             ## If no start rows just take the returned row as the end
-            #print(first_row.iloc[0])
+
             returned_row = narrowed_rows.drop(['merged_index', 'contig_pos', 'end_loc', 'start_loc'], axis = 1 )
             merged_indexers = []
             merged_locs = []
@@ -425,7 +425,7 @@ def merged_contig_checker(merged_csv, contig_file_abs_path, act_path):
 
     multi_row_db = merged_csv.iloc[multi_rows].copy()
 
-    #print(multi_row_db['file_loc'])
+
     file_locs = set(multi_row_db.iloc[:,8].copy().to_list())
     file_locs = list(file_locs)
 
@@ -1150,8 +1150,6 @@ def gene_name_tryer(prospective_csv, library_csv, out_hit, missing_isolate, merg
     bef_and_aft = library_use[(library_use['before_gene_name'] == prospective_csv['before_gene_name'][0]) & \
                               (library_use['after_gene_name'] == prospective_csv['after_gene_name'][0])]
 
-    if isolate_id in ['15608_5#79','15608_5#85']:
-        print(bef_and_aft)
 
     if not bef_and_aft.empty:
 
@@ -1189,7 +1187,7 @@ def gene_name_tryer(prospective_csv, library_csv, out_hit, missing_isolate, merg
                 prospective_csv['mergio'] = "Yes"
             else:
                 prospective_csv['mergio'] = "No"
-            print(prospective_csv)
+
             out_hit_copy = out_hit_copy.append(prospective_csv, sort = False)
 
         else:
@@ -1215,32 +1213,31 @@ def gene_name_tryer(prospective_csv, library_csv, out_hit, missing_isolate, merg
             # missing_copy = missing_copy.append(missing_current, sort = False)
 
     else:
+        # Initially had this as only searching if none not present, I'll do away with that condition for now
 
-        if "NONE" not in [prospective_csv['before_gene_name'].values, prospective_csv['after_gene_name'].values]:
-            print(type(gene_rows[0]))
-            cluster_name = fasta_extractor(isolate_id, gene_rows, fasta_csv, contig_tab)
-            before_results, after_results = blast_search(isolate_id, reference_name, cluster_name)
-            library_append, missing_copy =  blast_results_adder([before_results,after_results],prospective_csv, library_csv,missing_copy,ref_contig_tab)
-
+        cluster_name = fasta_extractor(isolate_id, gene_rows, fasta_csv, contig_tab)
+        before_results, after_results = blast_search(isolate_id, reference_name, cluster_name)
+        library_append, missing_copy =  blast_results_adder([before_results,after_results],prospective_csv, library_csv,missing_copy,ref_contig_tab)
 
 
-        else:
 
-            missing_current = pandas.DataFrame()
-            missing_current['id'] = pandas.Series(prospective_csv['id'])
-
-            missing_current['mge_start'] = pandas.Series(prospective_csv['mge_start'], index=missing_current.index)
-            missing_current['mge_end'] = pandas.Series(prospective_csv['mge_end'], index=missing_current.index)
-            missing_current['insert_start'] = pandas.Series(prospective_csv['insert_start'], index=missing_current.index)
-            missing_current['insert_end'] = pandas.Series(prospective_csv['insert_end'], index=missing_current.index)
-            missing_current['ref_name'] = pandas.Series(prospective_csv['ref_name'], index=missing_current.index)
-            missing_current['cluster_name'] = pandas.Series(prospective_csv['cluster_name'], index=missing_current.index)
-            missing_current['mge_length'] = pandas.Series(prospective_csv['mge_length'], index=missing_current.index)
-            missing_current['before_gene_name'] = pandas.Series(prospective_csv['before_gene_name'],index=missing_current.index)
-            missing_current['after_gene_name'] = pandas.Series(prospective_csv['after_gene_name'], index=missing_current.index)
-            missing_current['merged'] = pandas.Series(mergio, index=missing_current.index)
-            missing_current['reason'] = pandas.Series(["No gene name matches"], index=missing_current.index)
-            missing_copy = missing_copy.append(missing_current, sort=False)
+        # else:
+        #
+        #     missing_current = pandas.DataFrame()
+        #     missing_current['id'] = pandas.Series(prospective_csv['id'])
+        #
+        #     missing_current['mge_start'] = pandas.Series(prospective_csv['mge_start'], index=missing_current.index)
+        #     missing_current['mge_end'] = pandas.Series(prospective_csv['mge_end'], index=missing_current.index)
+        #     missing_current['insert_start'] = pandas.Series(prospective_csv['insert_start'], index=missing_current.index)
+        #     missing_current['insert_end'] = pandas.Series(prospective_csv['insert_end'], index=missing_current.index)
+        #     missing_current['ref_name'] = pandas.Series(prospective_csv['ref_name'], index=missing_current.index)
+        #     missing_current['cluster_name'] = pandas.Series(prospective_csv['cluster_name'], index=missing_current.index)
+        #     missing_current['mge_length'] = pandas.Series(prospective_csv['mge_length'], index=missing_current.index)
+        #     missing_current['before_gene_name'] = pandas.Series(prospective_csv['before_gene_name'],index=missing_current.index)
+        #     missing_current['after_gene_name'] = pandas.Series(prospective_csv['after_gene_name'], index=missing_current.index)
+        #     missing_current['merged'] = pandas.Series(mergio, index=missing_current.index)
+        #     missing_current['reason'] = pandas.Series(["No Fasta search, no gene name matches"], index=missing_current.index)
+        #     missing_copy = missing_copy.append(missing_current, sort=False)
 
 
     return out_hit_copy, missing_copy, library_append
@@ -1364,7 +1361,7 @@ def blast_results_adder(blast_results, prospective_csv, library_csv, missing_csv
 
     missing_copy = missing_csv.copy()
     library_csv_copy = library_csv.copy()
-    print("In the blast results adder")
+
     blast_cols = ['query','subject','pid','align','gap','mismatch','qstart',
                   'qend','sstart','send','eval','bitscore']
 
@@ -1388,10 +1385,10 @@ def blast_results_adder(blast_results, prospective_csv, library_csv, missing_csv
         missing_current['after_gene_name'] = pandas.Series(prospective_csv['after_gene_name'],
                                                            index=missing_current.index)
         missing_current['merged'] = pandas.Series(mergio, index=missing_current.index)
-        missing_current['reason'] = pandas.Series(["No gene name matches"], index=missing_current.index)
+        missing_current['reason'] = pandas.Series(["No Fasta results returned"], index=missing_current.index)
         missing_copy = missing_copy.append(missing_current, sort=False)
     else:
-        print("IN the else bit")
+
         ## Just use the top hit
         before_ref_hits = blast_results_before.iloc[0,[8,9]].tolist()
         after_ref_hits = blast_results_after.iloc[0, [8, 9]].tolist()
@@ -1400,14 +1397,10 @@ def blast_results_adder(blast_results, prospective_csv, library_csv, missing_csv
         after_contig = contig_checker(ref_contig_tab, after_ref_hits)
 
         if before_contig == after_contig:
-            print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-            print("~~~~~~~~~~~~~~~~~~~~~~~ It's a match!! ~~~~~~~~~~~~~~~~~~~~~~~~~")
-            print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+
             library_csv_copy = merged_adder(prospective_csv, library_csv_copy)
         else:
-            print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
-            print("@@@@@@@@@@@@@@@@@@@@@@@ It's a match!! @@@@@@@@@@@@@@@@@@@@@@@@@")
-            print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+
             missing_current = pandas.DataFrame()
             missing_current['id'] = pandas.Series(prospective_csv['id'])
 
@@ -1425,7 +1418,7 @@ def blast_results_adder(blast_results, prospective_csv, library_csv, missing_csv
             missing_current['after_gene_name'] = pandas.Series(prospective_csv['after_gene_name'],
                                                                index=missing_current.index)
             missing_current['merged'] = pandas.Series(mergio, index=missing_current.index)
-            missing_current['reason'] = pandas.Series(["No gene name matches"], index=missing_current.index)
+            missing_current['reason'] = pandas.Series(["Fasta hits not on same contig in reference"], index=missing_current.index)
             missing_copy = missing_copy.append(missing_current, sort=False)
 
     return library_csv_copy, missing_copy
