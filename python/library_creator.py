@@ -2367,6 +2367,7 @@ if __name__ == '__main__':
     hit_csv = pandas.read_csv(files_for_input.hit_csv)
     contig_file_abs_path = files_for_input.contig_loc
     absolute_act_path = files_for_input.act_loc
+    act_dir = re.sub("referoo\.fasta\.","",absolute_act_path)
     fasta_csv = files_for_input.fasta_csv
     fasta_pandas = pandas.read_csv(fasta_csv)
     fasta_pandas.columns = ['isolate', 'reference', 'cluster']
@@ -2422,6 +2423,8 @@ if __name__ == '__main__':
     print(new_refs)
     print("")
     clusters_to_skip = []
+
+
 
     ## Now loop through the blast results ##
 
@@ -2523,7 +2526,7 @@ if __name__ == '__main__':
                     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
                     ## Now lets run these new acts to replace the current ones with the reference
                     act_command = "python " + python_dir + "/running_act_comparisons.py" + \
-                                  " --csv " + df_loc + " --perl_dir " + perl_dir + "/" + " --act_dir ./act_compos/"
+                                  " --csv " + df_loc + " --perl_dir " + perl_dir + "/" + " --act_dir " + act_dir
 
                     subprocess.call(act_command, shell=True)  # , stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
@@ -2576,7 +2579,7 @@ if __name__ == '__main__':
                     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
                     ## Now lets run these new acts to replace the current ones with the reference
                     act_command = "python " + python_dir + "/running_act_comparisons.py" + \
-                                  " --csv " + df_loc + " --perl_dir " + perl_dir + "/"  + " --act_dir ./act_compos/"
+                                  " --csv " + df_loc + " --perl_dir " + perl_dir + "/"  + " --act_dir " + act_dir
 
 
                     subprocess.call(act_command, shell=True)#, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -2932,6 +2935,7 @@ if __name__ == '__main__':
                     if current_new == "global":
                         current_new = "pmen3_reference"
                     new_act_loc = absolute_act_path + current_new + ".crunch.gz"
+                    print(new_act_loc)
                     if isolate_id != ref_name:
                         hit_before, hit_after, mapped = act_mapper(hit_before, hit_after, new_act_loc, current_insert_s_locs)
                         if not mapped:

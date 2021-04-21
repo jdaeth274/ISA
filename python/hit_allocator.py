@@ -2945,6 +2945,7 @@ if __name__ == '__main__':
 
     contig_file_abs_path = files_for_input.contig_loc
     absolute_act_path = files_for_input.act_loc
+    act_dir = re.sub("referoo\.fasta\.","",absolute_act_path)
     fasta_csv = files_for_input.fasta_csv
     fasta_pandas = pandas.read_csv(fasta_csv)
     fasta_pandas.columns = ['isolate', 'reference', 'cluster_name']
@@ -3029,7 +3030,7 @@ if __name__ == '__main__':
 
         ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ The single merged hit I want to add in atm ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-        
+
 
         current_gff_loc, ref_loc, cluster_name = gff_finder(isolate_ref_gff, isolate_id, True)
         ref_name = os.path.basename(ref_loc.iloc[0])
@@ -3088,7 +3089,7 @@ if __name__ == '__main__':
                     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
                     ## Now lets run these new acts to replace the current ones with the reference
                     act_command = "python " + python_dir + "/running_act_comparisons.py" + \
-                                  " --csv " + df_loc + " --perl_dir " + perl_dir + "/" + " --act_dir ./act_compos/"
+                                  " --csv " + df_loc + " --perl_dir " + perl_dir + "/" + " --act_dir " + act_dir
 
                     subprocess.call(act_command, shell=True)  # , stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
@@ -3154,7 +3155,7 @@ if __name__ == '__main__':
                     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
                     ## Now lets run these new acts to replace the current ones with the reference
                     act_command = "python " + python_dir + "/running_act_comparisons.py" + \
-                                  " --csv " + df_loc + " --perl_dir " + perl_dir + "/" + " --act_dir ./act_compos/"
+                                  " --csv " + df_loc + " --perl_dir " + perl_dir + "/" + " --act_dir " + act_dir
 
                     subprocess.call(act_command, shell=True)  # , stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
