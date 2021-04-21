@@ -3612,7 +3612,7 @@ if __name__ == '__main__':
             print(isolate_id)
 
 
-
+    sys.exit(1)
 
     hit_out_name = files_for_input.output + "_hits_df.csv"
     library_add = library_dat[library_dat['cluster_name'].isin(clusters_present)]
