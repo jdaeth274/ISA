@@ -1701,7 +1701,7 @@ def gene_name_finder(flanks_csv, back_it_up):
                 break
 
     if search_res == []:
-        search_res = "None"
+        search_res = "NONE"
         if back_it_up:
             gene_row = new_flanks.iloc[len(new_flanks.index) - 1].copy()
         else:
