@@ -1149,8 +1149,7 @@ def gene_name_tryer(prospective_csv, library_csv, out_hit, missing_isolate, merg
 
     bef_and_aft = library_use[(library_use['before_gene_name'] == prospective_csv['before_gene_name'][0]) & \
                               (library_use['after_gene_name'] == prospective_csv['after_gene_name'][0])]
-    print(bef_and_aft)
-    print(prospective_csv)
+
 
     if not bef_and_aft.empty:
 
@@ -3030,8 +3029,7 @@ if __name__ == '__main__':
 
         ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ The single merged hit I want to add in atm ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-        if isolate_id not in ['11893_1#33']:
-            continue
+        
 
         current_gff_loc, ref_loc, cluster_name = gff_finder(isolate_ref_gff, isolate_id, True)
         ref_name = os.path.basename(ref_loc.iloc[0])
@@ -3612,7 +3610,7 @@ if __name__ == '__main__':
             print(isolate_id)
 
 
-    sys.exit(1)
+
 
     hit_out_name = files_for_input.output + "_hits_df.csv"
     library_add = library_dat[library_dat['cluster_name'].isin(clusters_present)]
