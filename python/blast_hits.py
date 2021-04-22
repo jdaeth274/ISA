@@ -746,7 +746,8 @@ def bounds_of_contig(contig_tab, contig_mge):
 
     return contig_bounds
 
-def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, reference_id, flanking_length, contig_loc, nice_ids_tot):
+def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, reference_id, flanking_length, contig_loc, nice_ids_tot,
+                   act_compo_loc):
     ## Function to take in the reccy hits csv for a paticular cluster. Then work through the
     ## reccy hits and find the isolate with the fewest snps around the insertion site. This will
     ## then be output in the out_df along with the end and start points for the flanks to be taken
@@ -944,7 +945,7 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
 
 
         elif reference_presence == "Yes" or reference_id in nice_ids_tot:
-            cont_id, cont_start, cont_end = outside_control(insertion_node, tree, isolate_row, act_compos,
+            cont_id, cont_start, cont_end = outside_control(insertion_node, tree, isolate_row, act_compo_loc,
                                                             ref_insert_list, nice_ids_tot)
             if isinstance(cont_id, int):
                 print("Can't extract control for this isolate, skipping: %s" % mge_id)
@@ -1020,7 +1021,7 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
         bef_hits = out_df.iloc[o, [3,4]]
         aft_hits = out_df.iloc[o, [5,6]]
         insert_hits = out_df.iloc[o, [8,9]]
-        act_file = act_compos + current_isolate + ".crunch.gz"
+        act_file = act_compo_loc + current_isolate + ".crunch.gz"
         compo_names = ['query', 'subject', 'pid', 'align', 'gap', 'mismatch', 'qstart',
                        'qend', 'sstart', 'send', 'eval', 'bitscore']
 
