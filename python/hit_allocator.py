@@ -1122,7 +1122,7 @@ def gff_to_dna(gff_csv, contig_csv, isolate_id, input_k):
 
 
 def gene_name_tryer(prospective_csv, library_csv, out_hit, missing_isolate, mergio, isolate_id, gene_rows,
-                    fasta_csv, reference_name, contig_bounds, ref_contig_bounds):
+                    fasta_csv, reference_name,contig_tab, ref_contig_tab, fasta_out_dir):
     ## Function to take in hits they have missed the first few cutoffs in the hit_integrator function
     ## And try to merge them instead using the flank gene names and then the mge charecteristics
     ## Input: prospective_csv: The single line isolate from the hit_integrator function
@@ -1134,7 +1134,9 @@ def gene_name_tryer(prospective_csv, library_csv, out_hit, missing_isolate, merg
     ##        gene_rows: The before and after gene rows from the gff (list of series)
     ##        fasta_csv: The csv of the fastas and the references
     ##        reference_name: The current reference for this isolate, after correcting for MGE presence.
-    ##        contig_bounds: The contig bounds csv for the current isolate in question.
+    ##        contig_tab: The isoltaes contig table file.
+    ##        ref_contig_tab: The reference contig table file.
+    ##        fasta_out_dir: Location to store the fasta searches.
 
 
 
@@ -1215,8 +1217,8 @@ def gene_name_tryer(prospective_csv, library_csv, out_hit, missing_isolate, merg
     else:
         # Initially had this as only searching if none not present, I'll do away with that condition for now
 
-        cluster_name = fasta_extractor(isolate_id, gene_rows, fasta_csv, contig_tab)
-        before_results, after_results = blast_search(isolate_id, reference_name, cluster_name)
+        cluster_name = fasta_extractor(isolate_id, gene_rows, fasta_csv, contig_tab, fasta_out_dir)
+        before_results, after_results = blast_search(isolate_id, reference_name, cluster_name, fasta_out_dir)
         library_append, missing_copy =  blast_results_adder([before_results,after_results],prospective_csv, library_csv,missing_copy,ref_contig_tab)
 
 
@@ -1242,14 +1244,14 @@ def gene_name_tryer(prospective_csv, library_csv, out_hit, missing_isolate, merg
 
     return out_hit_copy, missing_copy, library_append
 
-def fasta_extractor(isolate_id, gene_rows, fasta_csv, contig_bounds):
+def fasta_extractor(isolate_id, gene_rows, fasta_csv, contig_bounds, fasta_dir):
     ## Function to extract the gene sequence for the before and after hits in the
     ## MGE identification pipeline
     ## Input: gene_rows: List of the two series for the named genes before and
     ##                   after the MGE insert
     ##        fasta_csv: The csv with the location of the fasta files
     ##        contig_bounds: The list of start and end of a contig to transfer back
-    ##                       the
+    ##        fasta_dir: The directory where the searched for fasta files should be stored
 
     fasta_file, reference, cluster = gff_finder(fasta_csv, isolate_id, True)
 
@@ -1313,15 +1315,15 @@ def fasta_extractor(isolate_id, gene_rows, fasta_csv, contig_bounds):
 
     ## ok its getting the right positions, lets export these fastas
 
-    with open((isolate_id + "_before_gene.fasta"), "w+") as output_handle:
+    with open((fasta_dir + isolate_id + "_before_gene.fasta"), "w+") as output_handle:
         SeqIO.write(before_gene, output_handle, "fasta")
-    with open((isolate_id + "_after_gene.fasta"), "w+") as output_handle:
+    with open((fasta_dir + isolate_id + "_after_gene.fasta"), "w+") as output_handle:
         SeqIO.write(after_gene, output_handle, "fasta")
 
     return str(cluster.iloc[0])
 
 
-def blast_search(isolate_id, reference_loc, cluster_id):
+def blast_search(isolate_id, reference_loc, cluster_id, fasta_dir):
     ## Function to search the newly created genes against the refernece isolate for the
     ## cluster. Will check if this already exists in the tmp_dna_dir folder
     ## input: isolate_id: The current isolate's id, gets us the gene fasta locs
@@ -1329,8 +1331,8 @@ def blast_search(isolate_id, reference_loc, cluster_id):
     ##        clutser_id: The current cluster id, we'll name the reference db after this.
 
     reference_db = cluster_id + "_db.nhr"
-    before_gene = isolate_id + "_before_gene.fasta"
-    after_gene = isolate_id + "_after_gene.fasta"
+    before_gene = fasta_dir + isolate_id + "_before_gene.fasta"
+    after_gene = fasta_dir + isolate_id + "_after_gene.fasta"
     if not os.path.isfile(reference_db):
         if reference_loc == "pmen3_reference":
             data_dir = re.sub("python$", "data", os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))  # script directory
@@ -1340,14 +1342,14 @@ def blast_search(isolate_id, reference_loc, cluster_id):
         db_command = "makeblastdb -in " + reference_name + " -dbtype nucl -out " + cluster_id + "_db"
         subprocess.call(db_command, shell=True)
 
-    before_blast = "blastn -query " + before_gene + " -db " + cluster_id + "_db" + " -out " + isolate_id + "_before_blast.csv" + " -outfmt 10"
-    after_blast = "blastn -query " + after_gene + " -db " + cluster_id + "_db" + " -out " + isolate_id + "_after_blast.csv" + " -outfmt 10"
+    before_blast = "blastn -query " + before_gene + " -db " + cluster_id + "_db" + " -out " + fasta_dir + isolate_id + "_before_blast.csv" + " -outfmt 10"
+    after_blast = "blastn -query " + after_gene + " -db " + cluster_id + "_db" + " -out " + fasta_dir + isolate_id + "_after_blast.csv" + " -outfmt 10"
 
     subprocess.call(before_blast, shell=True)
     subprocess.call(after_blast, shell=True)
 
-    before_blast_res = isolate_id + "_before_blast.csv"
-    after_blast_res = isolate_id + "_after_blast.csv"
+    before_blast_res = fasta_dir + isolate_id + "_before_blast.csv"
+    after_blast_res = fasta_dir + isolate_id + "_after_blast.csv"
 
     return before_blast_res, after_blast_res
 
@@ -1460,7 +1462,7 @@ def contig_number_getter(contig_name):
 
 
 def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isolates, mergio, gene_rows,
-                 fasta_csv, reference_name, contig_tab, ref_contig_tab):
+                 fasta_csv, reference_name, contig_tab, ref_contig_tab, fasta_dir):
     ## Function to allocate hit location
     ## Input: library_csv: The current library csv to search for matches against
     ##        prospective_csv: The prospective set of results to be sorted
@@ -1499,7 +1501,7 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
 
     if mergio:
         out_hit, missing_df, lib_new = gene_name_tryer(prospective_csv, library_csv, out_hit, missing_df, mergio, isolate_id, gene_rows,
-                                                       fasta_csv, reference_name, contig_tab, ref_contig_tab)
+                                                       fasta_csv, reference_name, contig_tab, ref_contig_tab, fasta_dir)
 
     else:
 
@@ -1598,7 +1600,7 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
 
                         if gene_hits.empty and length_hits.empty:
                             out_hit, missing_df, lib_new = gene_name_tryer(prospective_csv, lib_use, out_hit, missing_df, mergio, isolate_id,
-                                                                           gene_rows, fasta_csv, reference_name, contig_tab, ref_contig_tab)
+                                                                           gene_rows, fasta_csv, reference_name, contig_tab, ref_contig_tab, fasta_dir)
 
                         else:
                             remain_48 = pandas.concat([gene_hits, length_hits], ignore_index=True, sort = False)
@@ -1608,7 +1610,7 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
                             if len(remain_48.index) == 1:
                                 if remain_48['before_gene_name'][0] != before_gene_name and remain_48['after_gene_name'][0] != after_gene_name:
                                     out_hit, missing_df, lib_new = gene_name_tryer(prospective_csv, lib_use, out_hit, missing_df, mergio, isolate_id,
-                                                                                   gene_rows, fasta_csv, reference_name, contig_tab, ref_contig_tab)
+                                                                                   gene_rows, fasta_csv, reference_name, contig_tab, ref_contig_tab, fasta_dir)
 
                                 else:
                                     prospective_csv['insert_name'] = pandas.Series(remain_48['insert_name'], index=prospective_csv.index)
@@ -1626,7 +1628,7 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
                                 closest_index = lengers.idxmin()
                                 if remain_48['before_gene_name'].iloc[closest_index] != before_gene_name and remain_48['after_gene_name'].iloc[closest_index] != after_gene_name:
                                     out_hit, missing_df, lib_new = gene_name_tryer(prospective_csv, lib_use, out_hit, missing_df, mergio, isolate_id, gene_rows,
-                                                       fasta_csv, reference_name, contig_tab, ref_contig_tab)
+                                                       fasta_csv, reference_name, contig_tab, ref_contig_tab, fasta_dir)
 
                                 else:
                                     prospective_csv['insert_name'] = pandas.Series(remain_48['insert_name'].iloc[closest_index], index=remain_48.index)
@@ -1643,16 +1645,16 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
 
                     else:
                         out_hit, missing_df, lib_new = gene_name_tryer(prospective_csv, lib_use, out_hit, missing_df, mergio, isolate_id, gene_rows,
-                                                       fasta_csv, reference_name, contig_tab, ref_contig_tab)
+                                                       fasta_csv, reference_name, contig_tab, ref_contig_tab, fasta_dir)
 
                 else:
                     out_hit, missing_df, lib_new = gene_name_tryer(prospective_csv, lib_use, out_hit, missing_df, mergio, isolate_id, gene_rows,
-                                                       fasta_csv, reference_name, contig_tab, ref_contig_tab)
+                                                       fasta_csv, reference_name, contig_tab, ref_contig_tab, fasta_dir)
 
         else:
             ## Try to see if there is a hit with the same start and end gene names and mge_length +- 50 bp or gene +- 1
             out_hit, missing_df, lib_new = gene_name_tryer(prospective_csv, lib_use, out_hit, missing_df, mergio, isolate_id, gene_rows,
-                                                       fasta_csv, reference_name, contig_tab, ref_contig_tab)
+                                                       fasta_csv, reference_name, contig_tab, ref_contig_tab, fasta_dir)
     return(out_hit, missing_df, lib_new)
 
 def gene_name_finder(flanks_csv, back_it_up):
@@ -3008,7 +3010,7 @@ if __name__ == '__main__':
     print("This many hits to get through: %s" % len(proper_hits.index))
     print("")
 
-
+    fasta_directory = files_for_input.output + "_fasta_searches/"
 
     ## Now loop through the blast results ##
 
@@ -3551,7 +3553,7 @@ if __name__ == '__main__':
 
             if genes_mge_num <= gene_insert_num or mergio == True:
                     hit_df, missing_isolate, library_dat = hit_detector(library_dat, library_pros, isolate_id, hit_df, missing_isolate, mergio, gene_gff_rows,
-                                                                        fasta_pandas,ref_contig_name, contig_tab, ref_contig_tab)
+                                                                        fasta_pandas,ref_contig_name, contig_tab, ref_contig_tab, fasta_directory)
             else:
 
                 missing_current = pandas.DataFrame()

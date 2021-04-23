@@ -1408,7 +1408,7 @@ if __name__ == '__main__':
 
         flanks_csv, regions_bef, regions_aft = isolate_narrow(current_dat, current_pyt, tree, embl_reccy_csv,
                                                               branch_mutations, current_ref_name, flanking_length,
-                                                              contig_bounds, nice_ids_tot)
+                                                              contig_bounds, nice_ids_tot, act_compos)
         if isinstance(flanks_csv, str):
             continue
 

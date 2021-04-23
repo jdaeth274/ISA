@@ -182,6 +182,17 @@ then
     fi
 
     ## Now for the hit allocation step
+
+    ## Make the output dir for the fasta searching
+
+    if [ -d "$4/$5_fasta_searches" ]
+    then
+      rm -r "$4/$5_fasta_searches"
+      mkdir "$4/$5_fasta_searches"
+    else
+      mkdir "$4/$5_fasta_searches"
+    fi
+
     python "${pythondir}hit_allocator.py" \
     --blast_csv "$4/$5_merged_blast_file" --lib_csv "$4/$5_library.csv" --reference_csv $ref_isolate_gff \
     --fasta_csv $ref_isolate_fasta --act_loc "${act_compos_loc}referoo.fasta." --contig_loc ./contig_bounds/ \
