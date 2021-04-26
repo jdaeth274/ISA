@@ -181,6 +181,8 @@ then
       --new_lib "$4/$5_library.csv" --old_lib $extra_lib --out_csv "$4/$5_library.csv"
     fi
 
+    cp "$4/$5_library_csv" "$4/$5_library_copy_csv.csv"
+
     ## Now for the hit allocation step
 
     ## Make the output dir for the fasta searching
@@ -197,6 +199,8 @@ then
     --blast_csv "$4/$5_merged_blast_file" --lib_csv "$4/$5_library.csv" --reference_csv $ref_isolate_gff \
     --fasta_csv $ref_isolate_fasta --act_loc "${act_compos_loc}referoo.fasta." --contig_loc ./contig_bounds/ \
     --output "$4/$5" --align $3
+
+    exit 1 
 
     ## Now for the edge list
       python "${pythondir}edge_list.py" --hit_csv "$4/$5_hits_df.csv" --out_name "$4/$5_edge_list.tsv"

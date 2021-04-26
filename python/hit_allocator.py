@@ -1141,6 +1141,10 @@ def gene_name_tryer(prospective_csv, library_csv, out_hit, missing_isolate, merg
     print(" This is in the gene name tryer")
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
+    if mergio:
+        merged = "Yes"
+    else:
+        merged = "No"
 
     missing_copy = missing_isolate.copy()
     out_hit_copy = out_hit.copy()
@@ -1198,7 +1202,7 @@ def gene_name_tryer(prospective_csv, library_csv, out_hit, missing_isolate, merg
             ## So these hits have the same approved gene names as before. Lets add them to the library instead
             ## of punishing the MGE length criteria
 
-            library_append = merged_adder(prospective_csv, library_csv)
+            library_append = merged_adder(prospective_csv, library_csv, merged)
 
             # print(mergio)
             # missing_current = pandas.DataFrame()
@@ -1222,9 +1226,14 @@ def gene_name_tryer(prospective_csv, library_csv, out_hit, missing_isolate, merg
         print(" This is in the fasta_extractor bit")
         print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
+        if mergio:
+            merged = "Yes"
+        else:
+            merged = "No"
+
         cluster_name = fasta_extractor(isolate_id, gene_rows, fasta_csv, contig_tab, fasta_out_dir)
         before_results, after_results = blast_search(isolate_id, reference_name, cluster_name, fasta_out_dir)
-        library_append, missing_copy =  blast_results_adder([before_results,after_results],prospective_csv, library_csv,missing_copy,ref_contig_tab)
+        library_append, missing_copy =  blast_results_adder([before_results,after_results],prospective_csv, library_csv,missing_copy,ref_contig_tab, merged)
 
 
 
@@ -1358,7 +1367,7 @@ def blast_search(isolate_id, reference_loc, cluster_id, fasta_dir):
 
     return before_blast_res, after_blast_res
 
-def blast_results_adder(blast_results, prospective_csv, library_csv, missing_csv, ref_contig_tab):
+def blast_results_adder(blast_results, prospective_csv, library_csv, missing_csv, ref_contig_tab, merged):
     ## Function to take in the blast results for a hit from blast_search
     ## then to add in the results if the hits are on the same contig as
     ## each other
@@ -1367,6 +1376,7 @@ def blast_results_adder(blast_results, prospective_csv, library_csv, missing_csv
     ##        library_csv: The current library csv
     ##        missing_csv: The current missing csv
     ##        ref_contig_tab: The current reference contig table
+    ##        merged: Whether or not the hit is merged to add into merged column
 
     missing_copy = missing_csv.copy()
     library_csv_copy = library_csv.copy()
@@ -1434,7 +1444,7 @@ def blast_results_adder(blast_results, prospective_csv, library_csv, missing_csv
         #     missing_current['reason'] = pandas.Series(["Fasta hits not on same contig in reference"], index=missing_current.index)
         #     missing_copy = missing_copy.append(missing_current, sort=False)
 
-        library_csv_copy = merged_adder(prospective_csv, library_csv_copy)
+        library_csv_copy = merged_adder(prospective_csv, library_csv_copy, merged)
 
     return library_csv_copy, missing_copy
 
@@ -1443,13 +1453,14 @@ def blast_results_adder(blast_results, prospective_csv, library_csv, missing_csv
 
 
 
-def merged_adder(prospective_csv, library_csv):
+def merged_adder(prospective_csv, library_csv, merged):
     ## This is a function to add a merged isolates hit into the the library csv.
     ## This will add the hit and lable the hit as for merged use only
     ## Input: prospective_csv: The merged hit row
     ##        library_csv: The library csv, with a merged column already added in.
+    ##        merged: The mergio column value
 
-    prospective_csv['mergio'] = "Yes"
+    prospective_csv['mergio'] = merged
     prospective_csv['insert_name'] = len(library_csv.index) + 1
     library_csv_merged = library_csv.append(prospective_csv, ignore_index=True, sort=False)
 
