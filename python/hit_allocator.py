@@ -1137,7 +1137,9 @@ def gene_name_tryer(prospective_csv, library_csv, out_hit, missing_isolate, merg
     ##        contig_tab: The isoltaes contig table file.
     ##        ref_contig_tab: The reference contig table file.
     ##        fasta_out_dir: Location to store the fasta searches.
-
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+    print(" This is in the gene name tryer")
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
 
     missing_copy = missing_isolate.copy()
@@ -1216,6 +1218,9 @@ def gene_name_tryer(prospective_csv, library_csv, out_hit, missing_isolate, merg
 
     else:
         # Initially had this as only searching if none not present, I'll do away with that condition for now
+        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+        print(" This is in the fasta_extractor bit")
+        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
         cluster_name = fasta_extractor(isolate_id, gene_rows, fasta_csv, contig_tab, fasta_out_dir)
         before_results, after_results = blast_search(isolate_id, reference_name, cluster_name, fasta_out_dir)
@@ -1495,7 +1500,9 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
 
     odd_ones = False
 
-
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+    print(" Is this a mergio? %s" % mergio)
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
     ## So there is a hit with the same number of mge genes, let now check the element length +- 2 bp
     ## Needs to be a hit with no length +- 2bp and no genes +- 1
 
