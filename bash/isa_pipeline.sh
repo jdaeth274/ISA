@@ -200,7 +200,7 @@ then
     --fasta_csv $ref_isolate_fasta --act_loc "${act_compos_loc}referoo.fasta." --contig_loc ./contig_bounds/ \
     --output "$4/$5" --align $3
 
-    
+
 
     ## Now for the edge list
       python "${pythondir}edge_list.py" --hit_csv "$4/$5_hits_df.csv" --out_name "$4/$5_edge_list.tsv"

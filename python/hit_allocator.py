@@ -3379,6 +3379,20 @@ if __name__ == '__main__':
 
                 current_gff = gff_to_dna(current_gff, contig_tab, isolate_id, input_k=k)
                 if isinstance(current_gff, str):
+                    missing_current = pandas.DataFrame()
+                    missing_current['id'] = pandas.Series(isolate_id)
+                    missing_current['mge_start'] = pandas.Series(hitters[0], index=missing_current.index)
+                    missing_current['mge_end'] = pandas.Series(hitters[1], index=missing_current.index)
+                    missing_current['insert_start'] = pandas.Series(current_insert_locs[0], index=missing_current.index)
+                    missing_current['insert_end'] = pandas.Series(current_insert_locs[1], index=missing_current.index)
+                    missing_current['before_gene_name'] = pandas.Series(before_gene, index=missing_current.index)
+                    missing_current['after_gene_name'] = pandas.Series(after_gene, index=missing_current.index)
+                    missing_current['ref_name'] = pandas.Series(ref_name, index=missing_current.index)
+                    missing_current['cluster_name'] = pandas.Series(cluster_name, index=missing_current.index)
+                    missing_current['merged'] = pandas.Series(mergio, missing_current.index)
+                    missing_current['mge_length'] = pandas.Series(current_mge_length, index=missing_current.index)
+                    missing_current['reason'] = pandas.Series(["No Fasta sequence in GFF"], missing_current.index)
+                    missing_isolate = missing_isolate.append(missing_current, sort=False)
                     continue
 
             if current_row.mge_bef_ori == "forward":
