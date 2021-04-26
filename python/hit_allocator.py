@@ -3027,7 +3027,8 @@ if __name__ == '__main__':
         isolate_id = current_row.id_z
         current_mge_length = current_row.mge_length
 
-
+        if isolate_id not in ['7011_5#5','7011_4#7']:
+            continue
 
 
         ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ The single merged hit I want to add in atm ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -3350,8 +3351,12 @@ if __name__ == '__main__':
                     hit_before_length = abs(hit_before_loc[1] - hit_before_loc[0])
                     hit_after_length = abs(hit_after_loc[1] - hit_after_loc[0])
 
-
-
+        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+        print("This is the all one tig 5k: %s" % all_one_tig_5k)
+        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+        print("This is the all one tig: %s" % all_one_tig)
+        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
         if all_one_tig_5k:
 
