@@ -1137,9 +1137,7 @@ def gene_name_tryer(prospective_csv, library_csv, out_hit, missing_isolate, merg
     ##        contig_tab: The isoltaes contig table file.
     ##        ref_contig_tab: The reference contig table file.
     ##        fasta_out_dir: Location to store the fasta searches.
-    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-    print(" This is in the gene name tryer")
-    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+
 
     if mergio:
         merged = "Yes"
@@ -1222,9 +1220,6 @@ def gene_name_tryer(prospective_csv, library_csv, out_hit, missing_isolate, merg
 
     else:
         # Initially had this as only searching if none not present, I'll do away with that condition for now
-        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-        print(" This is in the fasta_extractor bit")
-        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
         if mergio:
             merged = "Yes"
@@ -1511,9 +1506,7 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
 
     odd_ones = False
 
-    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-    print(" Is this a mergio? %s" % mergio)
-    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+
     ## So there is a hit with the same number of mge genes, let now check the element length +- 2 bp
     ## Needs to be a hit with no length +- 2bp and no genes +- 1
 
@@ -3045,8 +3038,6 @@ if __name__ == '__main__':
         isolate_id = current_row.id_z
         current_mge_length = current_row.mge_length
 
-        if isolate_id not in ['7011_5#5','7011_4#7']:
-            continue
 
 
         ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ The single merged hit I want to add in atm ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -3369,12 +3360,6 @@ if __name__ == '__main__':
                     hit_before_length = abs(hit_before_loc[1] - hit_before_loc[0])
                     hit_after_length = abs(hit_after_loc[1] - hit_after_loc[0])
 
-        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-        print("This is the all one tig 5k: %s" % all_one_tig_5k)
-        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-        print("This is the all one tig: %s" % all_one_tig)
-        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
         if all_one_tig_5k:
 
@@ -3634,6 +3619,7 @@ if __name__ == '__main__':
             print("")
             print("missing")
             print(isolate_id)
+            print(all_one_tig_5k)
 
 
 
