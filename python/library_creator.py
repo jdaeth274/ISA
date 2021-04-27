@@ -1024,8 +1024,8 @@ def library_integrator(library_csv, prospective_csv, isolate_id):
     ## Needs to be a hit with no length +- 2bp and no genes +- 1
     mge_hits = lib_new[(lib_new['mge_genes'] >= (prospective_csv['mge_genes'][0] - 1)) &\
                        (lib_new['mge_genes'] <= (prospective_csv['mge_genes'][0] + 1))]
-    mge_length_hits = mge_hits[(mge_hits['mge_length'] >= (prospective_csv['mge_length'][0] - 2))\
-                                 & (mge_hits['mge_length'] <= (prospective_csv['mge_length'][0] + 2))]
+    mge_length_hits = mge_hits[(mge_hits['mge_length'] >= (prospective_csv['mge_length'][0] - 5))\
+                                 & (mge_hits['mge_length'] <= (prospective_csv['mge_length'][0] + 5))]
 
 
     if not mge_length_hits.empty:
