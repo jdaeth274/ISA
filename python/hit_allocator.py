@@ -1519,8 +1519,8 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
 
         mge_hits = lib_use[(lib_use['mge_genes'] >= (prospective_csv['mge_genes'][0] - 1)) &\
                            (lib_use['mge_genes'] <= (prospective_csv['mge_genes'][0] + 1))]
-        mge_length_hits = mge_hits[(mge_hits['mge_length'] >= (prospective_csv['mge_length'][0] - 2))\
-                                     & (mge_hits['mge_length'] <= (prospective_csv['mge_length'][0] + 2))]
+        mge_length_hits = mge_hits[(mge_hits['mge_length'] >= (prospective_csv['mge_length'][0] - 5))\
+                                     & (mge_hits['mge_length'] <= (prospective_csv['mge_length'][0] + 5))]
 
         print("~~~~~~~~~~~~~~~~~~~~~")
         print(" MGE length hits ")
