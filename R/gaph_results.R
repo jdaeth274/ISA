@@ -626,26 +626,93 @@ tag_res <- graph_getter(dir_to_files = "~/Dropbox/phd/insertion_site_analysis/da
                         graph_name = "before_tag", insert_name = "28",current_flanks = "500")
 
 
-###############################################################################
-## Check for Tn916 ############################################################
-###############################################################################
+#######################################################################################
+## Re run for the updated pipeline ####################################################
+#######################################################################################
+
+gps_mega_updated <- folder_to_res(results_folder = "~/Dropbox/phd/insertion_site_analysis/data/gps_run_data/mega_res/gps_mega_21_4_2021/",
+                                     graph_name = graph_name,
+                                     insert_name = "total")
+
+## Get some info out from the gamma scores 
+whole_df <- bind_rows(gps_mega_updated$before_res$total_df, gps_mega_updated$after_res$total_df)
+
+whole_df_insert <- whole_df[whole_df$control == "Actual",]
+whole_df_ref <- whole_df[whole_df$control == "Control",]
+wilcox.test(whole_df_insert$bit_pneumo, whole_df_ref$bit_pneumo, conf.int = TRUE)
+median(whole_df_insert$bit_pneumo)
+median(whole_df_ref$bit_pneumo)
+
+mann_u_output <- wmwTest(whole_df_insert$bit_pneumo, whole_df_ref$bit_pneumo)
+
+## Now for the tag inserts
+
+gps_mega_res_tag <- folder_to_res(results_folder = "~/Dropbox/phd/insertion_site_analysis/data/gps_run_data/mega_res/gps_mega_21_4_2021/",
+                                   graph_name = "GPS Tn1207.1",
+                                   insert_name = "28")
+## Get some info on the insertions 
+## Look into the top species hits for tag at 500bp upstream. 
+
+
+gps_mega_res_tag$whole_res$graph_data
+whole_df <- bind_rows(gps_mega_res_tag$before_res$total_df, gps_mega_res_tag$after_res$total_df)
+whole_df <- whole_df %>% mutate(control = ifelse(control == "Actual", "Tag","Control"))
+whole_df$control <- factor(whole_df$control, levels = c("Tag","Control"))
+
+violin_plot_whole <- ggplot(data = whole_df, aes(x = control, y = bit_pneumo)) + geom_violin(aes(fill = control)) +
+  labs(x = "Isolate", y = "Score") + scale_fill_discrete(labels = c(expression(paste(italic("tag"), " insertion",sep = "")),"Unmodified Locus")) + 
+  guides(fill = guide_legend(title = "Isolate")) + geom_point(aes(x = control, y = bit_pneumo, color = control),
+                                                              position = position_jitter(width = 0.45, height = 0),
+                                                              size = 0.25) +
+  scale_color_discrete(labels = c(expression(paste(italic("tag"), " insertion",sep = "")),"Unmodified Locus"), name = "Isolate") + 
+  theme(legend.text.align = 0) +
+  scale_x_discrete(labels = c(expression(paste(italic("tag"), " insertion",sep = "")),"Unmodified Locus")) +
+  theme_bw()
+
+violin_plot_whole
+
+#whole_plot <- pmen_mega_res$whole_res$pneumo_plot
+whole_plot_figshare <- whole_df[,c(1,2,4)]
+colnames(whole_plot_figshare) <- c("Isolate","gamma","Insertion")
+
+before_flanks <- pmen_mega_res_tag$before_res$graph_data %>% mutate(region = sub("before","upstream", region)) %>%
+  select(c(bit_pneumo,flank, region, lqr, uqr)) %>% rename(gamma = bit_pneumo) %>%
+  mutate(region = sub("28", "tag",region))
+
+after_flanks <- pmen_mega_res_tag$after_res$graph_data %>% mutate(region = sub("after","downstream", region)) %>%
+  select(c(bit_pneumo,flank, region, lqr, uqr)) %>% rename(gamma = bit_pneumo) %>%
+  mutate(region = sub("28", "tag",region))
+
+
+mean_40_60 <- ggdraw()  +
+  draw_plot(pmen_mega_res_tag$before_res$pneumo_plot + labs(x = NULL) + theme_bw() + theme(legend.position = "none"), x = 0, y = 0.5, width = .4, height = .5) +
+  draw_plot(pmen_mega_res_tag$after_res$pneumo_plot  + labs(x = "Flank Length (bp)")  + theme_bw() + theme(legend.position = "none"), x = 0, y = 0, width = 0.4, height = 0.5) +
+  draw_plot(violin_plot_whole + theme(legend.text.align = 0), x = 0.4, y = 0, width = 0.6, height = 1) +
+  draw_plot_label(label = c("A", "B", "C"), size = 15,
+                  x = c(0, 0, 0.4), y = c(0.95, 0.45, 0.95)) 
 
 
 
+######################################
+## Tn916 #############################
+######################################
+
+pmen_tn916_res_total <- folder_to_res(results_folder = "~/Dropbox/phd/insertion_site_analysis/data/gps_run_data/tn916_res/gps_tn916_run_free/",
+                                      graph_name = graph_name,
+                                      insert_name = "total")
 
 
+whole_df <- bind_rows(pmen_tn916_res_total$before_res$total_df, pmen_tn916_res_total$after_res$total_df)
 
+whole_df_insert <- whole_df[whole_df$control == "Actual",]
+whole_df_ref <- whole_df[whole_df$control == "Control",]
 
+## Lets pair it up 
+pairing_df <- whole_df %>% mutate(iso = ifelse(grepl("!",isolate),sub(".*!","",isolate), isolate))
 
-
-
-
-
-
-
-
-
-
+wilcox.test(whole_df_insert$bit_pneumo, whole_df_ref$bit_pneumo, conf.int = TRUE)
+median(whole_df_insert$bit_pneumo)
+median(whole_df_ref$bit_pneumo)
 
 
 
