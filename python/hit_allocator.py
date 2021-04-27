@@ -1522,10 +1522,7 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
         mge_length_hits = mge_hits[(mge_hits['mge_length'] >= (prospective_csv['mge_length'][0] - 5))\
                                      & (mge_hits['mge_length'] <= (prospective_csv['mge_length'][0] + 5))]
 
-        print("~~~~~~~~~~~~~~~~~~~~~")
-        print(" MGE length hits ")
-        print(mge_length_hits.head())
-        print("~~~~~~~~~~~~~~~~~~~~~")
+
         if not mge_length_hits.empty:
 
                 ## Lets check if the before or after hits match quite closely with the number of genes +- 1
@@ -1543,11 +1540,7 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
                 before_empty = before_gene_hits.empty
                 after_empty = after_gene_hits.empty
 
-                print("~~~~~~~~~~~~~~~~~~~~~")
-                print(" gene nums ")
-                print(before_gene_hits.head())
-                print(after_gene_hits.head())
-                print("~~~~~~~~~~~~~~~~~~~~~")
+
 
                 if not before_empty or not after_empty:
                     ## So either the before or the after hit or both match to ones already in the database
@@ -1588,11 +1581,7 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
 
                         after_flank_empty = after_flank_means.empty
 
-                    print("~~~~~~~~~~~~~~~~~~~~~")
-                    print(" mean flanks ")
-                    print(after_flank_empty)
-                    print(before_flank_empty)
-                    print("~~~~~~~~~~~~~~~~~~~~~")
+
 
                     if not before_flank_empty or not after_flank_empty:
 
@@ -1622,12 +1611,7 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
                         length_hits = remaining_hits[(remaining_hits['insert_length'] >= (insert_length - 500)) & \
                                                      (remaining_hits['insert_length'] <= (insert_length + 500))]
 
-                        print("~~~~~~~~~~~~~~~~~~~~~")
-                        print(" genehits ")
-                        print(gene_hits)
-                        print(" length hits ")
-                        print(length_hits)
-                        print("~~~~~~~~~~~~~~~~~~~~~")
+
 
                         if gene_hits.empty and length_hits.empty:
                             out_hit, missing_df, lib_new = gene_name_tryer(prospective_csv, lib_use, out_hit, missing_df, mergio, isolate_id,
@@ -1638,10 +1622,7 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
                             remain_48 = remain_48.drop_duplicates()
                             before_gene_name = prospective_csv['before_gene_name'][0]
                             after_gene_name = prospective_csv['after_gene_name'][0]
-                            print("~~~~~~~~~~~~~~~~~~~~~")
-                            print(" remain_48 ")
-                            print(remain_48)
-                            print("~~~~~~~~~~~~~~~~~~~~~")
+
                             if len(remain_48.index) == 1:
                                 if remain_48['before_gene_name'][0] != before_gene_name and remain_48['after_gene_name'][0] != after_gene_name:
                                     out_hit, missing_df, lib_new = gene_name_tryer(prospective_csv, lib_use, out_hit, missing_df, mergio, isolate_id,
@@ -1661,10 +1642,7 @@ def hit_detector(library_csv, prospective_csv, isolate_id, hit_csv, missing_isol
                                 target_insert = prospective_csv['insert_length'][0]
                                 lengers = abs(remain_48['insert_length'] - target_insert)
                                 closest_index = lengers.idxmin()
-                                print("~~~~~~~~~~~~~~~~~~~~~")
-                                print(" remain_48 ")
-                                print(remain_48.iloc[closest_index])
-                                print("~~~~~~~~~~~~~~~~~~~~~")
+
                                 if remain_48['before_gene_name'].iloc[closest_index] != before_gene_name and remain_48['after_gene_name'].iloc[closest_index] != after_gene_name:
                                     out_hit, missing_df, lib_new = gene_name_tryer(prospective_csv, lib_use, out_hit, missing_df, mergio, isolate_id, gene_rows,
                                                        fasta_csv, reference_name, contig_tab, ref_contig_tab, fasta_dir)
@@ -3066,8 +3044,7 @@ if __name__ == '__main__':
         isolate_id = current_row.id_z
         current_mge_length = current_row.mge_length
 
-        if isolate_id != "14673_3#7":
-            continue
+        
 
         ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ The single merged hit I want to add in atm ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
