@@ -268,8 +268,8 @@ print(sum_up_by_MGE)
 
 dev.off()
 
-tot_csv <- read.csv("~/Dropbox/phd/insertion_site_analysis/data/gps_run_data/gps_recombination_lengths.csv",
-                    stringsAsFactors = FALSE)
+#tot_csv <- read.csv("~/Dropbox/phd/insertion_site_analysis/data/gps_run_data/gps_recombination_lengths.csv",
+                    #stringsAsFactors = FALSE)
 
 histo_mges <- ggplot(data = tot_csv) + geom_histogram(aes(tot_csv$density,
                                                           fill = MGE), alpha  = 1,
