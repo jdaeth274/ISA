@@ -2449,7 +2449,8 @@ if __name__ == '__main__':
             isolate_id = isolate_id_z
 
 
-
+        if isolate_id != "9716_7#3":
+            continue
 
         #cluster_2 = ["10900_6#9", "15608_3#45", "15608_3#49", "15608_3#55", "15608_3#71", "15608_3#75", "15608_4#18", \
         #            "15608_4#30", "15608_4#2", "15608_4#24"]
@@ -2917,7 +2918,8 @@ if __name__ == '__main__':
 
                 flanks_genes = num_genes_before + num_genes_after
 
-
+                print(after_loc_gens)
+                print(before_loc_gens)
                 before_gene = gene_name_finder(before_loc_gens, back_it_up=False)
                 after_gene = gene_name_finder(after_loc_gens, back_it_up=True)
 
