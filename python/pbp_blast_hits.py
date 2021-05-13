@@ -962,12 +962,12 @@ def isolate_narrow(reccy_hits, pyt_csv, tree, reccy_csv_gubbins, mut_bases_csv, 
 
 
         ## Get the locs of the pbps
-        print("###########################################################")
-        print(pbp_row)
-        print(type(pbp_row))
-        print(res_id)
-        print("###########################################################")
-
+        # print("###########################################################")
+        # print(pbp_row)
+        # print(type(pbp_row))
+        # print(res_id)
+        # print("###########################################################")
+        #
 
 
         if pbp_row.iloc[0,6] == "+":
@@ -1343,9 +1343,7 @@ if __name__ == '__main__':
     seq_clus = 1
     for cluster in unique_clusters:
         print("On cluster: %s, %s of %s" % (cluster, seq_clus, len(unique_clusters)))
-        if cluster != "gpsc.10":
-            continue
-
+        
         tic_cluster = time.perf_counter()
         current_dat = reccy_hits[reccy_hits['cluster_name'] == cluster]
         current_pyt = pyt_csv[pyt_csv['cluster'] == cluster]
